@@ -4,28 +4,103 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA"
+    android:background="@color/page_background"
     android:orientation="vertical"
     tools:context=".ProductListActivity">
 
-    <TextView
+    <!-- Top App Bar & Header Area - Thiết kế phẳng, vuông vức -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="18dp"
-        android:text="Sản phẩm"
-        android:textColor="#1976D2"
-        android:textSize="26sp"
-        android:textStyle="bold" />
+        android:background="@color/surface"
+        android:elevation="2dp"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp">
 
+        <!-- Lời chào người dùng -->
+        <TextView
+            android:id="@+id/tvUserGreeting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="👤 Xin chào quý khách 👋"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <!-- Tiêu đề chính -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Sản phẩm nổi bật"
+            android:textColor="@color/text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Banner khuyến mãi phẳng hoàn toàn -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_banner_gradient"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚡"
+                android:textSize="20sp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SIÊU SALE HÔM NAY"
+                    android:textColor="#FFD54F"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Giảm đến 50% • Miễn phí vận chuyển toàn quốc"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Danh sách sản phẩm phẳng -->
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#FFFFFF"
-        android:divider="#EEEEEE"
-        android:dividerHeight="1dp"
-        android:listSelector="?attr/selectableItemBackground" />
+        android:clipToPadding="false"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:listSelector="?attr/selectableItemBackground"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="12dp" />
+
+    <!-- Thanh Menu Dưới Cùng -->
+    <include
+        android:id="@+id/bottomMenu"
+        layout="@layout/include_bottom_menu" />
 
 </LinearLayout>

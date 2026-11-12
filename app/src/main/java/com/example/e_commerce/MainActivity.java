@@ -1,3 +1,6 @@
+/**
+ * Màn hình chính (Activity gốc) khởi tạo giao diện mẫu ứng dụng.
+ */
 package com.example.e_commerce;
 
 import android.os.Bundle;
@@ -13,8 +16,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Kích hoạt chế độ hiển thị tràn viền (Edge-to-Edge)
         WindowCompat.enableEdgeToEdge(getWindow());
         setContentView(R.layout.activity_main);
+
+        // Xử lý căn lề tự động tránh bị che bởi thanh điều hướng hệ thống
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);

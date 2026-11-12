@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Layout từng dòng sản phẩm trong danh sách (ProductAdapter) - Phong cách phẳng, vuông vức, tinh tế -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground"
+    android:layout_marginVertical="4dp"
+    android:background="@drawable/bg_card_white"
+    android:elevation="1dp"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:padding="12dp">
 
+    <!-- Khung chứa icon sản phẩm vuông vức với màu nền động từ Adapter -->
     <FrameLayout
         android:id="@+id/flIconContainer"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
         android:background="@drawable/bg_chip_blue">
 
         <TextView
@@ -18,27 +22,49 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:textSize="28sp" />
+            android:textSize="34sp" />
     </FrameLayout>
 
+    <!-- Khu vực hiển thị thông tin sản phẩm -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="14dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvCategory"
-            android:layout_width="wrap_content"
+        <!-- Hàng hiển thị danh mục và xếp hạng phẳng -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_chip_blue"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="2dp"
-            android:textColor="#1976D2"
-            android:textSize="11sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/tvCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_chip_blue"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:textColor="@color/primary"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_chip_amber"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:text="★ 4.9"
+                android:textColor="#B45309"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Tên sản phẩm -->
         <TextView
             android:id="@+id/tvName"
             android:layout_width="match_parent"
@@ -46,37 +72,41 @@
             android:layout_marginTop="4dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textColor="#212121"
+            android:textColor="@color/text_primary"
             android:textSize="15sp"
             android:textStyle="bold" />
 
+        <!-- Giá sản phẩm -->
         <TextView
             android:id="@+id/tvPrice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:textColor="#E53935"
-            android:textSize="14sp"
+            android:textColor="@color/danger"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
+        <!-- Mô tả ngắn gọn sản phẩm -->
         <TextView
             android:id="@+id/tvDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:ellipsize="end"
+            android:lineSpacingExtra="1dp"
             android:maxLines="2"
-            android:textColor="#757575"
-            android:textSize="13sp" />
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
 
     </LinearLayout>
 
+    <!-- Mũi tên điều hướng thanh lịch không viền tròn -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:text="›"
-        android:textColor="#BDBDBD"
+        android:textColor="@color/gray_400"
         android:textSize="24sp" />
 
 </LinearLayout>
