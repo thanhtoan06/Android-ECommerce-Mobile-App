@@ -1,97 +1,171 @@
 /**
- * Màn hình hiển thị danh sách sản phẩm lấy từ cơ sở dữ liệu SQLite và thanh menu điều hướng dưới cùng.
+ * ProductListActivity.java: Màn hình chính hiển thị thông tin người dùng, bộ lọc danh mục và danh sách sản phẩm từ SQLite.
  */
 package com.example.e_commerce;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.core.content.ContextCompat;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class ProductListActivity extends AppCompatActivity {
 
     private ListView listView;
-    private Product[] products;
+    private LinearLayout layoutCategoryTabs;
 
+    private Product[] allProducts = new Product[0];      // Toàn bộ sản phẩm lấy từ SQLite
+    private Product[] filteredProducts = new Product[0]; // Danh sách sản phẩm sau khi lọc theo danh mục
+    private String selectedCategory = "Tất cả";          // Danh mục đang được chọn
+
+    // Hàm chạy đầu tiên khi mở màn hình chính: hiển thị tên + email, tải sản phẩm và gắn sự kiện bấm
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Kích hoạt giao diện hiển thị tràn viền (Edge-to-Edge)
-        WindowCompat.enableEdgeToEdge(getWindow());
         setContentView(R.layout.activity_product_list);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(true);
 
-        // Xử lý căn lề tự động tránh bị che bởi thanh trạng thái và thanh điều hướng hệ thống
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-
-        // Lấy thông tin người dùng từ SharedPreferences qua SharedPrefManager
+        // Lấy thông tin người dùng đang đăng nhập từ SharedPreferences
         SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
         String username = prefManager.getUsername();
         String userEmail = prefManager.getEmail();
         String avatar = prefManager.getAvatar();
 
+        // Hiển thị Avatar, Tên và Email lên phần đầu trang
+        TextView tvHeaderAvatar = findViewById(R.id.tvHeaderAvatar);
         TextView tvUserGreeting = findViewById(R.id.tvUserGreeting);
-        if (tvUserGreeting != null) {
-            String displayName = !username.isEmpty() ? username : userEmail;
-            if (!displayName.isEmpty()) {
-                tvUserGreeting.setText(avatar + " Xin chào, " + displayName + " 👋");
-            } else {
-                tvUserGreeting.setText("👤 Xin chào quý khách 👋");
-            }
-        }
+        TextView tvUserEmail = findViewById(R.id.tvUserEmail);
 
+        tvHeaderAvatar.setText(avatar);
+        tvUserGreeting.setText("Xin chào, " + (!username.isEmpty() ? username : "Quý khách"));
+        tvUserEmail.setText(!userEmail.isEmpty() ? userEmail : "Chưa có email");
+
+        // Kết nối ListView và thanh tab danh mục
         listView = findViewById(R.id.listView);
+        layoutCategoryTabs = findViewById(R.id.layoutCategoryTabs);
+
+        // Tải danh sách sản phẩm từ SQLite và tạo các tab danh mục
         loadProductsFromDatabase();
 
-        // Sự kiện khi bấm vào một sản phẩm trong danh sách -> Chuyển sang màn hình chi tiết
+        // Khi bấm vào một sản phẩm -> mở màn hình Chi tiết sản phẩm và truyền kèm ID
         listView.setOnItemClickListener((parent, view, position, id) -> {
-            if (products != null && position < products.length) {
+            if (filteredProducts != null && position < filteredProducts.length) {
                 Intent intent = new Intent(ProductListActivity.this, ProductDetailActivity.class);
-                intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, products[position].getId());
+                intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, filteredProducts[position].getId());
                 startActivity(intent);
             }
         });
 
-        // Xử lý sự kiện bấm vào mục Trang chủ / Sản phẩm trên thanh menu dưới cùng
+        // Xử lý bấm các nút trên thanh menu điều hướng phía dưới cùng
         findViewById(R.id.menuHome).setOnClickListener(v ->
-                Toast.makeText(ProductListActivity.this, "Bạn đang ở trang Sản phẩm", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Bạn đang ở trang Sản phẩm", Toast.LENGTH_SHORT).show()
         );
 
-        // Xử lý sự kiện bấm vào mục Giỏ hàng -> Mở trang Giỏ hàng thật!
-        findViewById(R.id.menuCart).setOnClickListener(v -> {
-            Intent intent = new Intent(ProductListActivity.this, CartActivity.class);
-            startActivity(intent);
-        });
+        findViewById(R.id.menuCart).setOnClickListener(v ->
+                startActivity(new Intent(this, CartActivity.class))
+        );
 
-        // Xử lý sự kiện bấm vào mục Tài khoản -> Mở trang Tài khoản
-        findViewById(R.id.menuAccount).setOnClickListener(v -> {
-            Intent intent = new Intent(ProductListActivity.this, AccountActivity.class);
-            startActivity(intent);
-        });
+        findViewById(R.id.menuAccount).setOnClickListener(v ->
+                startActivity(new Intent(this, AccountActivity.class))
+        );
     }
 
+    // Tự động tải lại sản phẩm mỗi khi quay lại màn hình này
     @Override
     protected void onResume() {
         super.onResume();
         loadProductsFromDatabase();
     }
 
+    // Lấy toàn bộ sản phẩm từ SQLite, tạo tab danh mục và hiển thị danh sách tương ứng
     private void loadProductsFromDatabase() {
-        // Lấy danh sách sản phẩm trực tiếp từ SQLite Database
-        products = ProductRepository.getAll(this);
-        ProductAdapter adapter = new ProductAdapter(this, products);
-        listView.setAdapter(adapter);
+        allProducts = ProductRepository.getAll(this);
+        buildCategoryTabs();
+        filterProductsByCategory();
+    }
+
+    // Tự động lấy các danh mục từ danh sách sản phẩm để tạo thành các nút tab lọc
+    private void buildCategoryTabs() {
+        layoutCategoryTabs.removeAllViews();
+
+        Set<String> categories = new LinkedHashSet<>();
+        categories.add("Tất cả");
+        for (Product product : allProducts) {
+            if (product.getCategory() != null && !product.getCategory().trim().isEmpty()) {
+                categories.add(product.getCategory().trim());
+            }
+        }
+
+        if (!categories.contains(selectedCategory)) {
+            selectedCategory = "Tất cả";
+        }
+
+        int padH = dpToPx(14);
+        int padV = dpToPx(6);
+        int marginEnd = dpToPx(8);
+
+        for (String category : categories) {
+            TextView tab = new TextView(this);
+            tab.setText(category);
+            tab.setTextSize(13f);
+            tab.setPadding(padH, padV, padH, padV);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            params.setMarginEnd(marginEnd);
+            tab.setLayoutParams(params);
+
+            // Làm nổi bật tab đang được chọn
+            if (category.equals(selectedCategory)) {
+                tab.setBackgroundResource(R.drawable.bg_primary_button);
+                tab.setTextColor(ContextCompat.getColor(this, R.color.white));
+                tab.setTypeface(null, Typeface.BOLD);
+            } else {
+                tab.setBackgroundResource(R.drawable.bg_secondary_button);
+                tab.setTextColor(ContextCompat.getColor(this, R.color.primary));
+                tab.setTypeface(null, Typeface.NORMAL);
+            }
+
+            tab.setOnClickListener(v -> {
+                selectedCategory = category;
+                buildCategoryTabs();
+                filterProductsByCategory();
+            });
+
+            layoutCategoryTabs.addView(tab);
+        }
+    }
+
+    // Lọc danh sách sản phẩm theo danh mục đang chọn và hiển thị lên ListView
+    private void filterProductsByCategory() {
+        if ("Tất cả".equals(selectedCategory)) {
+            filteredProducts = allProducts;
+        } else {
+            List<Product> result = new ArrayList<>();
+            for (Product product : allProducts) {
+                if (selectedCategory.equalsIgnoreCase(product.getCategory())) {
+                    result.add(product);
+                }
+            }
+            filteredProducts = result.toArray(new Product[0]);
+        }
+
+        listView.setAdapter(new ProductAdapter(this, filteredProducts));
+    }
+
+    // Đổi đơn vị dp sang pixel
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

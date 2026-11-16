@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- activity_product_list.xml: Giao diện trang chủ mua sắm (gồm thông tin người dùng, tab lọc danh mục, danh sách sản phẩm và menu dưới). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
@@ -8,7 +9,7 @@
     android:orientation="vertical"
     tools:context=".ProductListActivity">
 
-    <!-- Top App Bar & Header Area - Thiết kế phẳng, vuông vức -->
+    <!-- Thanh tiêu đề phía trên cùng (Avatar + Xin chào Tên + Email + Tab danh mục) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -16,75 +17,72 @@
         android:elevation="2dp"
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
-        android:paddingTop="16dp"
+        android:paddingTop="14dp"
         android:paddingBottom="12dp">
 
-        <!-- Lời chào người dùng -->
-        <TextView
-            android:id="@+id/tvUserGreeting"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="👤 Xin chào quý khách 👋"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
-
-        <!-- Tiêu đề chính -->
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Sản phẩm nổi bật"
-            android:textColor="@color/text_primary"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <!-- Banner khuyến mãi phẳng hoàn toàn -->
+        <!-- Hàng hiển thị Avatar, Tên tài khoản và Email -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_banner_gradient"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="10dp">
+            android:orientation="horizontal">
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⚡"
-                android:textSize="20sp" />
+                android:id="@+id/tvHeaderAvatar"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@drawable/bg_avatar_circle"
+                android:gravity="center"
+                android:text="👤"
+                android:textSize="22sp" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvUserGreeting"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="SIÊU SALE HÔM NAY"
-                    android:textColor="#FFD54F"
-                    android:textSize="11sp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Xin chào, Người dùng"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvUserEmail"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Giảm đến 50% • Miễn phí vận chuyển toàn quốc"
-                    android:textColor="@color/white"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="user@example.com"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
-
         </LinearLayout>
+
+        <!-- Thanh tab lọc theo danh mục sản phẩm (cuộn ngang) -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/layoutCategoryTabs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
     </LinearLayout>
 
-    <!-- Danh sách sản phẩm phẳng -->
+    <!-- Danh sách sản phẩm cuộn dọc -->
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
@@ -95,10 +93,10 @@
         android:dividerHeight="0dp"
         android:listSelector="?attr/selectableItemBackground"
         android:paddingHorizontal="12dp"
-        android:paddingTop="6dp"
+        android:paddingTop="8dp"
         android:paddingBottom="12dp" />
 
-    <!-- Thanh Menu Dưới Cùng -->
+    <!-- Thanh menu điều hướng phía dưới cùng -->
     <include
         android:id="@+id/bottomMenu"
         layout="@layout/include_bottom_menu" />

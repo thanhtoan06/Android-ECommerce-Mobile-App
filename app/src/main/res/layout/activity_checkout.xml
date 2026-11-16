@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout màn hình Xác nhận và Thanh toán đơn hàng (CheckoutActivity) - Phẳng, vuông vức -->
+<!-- activity_checkout.xml: Giao diện màn hình Thanh toán (nhập địa chỉ nhận hàng, chọn phương thức thanh toán và tổng kết chi phí). -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -9,7 +9,7 @@
     android:background="@color/page_background"
     tools:context=".CheckoutActivity">
 
-    <!-- Top Bar phẳng -->
+    <!-- Thanh tiêu đề phía trên cùng -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
@@ -50,7 +50,7 @@
             android:layout_height="match_parent" />
     </LinearLayout>
 
-    <!-- Bottom Bar: Nút Đặt hàng phẳng -->
+    <!-- Thanh nút xác nhận đặt hàng cố định phía dưới cùng -->
     <LinearLayout
         android:id="@+id/bottomCheckoutBar"
         android:layout_width="match_parent"
@@ -66,14 +66,14 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:background="@drawable/bg_primary_button"
-            app:backgroundTint="@null"
             android:text="XÁC NHẬN ĐẶT HÀNG"
             android:textColor="@color/white"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:backgroundTint="@null" />
     </LinearLayout>
 
-    <!-- Nội dung thanh toán cuộn được -->
+    <!-- Nội dung thanh toán cuộn dọc -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -87,7 +87,7 @@
             android:orientation="vertical"
             android:padding="14dp">
 
-            <!-- Card 1: Thông tin giao hàng -->
+            <!-- Khối 1: Thông tin giao hàng -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -105,7 +105,6 @@
                 android:orientation="vertical"
                 android:padding="14dp">
 
-                <!-- Họ tên người nhận -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -127,7 +126,6 @@
                     android:textColorHint="@color/text_tertiary"
                     android:textSize="13sp" />
 
-                <!-- Số điện thoại -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -150,7 +148,6 @@
                     android:textColorHint="@color/text_tertiary"
                     android:textSize="13sp" />
 
-                <!-- Địa chỉ nhận hàng -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -176,7 +173,6 @@
                     android:textColorHint="@color/text_tertiary"
                     android:textSize="13sp" />
 
-                <!-- Ghi chú đơn hàng -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -201,7 +197,7 @@
 
             </LinearLayout>
 
-            <!-- Card 2: Danh sách sản phẩm trong đơn -->
+            <!-- Khối 2: Danh sách sản phẩm trong đơn -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -220,12 +216,9 @@
                 android:elevation="1dp"
                 android:orientation="vertical"
                 android:paddingHorizontal="14dp"
-                android:paddingVertical="8dp">
+                android:paddingVertical="8dp" />
 
-                <!-- Các item sẽ được nạp động từ Java -->
-            </LinearLayout>
-
-            <!-- Card 3: Phương thức thanh toán -->
+            <!-- Khối 3: Phương thức thanh toán -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -269,7 +262,6 @@
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
 
-                <!-- Khung thông tin ngân hàng phẳng -->
                 <LinearLayout
                     android:id="@+id/layoutBankInfo"
                     android:layout_width="match_parent"
@@ -325,7 +317,7 @@
 
             </RadioGroup>
 
-            <!-- Card 4: Chi tiết thanh toán -->
+            <!-- Khối 4: Tổng kết chi phí -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -344,7 +336,6 @@
                 android:orientation="vertical"
                 android:padding="14dp">
 
-                <!-- Tiền hàng -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -368,7 +359,6 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Phí vận chuyển -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -403,7 +393,6 @@
                     android:layout_marginVertical="10dp"
                     android:background="@color/card_stroke" />
 
-                <!-- Tổng thanh toán cuối cùng -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

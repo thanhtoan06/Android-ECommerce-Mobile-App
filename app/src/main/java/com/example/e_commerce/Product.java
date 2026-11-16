@@ -1,10 +1,5 @@
 /**
- * Product.java
- * ─────────────────────────────────────────────────────────
- * Model đại diện cho một sản phẩm trong bảng products (SQLite).
- * Các trường: id, tên, danh mục, giá (VNĐ), mô tả, icon (emoji), màu nền (ARGB).
- * Tất cả trường là final (bất biến) sau khi đợc khởi tạo.
- * ─────────────────────────────────────────────────────────
+ * Product.java: Đối tượng lưu trữ thông tin của một sản phẩm (id, tên, danh mục, giá, mô tả, icon).
  */
 package com.example.e_commerce;
 
@@ -13,23 +8,21 @@ import java.util.Locale;
 
 public class Product {
 
-    private final int id;          // Mã định danh sản phẩm
-    private final String name;     // Tên sản phẩm
-    private final String category; // Danh mục sản phẩm
-    private final long price;      // Giá sản phẩm (VND)
-    private final String description;// Mô tả chi tiết sản phẩm
-    private final String icon;     // Biểu tượng (emoji) đại diện cho sản phẩm
-    private final int color;       // Màu nền đại diện cho sản phẩm
+    private final int id;
+    private final String name;
+    private final String category;
+    private final long price;
+    private final String description;
+    private final String icon;
 
-    // Hàm khởi tạo đối tượng Product
-    public Product(int id, String name, String category, long price, String description, String icon, int color) {
+    // Hàm khởi tạo thông tin một sản phẩm
+    public Product(int id, String name, String category, long price, String description, String icon) {
         this.id = id;
         this.name = name;
         this.category = category;
         this.price = price;
         this.description = description;
         this.icon = icon;
-        this.color = color;
     }
 
     // Lấy mã sản phẩm
@@ -47,28 +40,23 @@ public class Product {
         return category;
     }
 
-    // Lấy giá sản phẩm
+    // Lấy giá gốc dạng số nguyên
     public long getPrice() {
         return price;
     }
 
-    // Lấy giá sản phẩm đã định dạng tiền tệ VN (VD: 189.000 ₫)
+    // Định dạng giá tiền theo kiểu Việt Nam (ví dụ: 189.000 ₫)
     public String getFormattedPrice() {
         return NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(price) + " ₫";
     }
 
-    // Lấy mô tả sản phẩm
+    // Lấy mô tả chi tiết sản phẩm
     public String getDescription() {
         return description;
     }
 
-    // Lấy icon sản phẩm
+    // Lấy biểu tượng icon sản phẩm
     public String getIcon() {
         return icon;
-    }
-
-    // Lấy màu sắc đại diện sản phẩm
-    public int getColor() {
-        return color;
     }
 }

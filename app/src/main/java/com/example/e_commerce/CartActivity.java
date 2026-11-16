@@ -1,3 +1,6 @@
+/**
+ * CartActivity.java: Màn hình Giỏ hàng hiển thị sản phẩm đã chọn từ SQLite, cho phép tăng/giảm số lượng, xóa và chuyển sang thanh toán.
+ */
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -5,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -12,20 +16,12 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Màn hình Giỏ hàng (CartActivity) hiển thị các sản phẩm người dùng đã chọn mua,
- * cho phép tăng giảm số lượng, xóa và tiến hành thanh toán trực tiếp từ SQLite.
- */
 public class CartActivity extends AppCompatActivity implements CartAdapter.OnCartItemListener {
 
     private ListView lvCartItems;
@@ -36,31 +32,21 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     private TextView btnClearAllCart;
     private Button btnCheckout;
 
-    private List<CartItem> cartItemList = new ArrayList<>();
+    private final List<CartItem> cartItemList = new ArrayList<>();
     private CartAdapter adapter;
     private DatabaseHelper databaseHelper;
     private String currentUserEmail;
 
+    // Hàm chạy đầu tiên khi mở màn hình Giỏ hàng: kết nối giao diện và gắn sự kiện các nút bấm
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Kích hoạt giao diện hiển thị tràn viền (Edge-to-Edge)
-        WindowCompat.enableEdgeToEdge(getWindow());
         setContentView(R.layout.activity_cart);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(true);
-
-        // Căn lề tự động tránh che khuất bởi system bars
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
 
         databaseHelper = DatabaseHelper.getInstance(this);
         currentUserEmail = SharedPrefManager.getInstance(this).getEmail();
 
-        // Ánh xạ View
+        // Kết nối các biến Java với các thành phần trên giao diện
         lvCartItems = findViewById(R.id.lvCartItems);
         layoutEmptyCart = findViewById(R.id.layoutEmptyCart);
         layoutCheckoutBar = findViewById(R.id.layoutCheckoutBar);
@@ -69,80 +55,80 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         btnClearAllCart = findViewById(R.id.btnClearAllCart);
         btnCheckout = findViewById(R.id.btnCheckout);
 
-        // Adapter cho ListView
+        // Khởi tạo Adapter đổ danh sách sản phẩm trong giỏ lên ListView
         adapter = new CartAdapter(this, cartItemList, this);
         lvCartItems.setAdapter(adapter);
 
-        // Sự kiện bấm vào sản phẩm trong giỏ hàng để xem lại chi tiết
+        // Khi bấm vào một sản phẩm trong giỏ -> mở lại trang Chi tiết sản phẩm đó
         lvCartItems.setOnItemClickListener((parent, view, position, id) -> {
             if (position < cartItemList.size()) {
                 CartItem item = cartItemList.get(position);
                 if (item.getProduct() != null) {
-                    Intent intent = new Intent(CartActivity.this, ProductDetailActivity.class);
+                    Intent intent = new Intent(this, ProductDetailActivity.class);
                     intent.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, item.getProduct().getId());
                     startActivity(intent);
                 }
             }
         });
 
-        // Nút khám phá sản phẩm khi giỏ hàng trống
+        // Nút "Khám phá sản phẩm" khi giỏ hàng đang trống
         findViewById(R.id.btnShopNow).setOnClickListener(v -> {
-            Intent intent = new Intent(CartActivity.this, ProductListActivity.class);
+            Intent intent = new Intent(this, ProductListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             finish();
         });
 
-        // Nút xóa toàn bộ giỏ hàng
+        // Nút "Xóa tất cả": hỏi xác nhận rồi xóa sạch giỏ hàng trong SQLite
         btnClearAllCart.setOnClickListener(v -> {
             if (cartItemList.isEmpty()) return;
-            new AlertDialog.Builder(CartActivity.this)
+            new AlertDialog.Builder(this)
                     .setTitle("Xóa giỏ hàng")
                     .setMessage("Bạn có chắc chắn muốn xóa toàn bộ sản phẩm khỏi giỏ hàng?")
                     .setPositiveButton("Xóa tất cả", (dialog, which) -> {
                         databaseHelper.clearCart(currentUserEmail);
                         loadCartData();
-                        Toast.makeText(CartActivity.this, "Đã xóa toàn bộ giỏ hàng!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Đã xóa toàn bộ giỏ hàng!", Toast.LENGTH_SHORT).show();
                     })
                     .setNegativeButton("Hủy", null)
                     .show();
         });
 
-        // Nút Tiến hành thanh toán
+        // Nút "Thanh toán": chuyển sang màn hình nhập thông tin đặt hàng (CheckoutActivity)
         btnCheckout.setOnClickListener(v -> {
             if (cartItemList.isEmpty()) {
-                Toast.makeText(CartActivity.this, "Giỏ hàng đang trống!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Giỏ hàng đang trống!", Toast.LENGTH_SHORT).show();
                 return;
             }
-            Intent intent = new Intent(CartActivity.this, CheckoutActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, CheckoutActivity.class));
         });
 
+        // Cài đặt thanh menu điều hướng dưới cùng
         setupBottomMenu();
     }
 
+    // Tự động tải lại dữ liệu giỏ hàng mỗi khi quay lại màn hình này
     @Override
     protected void onResume() {
         super.onResume();
         loadCartData();
     }
 
-    /**
-     * Tải lại toàn bộ dữ liệu giỏ hàng từ database SQLite
-     */
+    // Đọc danh sách giỏ hàng từ SQLite, tính tổng số lượng + tổng tiền và cập nhật giao diện
     private void loadCartData() {
         cartItemList.clear();
-        List<CartItem> items = databaseHelper.getCartItems(currentUserEmail);
-        cartItemList.addAll(items);
+        cartItemList.addAll(databaseHelper.getCartItems(currentUserEmail));
         adapter.notifyDataSetChanged();
 
         if (cartItemList.isEmpty()) {
+            // Hiển thị màn hình thông báo giỏ hàng trống
             layoutEmptyCart.setVisibility(View.VISIBLE);
             lvCartItems.setVisibility(View.GONE);
             layoutCheckoutBar.setVisibility(View.GONE);
             btnClearAllCart.setVisibility(View.GONE);
             tvCartHeaderTitle.setText("Giỏ hàng của tôi");
         } else {
+            // Hiển thị danh sách món hàng và thanh tổng thanh toán
             layoutEmptyCart.setVisibility(View.GONE);
             lvCartItems.setVisibility(View.VISIBLE);
             layoutCheckoutBar.setVisibility(View.VISIBLE);
@@ -161,10 +147,10 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         }
     }
 
+    // Xử lý khi người dùng bấm nút (+) hoặc (−) để thay đổi số lượng sản phẩm trong giỏ
     @Override
     public void onQuantityChanged(CartItem item, int newQuantity) {
         if (newQuantity <= 0) {
-            // Xác nhận xóa khi giảm về 0
             new AlertDialog.Builder(this)
                     .setTitle("Xóa sản phẩm")
                     .setMessage("Bạn có muốn xóa \"" + item.getProduct().getName() + "\" khỏi giỏ hàng?")
@@ -180,6 +166,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         }
     }
 
+    // Xử lý khi người dùng bấm nút thùng rác xóa một sản phẩm khỏi giỏ
     @Override
     public void onItemDeleted(CartItem item) {
         new AlertDialog.Builder(this)
@@ -188,64 +175,55 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     databaseHelper.removeCartItem(item.getId());
                     loadCartData();
-                    Toast.makeText(CartActivity.this, "Đã xóa sản phẩm khỏi giỏ hàng!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Đã xóa sản phẩm khỏi giỏ hàng!", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
-    /**
-     * Cài đặt thanh Menu dưới cùng và tô màu nổi bật tab Giỏ hàng
-     */
+    // Đánh dấu tab Giỏ hàng đang chọn và gắn sự kiện chuyển trang cho thanh menu dưới cùng
     private void setupBottomMenu() {
         View menuHome = findViewById(R.id.menuHome);
         View menuCart = findViewById(R.id.menuCart);
         View menuAccount = findViewById(R.id.menuAccount);
 
-        // Highlight tab Giỏ hàng
-        if (menuCart instanceof android.view.ViewGroup) {
-            android.view.ViewGroup cartGroup = (android.view.ViewGroup) menuCart;
+        // Tô đậm tab "Giỏ hàng"
+        if (menuCart instanceof ViewGroup) {
+            ViewGroup cartGroup = (ViewGroup) menuCart;
             for (int i = 0; i < cartGroup.getChildCount(); i++) {
                 View child = cartGroup.getChildAt(i);
-                if (child instanceof TextView) {
-                    TextView tv = (TextView) child;
-                    if ("Giỏ hàng".contentEquals(tv.getText())) {
-                        tv.setTextColor(Color.parseColor("#1976D2"));
-                        tv.setTypeface(null, Typeface.BOLD);
-                    }
+                if (child instanceof TextView && "Giỏ hàng".contentEquals(((TextView) child).getText())) {
+                    ((TextView) child).setTextColor(Color.parseColor("#1976D2"));
+                    ((TextView) child).setTypeface(null, Typeface.BOLD);
                 }
             }
         }
 
-        // Bỏ highlight tab Sản phẩm
-        if (menuHome instanceof android.view.ViewGroup) {
-            android.view.ViewGroup homeGroup = (android.view.ViewGroup) menuHome;
+        // Đặt lại màu chữ bình thường cho tab "Sản phẩm"
+        if (menuHome instanceof ViewGroup) {
+            ViewGroup homeGroup = (ViewGroup) menuHome;
             for (int i = 0; i < homeGroup.getChildCount(); i++) {
                 View child = homeGroup.getChildAt(i);
-                if (child instanceof TextView) {
-                    TextView tv = (TextView) child;
-                    if ("Sản phẩm".contentEquals(tv.getText())) {
-                        tv.setTextColor(Color.parseColor("#757575"));
-                        tv.setTypeface(null, Typeface.NORMAL);
-                    }
+                if (child instanceof TextView && "Sản phẩm".contentEquals(((TextView) child).getText())) {
+                    ((TextView) child).setTextColor(Color.parseColor("#757575"));
+                    ((TextView) child).setTypeface(null, Typeface.NORMAL);
                 }
             }
         }
 
         menuHome.setOnClickListener(v -> {
-            Intent intent = new Intent(CartActivity.this, ProductListActivity.class);
+            Intent intent = new Intent(this, ProductListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             finish();
         });
 
         menuCart.setOnClickListener(v ->
-                Toast.makeText(CartActivity.this, "Bạn đang ở trang Giỏ hàng", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Bạn đang ở trang Giỏ hàng", Toast.LENGTH_SHORT).show()
         );
 
         menuAccount.setOnClickListener(v -> {
-            Intent intent = new Intent(CartActivity.this, AccountActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, AccountActivity.class));
             finish();
         });
     }

@@ -1,6 +1,12 @@
+/**
+ * OrderAdapter.java: Bộ chuyển đổi danh sách đơn hàng Order thành từng thẻ đơn hàng chi tiết hiển thị trên ListView.
+ */
 package com.example.e_commerce;
 
 import android.content.Context;
+import android.graphics.Typeface;
+import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,24 +20,19 @@ import androidx.annotation.Nullable;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * OrderAdapter.java
- * ─────────────────────────────────────────────────────────
- * Adapter hiển thị danh sách đơn hàng đã mua với thông tin chi tiết
- * từng sản phẩm, ngày đặt, địa chỉ nhận hàng và tổng thanh toán.
- * ─────────────────────────────────────────────────────────
- */
 public class OrderAdapter extends ArrayAdapter<Order> {
 
     private final LayoutInflater inflater;
     private final DatabaseHelper dbHelper;
 
+    // Hàm khởi tạo Adapter nhận vào Context và danh sách đơn hàng
     public OrderAdapter(@NonNull Context context, @NonNull List<Order> orders) {
         super(context, 0, orders);
         this.inflater = LayoutInflater.from(context);
         this.dbHelper = DatabaseHelper.getInstance(context);
     }
 
+    // Tạo và gán dữ liệu từng đơn hàng (mã đơn, sản phẩm đã mua, người nhận, tổng tiền) vào giao diện item_order.xml
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
@@ -63,20 +64,18 @@ public class OrderAdapter extends ArrayAdapter<Order> {
             holder.tvReceiverAddress.setText("📍 Địa chỉ: " + order.getReceiverAddress());
             holder.tvPaymentMethod.setText("💳 Thanh toán: " + order.getPaymentMethod());
 
-            // Tải danh sách chi tiết các sản phẩm trong đơn hàng này
+            // Truy vấn bảng order_items trong SQLite để hiển thị từng sản phẩm thuộc đơn hàng này
             List<OrderItem> items = dbHelper.getOrderItems(order.getId());
             holder.llOrderItems.removeAllViews();
 
             int totalQty = 0;
-            for (int i = 0; i < items.size(); i++) {
-                OrderItem item = items.get(i);
+            for (OrderItem item : items) {
                 totalQty += item.getQuantity();
 
-                // Tạo dòng hiển thị sản phẩm thu nhỏ
                 LinearLayout row = new LinearLayout(getContext());
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setPadding(0, 6, 0, 6);
-                row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
 
                 TextView tvIcon = new TextView(getContext());
                 tvIcon.setText(item.getProductIcon());
@@ -92,14 +91,14 @@ public class OrderAdapter extends ArrayAdapter<Order> {
                 tvName.setTextColor(getContext().getColor(R.color.text_primary));
                 tvName.setTextSize(13f);
                 tvName.setSingleLine(true);
-                tvName.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                tvName.setEllipsize(TextUtils.TruncateAt.END);
                 row.addView(tvName);
 
                 TextView tvSubtotal = new TextView(getContext());
                 tvSubtotal.setText(item.getFormattedSubtotal());
                 tvSubtotal.setTextColor(getContext().getColor(R.color.text_primary));
                 tvSubtotal.setTextSize(13f);
-                tvSubtotal.setTypeface(null, android.graphics.Typeface.BOLD);
+                tvSubtotal.setTypeface(null, Typeface.BOLD);
                 row.addView(tvSubtotal);
 
                 holder.llOrderItems.addView(row);
@@ -112,6 +111,7 @@ public class OrderAdapter extends ArrayAdapter<Order> {
         return convertView;
     }
 
+    // Lớp giữ tham chiếu các thành phần View của một thẻ đơn hàng
     private static class ViewHolder {
         TextView tvOrderCode;
         TextView tvOrderDate;

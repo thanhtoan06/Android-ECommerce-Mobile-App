@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- activity_login.xml: Giao diện màn hình Đăng nhập (gồm ô nhập tài khoản, mật khẩu, nút đăng nhập và chuyển sang đăng ký). -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,6 +9,7 @@
     android:fillViewport="true"
     tools:context=".LoginActivity">
 
+    <!-- Khung bố cục chính xếp các thành phần theo chiều dọc và căn giữa màn hình -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -15,20 +17,13 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Logo vuông vức -->
-        <FrameLayout
+        <!-- Logo ứng dụng -->
+        <ImageView
             android:layout_width="72dp"
             android:layout_height="72dp"
-            android:background="@drawable/bg_avatar_circle">
+            android:src="@mipmap/ic_launcher" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="🛍️"
-                android:textSize="36sp" />
-        </FrameLayout>
-
+        <!-- Tiêu đề chính -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
@@ -39,6 +34,7 @@
             android:textSize="24sp"
             android:textStyle="bold" />
 
+        <!-- Dòng mô tả phụ -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -48,7 +44,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
-        <!-- Card Form Đăng nhập phẳng hoàn toàn -->
+        <!-- Khung trắng chứa biểu mẫu (Form) nhập liệu đăng nhập -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -57,7 +53,6 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Nhãn Email / Tài khoản -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -66,6 +61,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
+            <!-- Ô nhập email hoặc tên đăng nhập (liên kết với biến edtEmail trong Java) -->
             <EditText
                 android:id="@+id/edtEmail"
                 android:layout_width="match_parent"
@@ -80,7 +76,6 @@
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="14sp" />
 
-            <!-- Nhãn Mật khẩu -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -89,6 +84,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
+            <!-- Ô nhập mật khẩu, tự động ẩn ký tự thành dấu chấm (liên kết với biến edtPassword) -->
             <EditText
                 android:id="@+id/edtPassword"
                 android:layout_width="match_parent"
@@ -103,19 +99,19 @@
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="14sp" />
 
-            <!-- Nút Đăng nhập phẳng vuông vức -->
+            <!-- Nút bấm xác nhận đăng nhập (liên kết với biến btnLogin) -->
             <Button
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:background="@drawable/bg_primary_button"
-                app:backgroundTint="@null"
                 android:text="ĐĂNG NHẬP"
                 android:textColor="@color/white"
                 android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:backgroundTint="@null" />
 
-            <!-- Ngăn cách -->
+            <!-- Đường kẻ ngang ngăn cách 2 nút -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -145,26 +141,18 @@
                     android:background="@color/card_stroke" />
             </LinearLayout>
 
-            <!-- Nút Tạo tài khoản mới phẳng vuông vức -->
+            <!-- Nút bấm chuyển sang trang tạo tài khoản mới (liên kết với biến btnRegister) -->
             <Button
                 android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:background="@drawable/bg_secondary_button"
-                app:backgroundTint="@null"
                 android:text="+ TẠO TÀI KHOẢN MỚI"
                 android:textColor="@color/primary"
                 android:textSize="13sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:backgroundTint="@null" />
         </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="🔒 Bảo mật dữ liệu người dùng 100%"
-            android:textColor="@color/text_tertiary"
-            android:textSize="12sp" />
 
     </LinearLayout>
 </ScrollView>

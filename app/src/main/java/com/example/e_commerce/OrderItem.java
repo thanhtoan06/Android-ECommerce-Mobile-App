@@ -1,29 +1,25 @@
+/**
+ * OrderItem.java: Đối tượng lưu trữ chi tiết từng sản phẩm bên trong một đơn hàng (tên, icon, giá, số lượng, thành tiền).
+ */
 package com.example.e_commerce;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 
-/**
- * OrderItem.java
- * ─────────────────────────────────────────────────────────
- * Model đại diện cho một dòng sản phẩm trong đơn hàng (bảng order_items SQLite).
- * Lưu snapshot tên/giá tại thời điểm đặt hàng để bảo toàn lịch sử
- * kể cả khi sản phẩm gốc bị xóa hoặc thay đổi giá sau này.
- * ─────────────────────────────────────────────────────────
- */
 public class OrderItem {
-    private int id;             // Khóa chính bảng order_items
-    private int orderId;        // Khóa ngoại trỏ tới bảng orders
-    private int productId;      // ID gốc của sản phẩm (tham khảo)
-    private String productName; // Tên sản phẩm tại thời điểm đặt hàng (snapshot)
-    private String productIcon; // Emoji icon sản phẩm tại thời điểm đặt hàng
-    private long price;         // Đơn giá tại thời điểm đặt hàng (VNĐ)
-    private int quantity;       // Số lượng đặt mua
-    private long subtotal;      // Thành tiền = price × quantity
+
+    private int id;
+    private int orderId;
+    private int productId;
+    private String productName;
+    private String productIcon;
+    private long price;
+    private int quantity;
+    private long subtotal;
 
     public OrderItem() {}
 
-    // Constructor đầy đủ (dùng khi đọc từ SQLite)
+    // Hàm khởi tạo thông tin một món hàng trong đơn hàng
     public OrderItem(int id, int orderId, int productId, String productName,
                      String productIcon, long price, int quantity, long subtotal) {
         this.id = id;
@@ -36,38 +32,44 @@ public class OrderItem {
         this.subtotal = subtotal;
     }
 
-    // ─── Getters & Setters ───
-
+    // Lấy mã dòng chi tiết đơn hàng
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
+    // Lấy mã đơn hàng chứa sản phẩm này
     public int getOrderId() { return orderId; }
     public void setOrderId(int orderId) { this.orderId = orderId; }
 
+    // Lấy mã sản phẩm
     public int getProductId() { return productId; }
     public void setProductId(int productId) { this.productId = productId; }
 
+    // Lấy tên sản phẩm lúc đặt hàng
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
 
+    // Lấy biểu tượng icon sản phẩm
     public String getProductIcon() { return productIcon; }
     public void setProductIcon(String productIcon) { this.productIcon = productIcon; }
 
+    // Lấy đơn giá lúc đặt hàng
     public long getPrice() { return price; }
     public void setPrice(long price) { this.price = price; }
 
+    // Lấy số lượng mua
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
 
+    // Lấy thành tiền gốc dạng số nguyên
     public long getSubtotal() { return subtotal; }
     public void setSubtotal(long subtotal) { this.subtotal = subtotal; }
 
-    /** Đơn giá định dạng tiền tệ Việt Nam */
+    // Định dạng đơn giá theo kiểu Việt Nam
     public String getFormattedPrice() {
         return NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(price) + " ₫";
     }
 
-    /** Thành tiền định dạng tiền tệ Việt Nam */
+    // Định dạng thành tiền theo kiểu Việt Nam
     public String getFormattedSubtotal() {
         return NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(subtotal) + " ₫";
     }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout màn hình Chi tiết sản phẩm (ProductDetailActivity) - Thiết kế phẳng, vuông vức -->
+<!-- activity_product_detail.xml: Giao diện màn hình Chi tiết sản phẩm (hình biểu tượng, tên, giá, mô tả và nút mua). -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -9,7 +9,7 @@
     android:background="@color/page_background"
     tools:context=".ProductDetailActivity">
 
-    <!-- Top Bar phẳng -->
+    <!-- Thanh tiêu đề phía trên cùng -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
@@ -21,7 +21,7 @@
         android:orientation="horizontal"
         android:paddingHorizontal="10dp">
 
-        <!-- Nút quay lại màn hình trước phẳng vuông vức -->
+        <!-- Nút quay lại danh sách -->
         <TextView
             android:id="@+id/tvBack"
             android:layout_width="wrap_content"
@@ -46,7 +46,7 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <!-- Nút mở giỏ hàng nhanh ở góc trên phẳng -->
+        <!-- Nút mở nhanh giỏ hàng kèm số lượng -->
         <LinearLayout
             android:id="@+id/btnHeaderCart"
             android:layout_width="wrap_content"
@@ -78,7 +78,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Bottom Action Bar phẳng -->
+    <!-- Thanh nút bấm cố định phía dưới cùng -->
     <LinearLayout
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"
@@ -97,11 +97,11 @@
             android:layout_marginEnd="10dp"
             android:layout_weight="1"
             android:background="@drawable/bg_secondary_button"
-            app:backgroundTint="@null"
             android:text="🛒 Thêm vào giỏ"
             android:textColor="@color/primary"
             android:textSize="15sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:backgroundTint="@null" />
 
         <Button
             android:id="@+id/btnBuyNow"
@@ -109,14 +109,14 @@
             android:layout_height="50dp"
             android:layout_weight="1"
             android:background="@drawable/bg_primary_button"
-            app:backgroundTint="@null"
             android:text="⚡ Mua ngay"
             android:textColor="@color/white"
             android:textSize="15sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:backgroundTint="@null" />
     </LinearLayout>
 
-    <!-- Khu vực nội dung chi tiết cuộn được -->
+    <!-- Nội dung chi tiết sản phẩm cuộn được -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -132,36 +132,24 @@
             android:paddingTop="12dp"
             android:paddingBottom="20dp">
 
-            <!-- Card Hero Image phẳng vuông vức -->
+            <!-- Khung hiển thị biểu tượng sản phẩm lớn -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="220dp"
+                android:layout_height="200dp"
                 android:background="@drawable/bg_card_white"
-                android:elevation="1dp">
+                android:elevation="1dp"
+                android:padding="12dp">
 
                 <TextView
                     android:id="@+id/tvIcon"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:background="@color/primary_soft"
                     android:gravity="center"
-                    android:textSize="96sp" />
-
-                <!-- Badge giảm giá phẳng -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|start"
-                    android:layout_margin="10dp"
-                    android:background="@drawable/bg_chip_red"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="3dp"
-                    android:text="GIẢM 20%"
-                    android:textColor="@color/danger"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:textSize="92sp" />
             </FrameLayout>
 
-            <!-- Card Thông tin chính phẳng vuông vức -->
+            <!-- Khung thông tin danh mục, tên và giá sản phẩm -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -171,37 +159,17 @@
                 android:orientation="vertical"
                 android:padding="14dp">
 
-                <!-- Nhãn danh mục và tình trạng kho -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Nhãn danh mục -->
+                <TextView
+                    android:id="@+id/tvCategory"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvCategory"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_chip_blue"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="3dp"
-                        android:textColor="@color/primary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip_green"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="3dp"
-                        android:text="✓ Sẵn sàng giao ngay"
-                        android:textColor="@color/success_dark"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                </LinearLayout>
+                    android:background="@drawable/bg_chip_blue"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:textColor="@color/primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
                 <!-- Tên sản phẩm -->
                 <TextView
@@ -214,161 +182,24 @@
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
-                <!-- Đánh giá và số lượng bán -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_chip_amber"
-                        android:paddingHorizontal="6dp"
-                        android:paddingVertical="2dp"
-                        android:text="★ 4.9 (1.2k+ đánh giá)"
-                        android:textColor="#B45309"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="•  Đã bán 2.5k+"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
                     android:background="@color/card_stroke" />
 
-                <!-- Giá sản phẩm -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Giá bán sản phẩm -->
+                <TextView
+                    android:id="@+id/tvPrice"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvPrice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/danger"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:background="@drawable/bg_chip_red"
-                        android:paddingHorizontal="6dp"
-                        android:paddingVertical="2dp"
-                        android:text="Giá tốt nhất"
-                        android:textColor="@color/danger"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                    android:textColor="@color/danger"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
-            <!-- Card Cam kết dịch vụ phẳng -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_card_white"
-                android:elevation="1dp"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🛡️"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:text="Bảo hành chính hãng 12 tháng"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="8dp"
-                    android:background="@color/card_stroke" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🚚"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:text="Giao hàng toàn quốc • Miễn phí vận chuyển"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="8dp"
-                    android:background="@color/card_stroke" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🔄"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:text="Đổi trả miễn phí trong vòng 7 ngày"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- Card Chi tiết mô tả sản phẩm phẳng -->
+            <!-- Khung mô tả chi tiết sản phẩm -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

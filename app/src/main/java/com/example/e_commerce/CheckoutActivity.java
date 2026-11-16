@@ -1,3 +1,6 @@
+/**
+ * CheckoutActivity.java: Màn hình xác nhận thông tin giao hàng, phương thức thanh toán và lưu đơn hàng mới vào SQLite.
+ */
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -13,19 +16,11 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Màn hình Xác nhận và Thanh toán đơn hàng (CheckoutActivity).
- * Toàn bộ thông tin đơn hàng và sản phẩm được lưu vĩnh viễn vào cơ sở dữ liệu SQLite thật.
- */
 public class CheckoutActivity extends AppCompatActivity {
 
     private EditText etReceiverName;
@@ -45,27 +40,17 @@ public class CheckoutActivity extends AppCompatActivity {
     private List<CartItem> cartItems;
     private long totalAmount = 0;
 
+    // Hàm chạy đầu tiên khi mở màn hình thanh toán: kết nối giao diện, điền sẵn tên và tải tóm tắt giỏ hàng
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Kích hoạt giao diện hiển thị tràn viền (Edge-to-Edge)
-        WindowCompat.enableEdgeToEdge(getWindow());
         setContentView(R.layout.activity_checkout);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(true);
-
-        // Căn lề tự động tránh che khuất bởi system bars
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
 
         databaseHelper = DatabaseHelper.getInstance(this);
         prefManager = SharedPrefManager.getInstance(this);
         currentUserEmail = prefManager.getEmail();
 
-        // Ánh xạ View
+        // Kết nối các biến Java với các thành phần trên giao diện
         TextView tvCheckoutBack = findViewById(R.id.tvCheckoutBack);
         etReceiverName = findViewById(R.id.etReceiverName);
         etReceiverPhone = findViewById(R.id.etReceiverPhone);
@@ -80,13 +65,13 @@ public class CheckoutActivity extends AppCompatActivity {
 
         tvCheckoutBack.setOnClickListener(v -> finish());
 
-        // Điền trước thông tin người nhận nếu có
+        // Tự động điền sẵn tên tài khoản đang đăng nhập vào ô Người nhận
         String savedUsername = prefManager.getUsername();
         if (savedUsername != null && !savedUsername.isEmpty() && !"Người dùng".equals(savedUsername)) {
             etReceiverName.setText(savedUsername);
         }
 
-        // Xử lý chuyển đổi phương thức thanh toán
+        // Ẩn/hiện thông tin chuyển khoản ngân hàng khi người dùng đổi phương thức thanh toán
         rgPaymentMethods.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbBankTransfer) {
                 layoutBankInfo.setVisibility(View.VISIBLE);
@@ -95,16 +80,14 @@ public class CheckoutActivity extends AppCompatActivity {
             }
         });
 
-        // Tải danh sách sản phẩm từ SQLite Cart
+        // Tải danh sách sản phẩm từ giỏ hàng SQLite và tính tổng tiền
         loadCartSummary();
 
-        // Xử lý sự kiện bấm nút XÁC NHẬN ĐẶT HÀNG
+        // Gắn sự kiện cho nút Xác nhận đặt hàng
         btnConfirmOrder.setOnClickListener(v -> handlePlaceOrder());
     }
 
-    /**
-     * Tải và hiển thị danh sách sản phẩm từ bảng cart trong SQLite
-     */
+    // Đọc danh sách sản phẩm trong giỏ hàng SQLite, hiển thị tóm tắt và tính tổng thanh toán
     private void loadCartSummary() {
         cartItems = databaseHelper.getCartItems(currentUserEmail);
         if (cartItems == null || cartItems.isEmpty()) {
@@ -136,7 +119,6 @@ public class CheckoutActivity extends AppCompatActivity {
 
             llOrderItemsContainer.addView(itemView);
 
-            // Thêm đường phân cách giữa các item
             if (i < cartItems.size() - 1) {
                 View divider = new View(this);
                 divider.setLayoutParams(new LinearLayout.LayoutParams(
@@ -152,9 +134,7 @@ public class CheckoutActivity extends AppCompatActivity {
         btnConfirmOrder.setText("ĐẶT HÀNG • " + formattedTotal);
     }
 
-    /**
-     * Xác thực thông tin và tạo đơn hàng lưu vào SQLite
-     */
+    // Kiểm tra thông tin giao hàng người dùng nhập và lưu đơn hàng mới vào SQLite
     private void handlePlaceOrder() {
         String name = etReceiverName.getText().toString().trim();
         String phone = etReceiverPhone.getText().toString().trim();
@@ -185,7 +165,6 @@ public class CheckoutActivity extends AppCompatActivity {
             return;
         }
 
-        // Lấy phương thức thanh toán đã chọn
         String paymentMethod;
         int checkedId = rgPaymentMethods.getCheckedRadioButtonId();
         if (checkedId == R.id.rbBankTransfer) {
@@ -196,7 +175,7 @@ public class CheckoutActivity extends AppCompatActivity {
             paymentMethod = "Thanh toán khi nhận hàng (COD)";
         }
 
-        // Lưu đơn hàng vào SQLite Database thật
+        // Lưu đơn hàng vào bảng orders, order_items và tự động làm trống giỏ hàng
         long orderId = databaseHelper.createOrder(
                 currentUserEmail, name, phone, address, note, paymentMethod, cartItems
         );
@@ -208,9 +187,7 @@ public class CheckoutActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Hiển thị hộp thoại chúc mừng đặt hàng thành công
-     */
+    // Hiển thị hộp thoại thông báo đặt hàng thành công kèm mã đơn và điều hướng tiếp theo
     private void showOrderSuccessDialog(long orderId, String name, String phone, String address, String paymentMethod) {
         String formattedTotal = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(totalAmount) + " ₫";
 
@@ -219,27 +196,24 @@ public class CheckoutActivity extends AppCompatActivity {
                 + "• Người nhận: " + name + " (" + phone + ")\n"
                 + "• Địa chỉ: " + address + "\n"
                 + "• Phương thức: " + paymentMethod + "\n"
-                + "• Tổng thanh toán: " + formattedTotal + "\n\n"
-                + "Dữ liệu đơn hàng đã được lưu trữ vĩnh viễn vào hệ thống Database.";
+                + "• Tổng thanh toán: " + formattedTotal;
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("✅ ĐẶT HÀNG THÀNH CÔNG")
                 .setMessage(message)
                 .setCancelable(false)
                 .setPositiveButton("Về trang chủ", (d, which) -> {
-                    Intent intent = new Intent(CheckoutActivity.this, ProductListActivity.class);
+                    Intent intent = new Intent(this, ProductListActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                     finish();
                 })
                 .setNegativeButton("Xem đơn mua", (d, which) -> {
-                    Intent intent = new Intent(CheckoutActivity.this, OrderHistoryActivity.class);
+                    Intent intent = new Intent(this, OrderHistoryActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                     finish();
                 })
-                .create();
-
-        dialog.show();
+                .show();
     }
 }

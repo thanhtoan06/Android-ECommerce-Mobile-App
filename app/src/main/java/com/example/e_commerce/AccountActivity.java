@@ -1,77 +1,57 @@
+/**
+ * AccountActivity.java: Hiển thị thông tin tài khoản hiện tại, quản lý thông tin (đổi tên đăng nhập, đổi mật khẩu), mở lịch sử đơn hàng và xử lý đăng xuất.
+ */
 package com.example.e_commerce;
 
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 
-import java.util.List;
-
-/**
- * Màn hình Tài khoản (AccountActivity) hiển thị thông tin người dùng từ SharedPreferences,
- * cung cấp chức năng đổi avatar, xem lịch sử đơn hàng từ SQLite và đăng xuất.
- */
 public class AccountActivity extends AppCompatActivity {
 
-    private TextView tvAvatar;
     private SharedPrefManager prefManager;
+    private DatabaseHelper dbHelper;
+    private TextView tvAccountName, tvDetailUsername;
 
-    private final String[] avatarList = {"👨‍💼", "👩‍💼", "👨‍💻", "👩‍💻", "🧑‍🎨", "🧑‍🚀", "🦁", "🐱", "👤"};
-    private final String[] avatarLabels = {
-            "👨‍💼 Doanh nhân",
-            "👩‍💼 Nữ doanh nhân",
-            "👨‍💻 Nam lập trình",
-            "👩‍💻 Nữ lập trình",
-            "🧑‍🎨 Họa sĩ",
-            "🧑‍🚀 Phi hành gia",
-            "🦁 Sư tử",
-            "🐱 Mèo con",
-            "👤 Mặc định"
-    };
-
+    // Hàm chạy đầu tiên khi mở màn hình Tài khoản: hiển thị thông tin người dùng và gắn sự kiện các nút
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Kích hoạt giao diện hiển thị tràn viền (Edge-to-Edge)
-        WindowCompat.enableEdgeToEdge(getWindow());
         setContentView(R.layout.activity_account);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(true);
 
-        // Xử lý căn lề tự động tránh che khuất bởi system bars
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        dbHelper = DatabaseHelper.getInstance(this);
+        prefManager = SharedPrefManager.getInstance(this);
 
-        // Ánh xạ các thành phần giao diện
+        // Kết nối các biến Java với các thành phần trên giao diện
         TextView tvBack = findViewById(R.id.tvBack);
-        tvAvatar = findViewById(R.id.tvAvatar);
-        TextView tvAccountName = findViewById(R.id.tvAccountName);
+        TextView tvAvatar = findViewById(R.id.tvAvatar);
+        tvAccountName = findViewById(R.id.tvAccountName);
         TextView tvAccountEmail = findViewById(R.id.tvAccountEmail);
-        TextView tvDetailUsername = findViewById(R.id.tvDetailUsername);
+        tvDetailUsername = findViewById(R.id.tvDetailUsername);
         TextView tvDetailEmail = findViewById(R.id.tvDetailEmail);
         Button btnLogout = findViewById(R.id.btnLogout);
 
-        // Lấy thông tin người dùng từ SharedPreferences qua SharedPrefManager
-        prefManager = SharedPrefManager.getInstance(this);
+        View layoutUsernameRow = findViewById(R.id.layoutUsernameRow);
+        View btnChangeUsername = findViewById(R.id.btnChangeUsername);
+        View btnChangePassword = findViewById(R.id.btnChangePassword);
+
+        // Đọc thông tin người dùng đang đăng nhập từ SharedPreferences
         String username = prefManager.getUsername();
         String email = prefManager.getEmail();
         String avatar = prefManager.getAvatar();
 
-        // Hiển thị Avatar, tên người dùng và email lên giao diện
+        // Hiển thị avatar mặc định, tên và email lên giao diện
         tvAvatar.setText(avatar);
         String displayName = !username.isEmpty() ? username : (!email.isEmpty() ? email : "Người dùng");
         tvAccountName.setText(displayName);
@@ -79,33 +59,34 @@ public class AccountActivity extends AppCompatActivity {
         tvDetailUsername.setText(!username.isEmpty() ? username : "Chưa thiết lập");
         tvDetailEmail.setText(!email.isEmpty() ? email : "Chưa thiết lập");
 
-        // Sự kiện chạm vào Avatar để đổi ảnh đại diện
-        tvAvatar.setOnClickListener(v -> showChangeAvatarDialog(email));
-
-        // Sự kiện nút Quay lại
+        // Nút mũi tên quay lại màn hình trước
         tvBack.setOnClickListener(v -> finish());
 
-        // Tiện ích: Đơn mua và Địa chỉ
-        findViewById(R.id.btnOrderHistory).setOnClickListener(v -> {
-            Intent intent = new Intent(AccountActivity.this, OrderHistoryActivity.class);
-            startActivity(intent);
-        });
-        findViewById(R.id.btnAddressBook).setOnClickListener(v ->
-                Toast.makeText(AccountActivity.this, "Địa chỉ nhận hàng (Đã cập nhật theo đơn hàng gần nhất)", Toast.LENGTH_SHORT).show()
+        // Mở dialog đổi tên đăng nhập khi bấm vào nút trong Cài đặt hoặc dòng Tên tài khoản
+        View.OnClickListener changeUsernameListener = v -> showChangeUsernameDialog();
+        if (btnChangeUsername != null) btnChangeUsername.setOnClickListener(changeUsernameListener);
+        if (layoutUsernameRow != null) layoutUsernameRow.setOnClickListener(changeUsernameListener);
+
+        // Mở dialog đổi mật khẩu
+        if (btnChangePassword != null) {
+            btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
+        }
+
+        // Mở màn hình Lịch sử đơn mua hàng
+        findViewById(R.id.btnOrderHistory).setOnClickListener(v ->
+                startActivity(new Intent(AccountActivity.this, OrderHistoryActivity.class))
         );
 
-        // Xử lý sự kiện bấm nút ĐĂNG XUẤT với hộp thoại xác nhận
+        // Xử lý bấm nút ĐĂNG XUẤT: hiện hộp thoại xác nhận, xóa phiên đăng nhập và quay về LoginActivity
         btnLogout.setOnClickListener(v -> {
-            new AlertDialog.Builder(AccountActivity.this)
+            new AlertDialog.Builder(this)
                     .setTitle("Đăng xuất")
                     .setMessage("Bạn có chắc chắn muốn đăng xuất tài khoản không?")
                     .setPositiveButton("Đăng xuất", (dialog, which) -> {
-                        // 1. Xóa thông tin người dùng đã lưu trong SharedPreferences
-                        prefManager.logout();
+                        prefManager.logout(); // Xóa dữ liệu phiên trong SharedPreferences
+                        Toast.makeText(this, "Đã đăng xuất thành công!", Toast.LENGTH_SHORT).show();
 
-                        Toast.makeText(AccountActivity.this, "Đã đăng xuất thành công!", Toast.LENGTH_SHORT).show();
-
-                        // 2. Chuyển về LoginActivity và xóa sạch lịch sử BackStack
+                        // Chuyển về màn hình đăng nhập và xóa sạch lịch sử các màn hình trước đó
                         Intent intent = new Intent(AccountActivity.this, LoginActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
@@ -115,137 +96,178 @@ public class AccountActivity extends AppCompatActivity {
                     .show();
         });
 
-        // Thiết lập trạng thái thanh menu điều hướng dưới cùng (Bottom Navigation)
+        // Cài đặt thanh menu điều hướng phía dưới cùng
         setupBottomMenu();
     }
 
-    /**
-     * Hiển thị danh sách lịch sử đơn hàng đã lưu trong cơ sở dữ liệu SQLite
-     */
-    private void showOrderHistoryDialog(String email) {
-        List<Order> orders = DatabaseHelper.getInstance(this).getUserOrders(email);
-        if (orders.isEmpty()) {
-            new AlertDialog.Builder(this)
-                    .setTitle("📦 Đơn mua của tôi")
-                    .setMessage("Bạn chưa có đơn hàng nào trong hệ thống cơ sở dữ liệu.")
-                    .setPositiveButton("Mua sắm ngay", (dialog, which) -> {
-                        Intent intent = new Intent(AccountActivity.this, ProductListActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                        startActivity(intent);
-                        finish();
-                    })
-                    .setNegativeButton("Đóng", null)
-                    .show();
-            return;
+    // Hiển thị hộp thoại thay đổi tên đăng nhập / họ tên người dùng
+    private void showChangeUsernameDialog() {
+        String currentEmail = prefManager.getEmail();
+        String currentUsername = prefManager.getUsername();
+
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_change_username, null);
+        EditText edtNewUsername = dialogView.findViewById(R.id.edtNewUsername);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancelUsername);
+        Button btnSave = dialogView.findViewById(R.id.btnSaveUsername);
+
+        if (!currentUsername.isEmpty()) {
+            edtNewUsername.setText(currentUsername);
+            edtNewUsername.setSelection(currentUsername.length());
         }
 
-        StringBuilder sb = new StringBuilder();
-        for (Order order : orders) {
-            sb.append("━━━━━━━━━━━━━━━━━━━━\n")
-              .append("🔖 Mã ĐH: #DH").append(String.format("%05d", order.getId())).append("\n")
-              .append("📅 Ngày đặt: ").append(order.getOrderDate()).append("\n")
-              .append("👤 Người nhận: ").append(order.getReceiverName()).append(" (").append(order.getReceiverPhone()).append(")\n")
-              .append("📍 Địa chỉ: ").append(order.getReceiverAddress()).append("\n")
-              .append("💳 Thanh toán: ").append(order.getPaymentMethod()).append("\n")
-              .append("💰 Tổng tiền: ").append(order.getFormattedTotal()).append("\n")
-              .append("📌 Trạng thái: ").append(order.getStatus()).append("\n");
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
 
-            List<OrderItem> items = DatabaseHelper.getInstance(this).getOrderItems(order.getId());
-            if (!items.isEmpty()) {
-                sb.append("📦 Sản phẩm:\n");
-                for (OrderItem item : items) {
-                    sb.append("   • ").append(item.getProductIcon()).append(" ")
-                      .append(item.getProductName()).append(" (x").append(item.getQuantity())
-                      .append(") = ").append(item.getFormattedSubtotal()).append("\n");
-                }
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String newUsername = edtNewUsername.getText().toString().trim();
+
+            if (newUsername.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập tên đăng nhập mới!", Toast.LENGTH_SHORT).show();
+                return;
             }
-            sb.append("\n");
+
+            if (newUsername.equalsIgnoreCase(currentUsername.trim())) {
+                Toast.makeText(this, "Tên đăng nhập mới không có thay đổi!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (dbHelper.checkUsernameExists(newUsername, currentEmail)) {
+                Toast.makeText(this, "Tên đăng nhập này đã được sử dụng bởi tài khoản khác!", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            boolean isUpdated = dbHelper.updateUsername(currentEmail, newUsername);
+            if (isUpdated) {
+                prefManager.updateUsername(newUsername);
+                tvAccountName.setText(newUsername);
+                tvDetailUsername.setText(newUsername);
+                Toast.makeText(this, "Đổi tên đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            } else {
+                Toast.makeText(this, "Đổi tên đăng nhập thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.show();
+    }
+
+    // Hiển thị hộp thoại thay đổi mật khẩu tài khoản
+    private void showChangePasswordDialog() {
+        String currentEmail = prefManager.getEmail();
+
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_change_password, null);
+        EditText edtCurrentPassword = dialogView.findViewById(R.id.edtCurrentPassword);
+        EditText edtNewPassword = dialogView.findViewById(R.id.edtNewPassword);
+        EditText edtConfirmNewPassword = dialogView.findViewById(R.id.edtConfirmNewPassword);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancelPassword);
+        Button btnSave = dialogView.findViewById(R.id.btnSavePassword);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle("📦 Lịch sử đơn hàng (" + orders.size() + ")")
-                .setMessage(sb.toString().trim())
-                .setPositiveButton("Đóng", null)
-                .show();
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String currentPass = edtCurrentPassword.getText().toString().trim();
+            String newPass = edtNewPassword.getText().toString().trim();
+            String confirmPass = edtConfirmNewPassword.getText().toString().trim();
+
+            if (currentPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
+                Toast.makeText(this, "Vui lòng điền đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!dbHelper.checkPassword(currentEmail, currentPass)) {
+                Toast.makeText(this, "Mật khẩu hiện tại không chính xác!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (newPass.length() < 6) {
+                Toast.makeText(this, "Mật khẩu mới phải có ít nhất 6 ký tự!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (newPass.equals(currentPass)) {
+                Toast.makeText(this, "Mật khẩu mới không được trùng với mật khẩu hiện tại!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!newPass.equals(confirmPass)) {
+                Toast.makeText(this, "Mật khẩu xác nhận không khớp!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            boolean isUpdated = dbHelper.updatePassword(currentEmail, newPass);
+            if (isUpdated) {
+                Toast.makeText(this, "Đổi mật khẩu thành công!", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            } else {
+                Toast.makeText(this, "Đổi mật khẩu thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.show();
     }
 
-    /**
-     * Hộp thoại đổi Avatar và cập nhật đồng thời vào SQLite và SharedPreferences
-     */
-    private void showChangeAvatarDialog(String email) {
-        new AlertDialog.Builder(this)
-                .setTitle("Chọn Avatar mới")
-                .setItems(avatarLabels, (dialog, which) -> {
-                    String newAvatar = avatarList[which];
-
-                    // Cập nhật trong cơ sở dữ liệu SQLite
-                    DatabaseHelper.getInstance(AccountActivity.this).updateAvatar(email, newAvatar);
-
-                    // Cập nhật trong phiên đăng nhập SharedPreferences
-                    prefManager.updateAvatar(newAvatar);
-
-                    // Cập nhật giao diện
-                    tvAvatar.setText(newAvatar);
-                    Toast.makeText(AccountActivity.this, "Đã đổi ảnh đại diện thành công!", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
-    }
-
-    /**
-     * Cấu hình và xử lý các sự kiện click cho Bottom Navigation
-     */
+    // Đánh dấu tab Tài khoản đang chọn và gắn sự kiện chuyển trang cho thanh menu dưới cùng
     private void setupBottomMenu() {
         View menuHome = findViewById(R.id.menuHome);
         View menuCart = findViewById(R.id.menuCart);
         View menuAccount = findViewById(R.id.menuAccount);
 
-        // Highlight tab Tài khoản
-        if (menuAccount instanceof android.view.ViewGroup) {
-            android.view.ViewGroup accountGroup = (android.view.ViewGroup) menuAccount;
+        // Tô đậm chữ tab "Tài khoản"
+        if (menuAccount instanceof ViewGroup) {
+            ViewGroup accountGroup = (ViewGroup) menuAccount;
             for (int i = 0; i < accountGroup.getChildCount(); i++) {
                 View child = accountGroup.getChildAt(i);
-                if (child instanceof TextView) {
-                    TextView tv = (TextView) child;
-                    if ("Tài khoản".contentEquals(tv.getText())) {
-                        tv.setTextColor(Color.parseColor("#1976D2"));
-                        tv.setTypeface(null, Typeface.BOLD);
-                    }
+                if (child instanceof TextView && "Tài khoản".contentEquals(((TextView) child).getText())) {
+                    ((TextView) child).setTextColor(Color.parseColor("#1976D2"));
+                    ((TextView) child).setTypeface(null, Typeface.BOLD);
                 }
             }
         }
 
-        // Bỏ highlight tab Sản phẩm
-        if (menuHome instanceof android.view.ViewGroup) {
-            android.view.ViewGroup homeGroup = (android.view.ViewGroup) menuHome;
+        // Đặt lại màu chữ bình thường cho tab "Sản phẩm"
+        if (menuHome instanceof ViewGroup) {
+            ViewGroup homeGroup = (ViewGroup) menuHome;
             for (int i = 0; i < homeGroup.getChildCount(); i++) {
                 View child = homeGroup.getChildAt(i);
-                if (child instanceof TextView) {
-                    TextView tv = (TextView) child;
-                    if ("Sản phẩm".contentEquals(tv.getText())) {
-                        tv.setTextColor(Color.parseColor("#757575"));
-                        tv.setTypeface(null, Typeface.NORMAL);
-                    }
+                if (child instanceof TextView && "Sản phẩm".contentEquals(((TextView) child).getText())) {
+                    ((TextView) child).setTextColor(Color.parseColor("#757575"));
+                    ((TextView) child).setTypeface(null, Typeface.NORMAL);
                 }
             }
         }
 
-        // Sự kiện chuyển tab
+        // Chuyển sang màn hình Danh sách sản phẩm
         menuHome.setOnClickListener(v -> {
-            Intent intent = new Intent(AccountActivity.this, ProductListActivity.class);
+            Intent intent = new Intent(this, ProductListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             finish();
         });
 
+        // Chuyển sang màn hình Giỏ hàng
         menuCart.setOnClickListener(v -> {
-            Intent intent = new Intent(AccountActivity.this, CartActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, CartActivity.class));
             finish();
         });
 
+        // Đang ở trang Tài khoản nên chỉ hiện thông báo nhẹ
         menuAccount.setOnClickListener(v ->
-                Toast.makeText(AccountActivity.this, "Bạn đang ở trang Tài khoản", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Bạn đang ở trang Tài khoản", Toast.LENGTH_SHORT).show()
         );
     }
 }
