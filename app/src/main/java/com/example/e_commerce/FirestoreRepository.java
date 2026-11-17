@@ -1,4 +1,4 @@
-// Kho lưu trữ dữ liệu trung tâm: giao tiếp trực tiếp với Firebase Cloud Firestore cho các nghiệp vụ sản phẩm, giỏ hàng, đơn hàng và tài khoản
+// Kho dữ liệu chính trên mây (Firebase Cloud Firestore): xử lý đọc/ghi sản phẩm, giỏ hàng, đơn hàng và tài khoản trực tuyến.
 package com.example.e_commerce;
 
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -20,12 +20,12 @@ import java.util.function.IntConsumer;
 
 public class FirestoreRepository {
 
-    // Khai báo email mặc định cho khách vãng lai, đối tượng Singleton và kết nối FirebaseFirestore
+    // Khai báo email khách mặc định, biến giữ 1 kết nối duy nhất (Singleton) và đối tượng FirebaseFirestore
     private static final String GUEST_EMAIL = "guest@cart.local";
     private static FirestoreRepository instance;
     private final FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
-    // Các callback nhận kết quả trả về bất đồng bộ từ Firestore
+    // Các giao diện Callback nhận kết quả bất đồng bộ trả về từ Firebase
     public interface ProductsCallback { void onResult(List<Product> products); void onError(Exception e); }
     public interface ProductCallback { void onResult(Product product); void onError(Exception e); }
     public interface CartCallback { void onResult(List<CartItem> items); void onError(Exception e); }
@@ -35,10 +35,10 @@ public class FirestoreRepository {
     public interface OrderItemsCallback { void onResult(List<OrderItem> items); void onError(Exception e); }
     public interface OrderCallback { void onResult(long id); void onError(Exception e); }
 
-    // Hàm khởi tạo private để đảm bảo chỉ dùng 1 đối tượng FirestoreRepository duy nhất (Singleton)
+    // Hàm khởi tạo đóng kín (private) để ngăn tạo nhiều kết nối trùng lặp
     private FirestoreRepository() {}
 
-    // Lấy thể hiện duy nhất của FirestoreRepository
+    // Lấy kết nối FirestoreRepository dùng chung cho toàn bộ ứng dụng
     public static synchronized FirestoreRepository getInstance() {
         if (instance == null) {
             instance = new FirestoreRepository();
@@ -46,33 +46,34 @@ public class FirestoreRepository {
         return instance;
     }
 
-    // Chuẩn hóa email về chữ thường và cắt khoảng trắng để dùng làm khóa định danh trên Firestore
+    // Chuẩn hóa email về chữ thường và bỏ khoảng trắng thừa để làm mã định danh trên Firebase
     private String normalizeEmail(String email) {
         return (email == null || email.trim().isEmpty()) ? GUEST_EMAIL : email.trim().toLowerCase();
     }
 
-    // --- SẢN PHẨM ---
+    // ================= PHẦN 1: QUẢN LÝ SẢN PHẨM TRÊN FIREBASE =================
 
-    // Nạp 12 sản phẩm mẫu nếu trên Firestore chưa có dữ liệu
+    // Kiểm tra trên Firebase nếu kho sản phẩm đang trống thì tự động đẩy 12 sản phẩm mẫu lên
     public void seedProductsIfNeeded() {
         firestore.collection("products").limit(1).get().addOnSuccessListener(snapshot -> {
+            // Nếu trên mây đã có sản phẩm rồi thì dừng lại, không ghi đè
             if (!snapshot.isEmpty()) return;
             writeDefaultProducts(null);
         });
     }
 
-    // Lấy toàn bộ sản phẩm sắp xếp theo id tăng dần
+    // Tải toàn bộ danh sách sản phẩm chính thức từ Firebase theo thứ tự ID tăng dần
     public void getAllProducts(ProductsCallback callback) {
         firestore.collection("products")
                 .orderBy("id", Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(snapshot -> {
-                    // Nếu collection products đang rỗng thì nạp sản phẩm mẫu rồi gọi lại
+                    // Nếu kho sản phẩm trên mây đang rỗng thì nạp 12 món mẫu rồi tải lại
                     if (snapshot.isEmpty()) {
                         writeDefaultProducts(() -> getAllProducts(callback));
                         return;
                     }
-                    // Chuyển từng DocumentSnapshot thành đối tượng Product
+                    // Chuyển từng Document tải về thành đối tượng Product đưa vào danh sách
                     List<Product> products = new ArrayList<>();
                     for (DocumentSnapshot d : snapshot.getDocuments()) {
                         products.add(toProduct(d));
@@ -82,7 +83,7 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // Ghi hàng loạt danh sách sản phẩm mẫu lên Firestore bằng WriteBatch
+    // Ghi một lần toàn bộ 12 sản phẩm mẫu lên Firebase bằng WriteBatch để tối ưu tốc độ
     private void writeDefaultProducts(Runnable onComplete) {
         WriteBatch batch = firestore.batch();
         for (Product p : defaultProducts()) {
@@ -93,7 +94,7 @@ public class FirestoreRepository {
         });
     }
 
-    // Lấy chi tiết 1 sản phẩm theo id
+    // Lấy thông tin chi tiết của 1 sản phẩm trên Firebase theo mã ID
     public void getProductById(int id, ProductCallback callback) {
         firestore.collection("products")
                 .document(String.valueOf(id))
@@ -102,20 +103,21 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // --- GIỎ HÀNG ---
+    // ================= PHẦN 2: QUẢN LÝ GIỎ HÀNG TRÊN FIREBASE =================
 
-    // Thêm sản phẩm vào giỏ (nếu đã có sẵn trong giỏ thì cộng dồn số lượng)
+    // Thêm sản phẩm vào giỏ hàng trên Firebase (nếu đã có sẵn thì cộng dồn số lượng)
     public void addToCart(String email, int productId, int quantity, BooleanCallback callback) {
         String normalized = normalizeEmail(email);
+        // Tạo mã định danh duy nhất cho món hàng trong giỏ bằng cách ghép: email_mãSảnPhẩm
         String docId = normalized + "_" + productId;
 
         firestore.collection("carts").document(docId).get()
                 .addOnSuccessListener(document -> {
-                    // Lấy số lượng hiện có trong giỏ (nếu chưa có thì bằng 0)
+                    // Lấy số lượng cũ đang có trên Firebase (nếu chưa có thì bằng 0)
                     int current = (document.exists() && document.getLong("quantity") != null)
                             ? document.getLong("quantity").intValue() : 0;
 
-                    // Đóng gói dữ liệu giỏ hàng mới và lưu đè lên document
+                    // Đóng gói thông tin mới (cộng thêm số lượng vừa chọn) và đẩy lên Firebase
                     Map<String, Object> values = new HashMap<>();
                     values.put("userEmail", normalized);
                     values.put("productId", productId);
@@ -127,19 +129,38 @@ public class FirestoreRepository {
                 .addOnFailureListener(e -> callback.onResult(false));
     }
 
-    // Lấy danh sách món trong giỏ kèm thông tin chi tiết từng sản phẩm
+    // Ghi trực tiếp số lượng chính xác của 1 món hàng trong giỏ lên Firebase (nếu <= 0 thì xóa)
+    public void syncCartItem(String email, int productId, int quantity, BooleanCallback callback) {
+        String docId = normalizeEmail(email) + "_" + productId;
+        if (quantity <= 0) {
+            // Nếu số lượng về 0 thì xóa hẳn món đó khỏi Firebase
+            firestore.collection("carts").document(docId).delete()
+                    .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
+            return;
+        }
+        // Ghi đè đúng số lượng mới lên Firebase
+        Map<String, Object> values = new HashMap<>();
+        values.put("userEmail", normalizeEmail(email));
+        values.put("productId", productId);
+        values.put("quantity", quantity);
+        firestore.collection("carts").document(docId).set(values)
+                .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
+    }
+
+    // Tải toàn bộ các món trong giỏ hàng của người dùng từ Firebase về (kèm thông tin chi tiết sản phẩm)
     public void getCartItems(String email, CartCallback callback) {
         String normalized = normalizeEmail(email);
         firestore.collection("carts")
                 .whereEqualTo("userEmail", normalized)
                 .get()
                 .addOnSuccessListener(snapshot -> {
+                    // Nếu giỏ trên mây trống thì trả về danh sách rỗng
                     if (snapshot.isEmpty()) {
                         callback.onResult(new ArrayList<>());
                         return;
                     }
 
-                    // Dùng biến đếm nguyên tử (AtomicInteger) để đợi tải xong toàn bộ thông tin sản phẩm
+                    // Tạo danh sách và biến đếm AtomicInteger để đợi tải xong thông tin tất cả sản phẩm
                     List<CartItem> items = new ArrayList<>();
                     int totalDocs = snapshot.size();
                     AtomicInteger completedCount = new AtomicInteger(0);
@@ -155,13 +176,14 @@ public class FirestoreRepository {
                             continue;
                         }
 
-                        // Truy vấn thông tin sản phẩm tương ứng với productId trong giỏ
+                        // Lấy thông tin tên, giá, icon của sản phẩm dựa theo productId
                         getProductById(productId.intValue(), new ProductCallback() {
                             @Override
                             public void onResult(Product product) {
                                 if (product != null) {
                                     items.add(new CartItem(product.getId(), product, quantity.intValue()));
                                 }
+                                // Khi đã tải xong tất cả các món thì trả kết quả về giao diện
                                 if (completedCount.incrementAndGet() == totalDocs) {
                                     callback.onResult(items);
                                 }
@@ -179,7 +201,7 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // Cập nhật số lượng món trong giỏ (nếu số lượng <= 0 thì xóa khỏi giỏ)
+    // Cập nhật số lượng mới cho 1 món hàng trong giỏ trên Firebase (nếu <= 0 thì xóa)
     public void updateCartQuantity(String email, int productId, int quantity, BooleanCallback callback) {
         String docId = normalizeEmail(email) + "_" + productId;
         if (quantity <= 0) {
@@ -191,29 +213,32 @@ public class FirestoreRepository {
         }
     }
 
-    // Xóa 1 món khỏi giỏ hàng
+    // Xóa 1 món hàng cụ thể khỏi giỏ hàng trên Firebase
     public void removeCartItem(String email, int productId, BooleanCallback callback) {
         String docId = normalizeEmail(email) + "_" + productId;
         firestore.collection("carts").document(docId).delete()
                 .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
     }
 
-    // Xóa toàn bộ giỏ hàng của người dùng sau khi đặt đơn hoặc bấm Xóa tất cả
+    // Xóa sạch toàn bộ giỏ hàng của người dùng trên Firebase (dùng khi bấm Xóa tất cả hoặc Đặt hàng xong)
     public void clearCart(String email, BooleanCallback callback) {
         firestore.collection("carts")
                 .whereEqualTo("userEmail", normalizeEmail(email))
                 .get()
                 .addOnSuccessListener(snapshot -> {
+                    // Gom tất cả các món trong giỏ của user để xóa cùng lúc bằng WriteBatch
                     WriteBatch batch = firestore.batch();
                     for (DocumentSnapshot d : snapshot.getDocuments()) {
                         batch.delete(d.getReference());
                     }
-                    batch.commit().addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
+                    batch.commit().addOnCompleteListener(t -> {
+                        callback.onResult(t.isSuccessful());
+                    });
                 })
                 .addOnFailureListener(e -> callback.onResult(false));
     }
 
-    // Đếm tổng số lượng sản phẩm đang có trong giỏ hàng để hiển thị lên huy hiệu (badge)
+    // Đếm tổng số lượng sản phẩm đang nằm trong giỏ hàng trên Firebase
     public void getCartCount(String email, IntConsumer callback) {
         firestore.collection("carts")
                 .whereEqualTo("userEmail", normalizeEmail(email))
@@ -230,9 +255,9 @@ public class FirestoreRepository {
                 .addOnFailureListener(e -> callback.accept(0));
     }
 
-    // --- ĐƠN HÀNG ---
+    // ================= PHẦN 3: QUẢN LÝ ĐƠN HÀNG TRÊN FIREBASE =================
 
-    // Tạo đơn hàng mới, lưu danh sách sản phẩm vào sub-collection items và xóa giỏ hàng
+    // Tạo đơn hàng chính thức trên Firebase: lưu thông tin đơn -> lưu chi tiết từng món -> xóa sạch giỏ hàng
     public void createOrder(String email, String name, String phone, String address, String note,
                             String payment, List<CartItem> cartItems, OrderCallback callback) {
         if (cartItems == null || cartItems.isEmpty()) {
@@ -240,12 +265,12 @@ public class FirestoreRepository {
             return;
         }
 
-        // Tạo mã đơn hàng số nguyên duy nhất theo thời gian hiện tại và định dạng ngày đặt
+        // Tạo mã đơn hàng duy nhất theo thời gian hiện tại và định dạng ngày giờ đặt
         String normalized = normalizeEmail(email);
         long numericId = System.currentTimeMillis() % Integer.MAX_VALUE;
         String date = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
 
-        // Tính tổng tiền toàn bộ đơn hàng
+        // Cộng dồn tổng tiền toàn bộ đơn hàng
         long total = 0;
         for (CartItem item : cartItems) {
             total += item.getSubtotal();
@@ -264,10 +289,11 @@ public class FirestoreRepository {
         order.put("orderDate", date);
         order.put("status", "Đặt hàng thành công");
 
-        // Lưu document đơn hàng chính, sau đó ghi từng sản phẩm vào sub-collection "items"
+        // Bước 1: Ghi thông tin chung đơn hàng vào collection "orders"
         String orderId = String.valueOf(numericId);
         firestore.collection("orders").document(orderId).set(order)
                 .addOnSuccessListener(v -> {
+                    // Bước 2: Ghi chi tiết từng sản phẩm vào sub-collection "items" bằng WriteBatch
                     WriteBatch batch = firestore.batch();
                     for (int i = 0; i < cartItems.size(); i++) {
                         CartItem item = cartItems.get(i);
@@ -289,7 +315,7 @@ public class FirestoreRepository {
                                 .document(String.valueOf(i + 1)), data);
                     }
 
-                    // Cam kết ghi xong toàn bộ sản phẩm trong đơn thì xóa sạch giỏ hàng
+                    // Bước 3: Lưu xong chi tiết đơn thì xóa sạch giỏ hàng trên Firebase và trả về mã đơn numericId
                     batch.commit()
                             .addOnSuccessListener(x -> clearCart(normalized, ok -> callback.onResult(ok ? numericId : -1)))
                             .addOnFailureListener(callback::onError);
@@ -297,7 +323,55 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // Lấy danh sách đơn hàng của user, sắp xếp đơn mới nhất lên đầu
+    // Ghi hoặc khôi phục bản ghi đơn hàng lên Firebase theo mã orderId có sẵn
+    public void syncOrder(long orderId, String email, String name, String phone, String address,
+                          String note, String payment, long total, String orderDate,
+                          String status, List<OrderItem> items, BooleanCallback callback) {
+        // Đóng gói thông tin chung của đơn hàng
+        String normalized = normalizeEmail(email);
+        Map<String, Object> order = new HashMap<>();
+        order.put("id", orderId);
+        order.put("userEmail", normalized);
+        order.put("receiverName", name);
+        order.put("receiverPhone", phone);
+        order.put("receiverAddress", address);
+        order.put("note", note == null ? "" : note);
+        order.put("paymentMethod", payment);
+        order.put("totalAmount", total);
+        order.put("orderDate", orderDate);
+        order.put("status", status);
+
+        // Ghi đơn hàng lên collection "orders", sau đó ghi từng món hàng vào collection con "items"
+        String orderDoc = String.valueOf(orderId);
+        firestore.collection("orders").document(orderDoc).set(order)
+                .addOnSuccessListener(v -> {
+                    WriteBatch batch = firestore.batch();
+                    for (OrderItem item : items) {
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("id", item.getId());
+                        data.put("orderId", item.getOrderId());
+                        data.put("productId", item.getProductId());
+                        data.put("productName", item.getProductName());
+                        data.put("productIcon", item.getProductIcon());
+                        data.put("price", item.getPrice());
+                        data.put("quantity", item.getQuantity());
+                        data.put("subtotal", item.getSubtotal());
+                        batch.set(firestore.collection("orders").document(orderDoc)
+                                .collection("items").document(String.valueOf(item.getId())), data);
+                    }
+                    // Xác nhận ghi xong toàn bộ chi tiết món thì xóa sạch giỏ hàng trên Firebase
+                    batch.commit().addOnCompleteListener(t -> {
+                        if (!t.isSuccessful()) {
+                            callback.onResult(false);
+                            return;
+                        }
+                        clearCart(normalized, callback);
+                    });
+                })
+                .addOnFailureListener(e -> callback.onResult(false));
+    }
+
+    // Lấy danh sách đơn hàng đã mua của người dùng từ Firebase (sắp xếp đơn mới nhất lên đầu)
     public void getUserOrders(String email, OrdersCallback callback) {
         firestore.collection("orders")
                 .whereEqualTo("userEmail", normalizeEmail(email))
@@ -307,13 +381,14 @@ public class FirestoreRepository {
                     for (DocumentSnapshot d : snapshot) {
                         result.add(toOrder(d));
                     }
+                    // Sắp xếp giảm dần theo mã ID để đơn đặt sau cùng hiện lên trên cùng
                     result.sort((a, b) -> Integer.compare(b.getId(), a.getId()));
                     callback.onResult(result);
                 })
                 .addOnFailureListener(callback::onError);
     }
 
-    // Lấy chi tiết các sản phẩm trong 1 đơn hàng
+    // Lấy chi tiết từng sản phẩm bên trong 1 đơn hàng trên Firebase
     public void getOrderItems(long orderId, OrderItemsCallback callback) {
         firestore.collection("orders")
                 .document(String.valueOf(orderId))
@@ -330,17 +405,18 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // --- TÀI KHOẢN ---
+    // ================= PHẦN 4: QUẢN LÝ TÀI KHOẢN TRÊN FIREBASE =================
 
-    // Kiểm tra email đã đăng ký tài khoản trên Firestore chưa
+    // Kiểm tra xem địa chỉ email này đã tồn tại trên Firebase chưa
     public void checkEmailExists(String email, Consumer<Boolean> callback) {
         firestore.collection("users")
                 .document(normalizeEmail(email))
                 .get()
-                .addOnSuccessListener(d -> callback.accept(d.exists()));
+                .addOnSuccessListener(d -> callback.accept(d.exists()))
+                .addOnFailureListener(e -> callback.accept(false));
     }
 
-    // Đăng ký tài khoản mới và lưu lên collection "users"
+    // Lưu thông tin tài khoản người dùng mới đăng ký lên collection "users" của Firebase
     public void registerUser(String fullName, String email, String password, String phone, BooleanCallback callback) {
         String normalized = normalizeEmail(email);
         Map<String, Object> data = new HashMap<>();
@@ -352,11 +428,12 @@ public class FirestoreRepository {
         data.put("phone", phone == null ? "" : phone.trim());
         data.put("address", "");
 
+        // Dùng chính địa chỉ email làm tên tài liệu (Document ID) để dễ tìm và không bao giờ trùng
         firestore.collection("users").document(normalized).set(data)
                 .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
     }
 
-    // Kiểm tra đăng nhập bằng email, họ tên hoặc phần tiền tố trước dấu @ của email
+    // Kiểm tra đăng nhập trên Firebase (hỗ trợ nhập email, họ tên hoặc phần tên trước dấu @)
     public void checkLogin(String account, String password, UserCallback callback) {
         String value = account == null ? "" : account.trim().toLowerCase();
         firestore.collection("users").get()
@@ -379,7 +456,7 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // Lấy thông tin user theo email
+    // Lấy thông tin tài khoản trên Firebase dựa theo email
     public void getUserByEmail(String email, UserCallback callback) {
         firestore.collection("users")
                 .document(normalizeEmail(email))
@@ -388,7 +465,7 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // Kiểm tra mật khẩu cũ có khớp không trước khi cho phép đổi mật khẩu
+    // Kiểm tra mật khẩu cũ trên Firebase có khớp không
     public void checkPassword(String email, String password, BooleanCallback callback) {
         getUserByEmail(email, new UserCallback() {
             @Override
@@ -403,7 +480,7 @@ public class FirestoreRepository {
         });
     }
 
-    // Kiểm tra tên đăng nhập mới có bị trùng với tài khoản khác không
+    // Kiểm tra tên đăng nhập mới có bị trùng với tài khoản khác trên Firebase không
     public void checkUsernameExists(String username, String currentEmail, Consumer<Boolean> callback) {
         firestore.collection("users")
                 .whereEqualTo("fullName", username.trim())
@@ -412,10 +489,11 @@ public class FirestoreRepository {
                     boolean isDuplicate = !s.isEmpty()
                             && !(s.size() == 1 && s.getDocuments().get(0).getId().equals(normalizeEmail(currentEmail)));
                     callback.accept(isDuplicate);
-                });
+                })
+                .addOnFailureListener(e -> callback.accept(false));
     }
 
-    // Cập nhật từng phần thông tin user (tên, SĐT, địa chỉ, mật khẩu) bằng SetOptions.merge()
+    // Cập nhật từng trường thông tin tài khoản (tên, SĐT, địa chỉ, mật khẩu) lên Firebase mà không làm mất trường khác
     public void updateUser(String email, Map<String, Object> values, BooleanCallback callback) {
         firestore.collection("users")
                 .document(normalizeEmail(email))
@@ -423,9 +501,9 @@ public class FirestoreRepository {
                 .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
     }
 
-    // --- CHUYỂN ĐỔI DỮ LIỆU & DATA MẪU ---
+    // ================= PHẦN 5: CÁC HÀM CHUYỂN ĐỔI DỮ LIỆU & SẢN PHẨM MẪU =================
 
-    // Chuyển DocumentSnapshot trên Firestore thành đối tượng Product
+    // Chuyển dữ liệu thô từ DocumentSnapshot thành đối tượng Product
     private Product toProduct(DocumentSnapshot d) {
         return new Product(
                 value(d, "id"),
@@ -437,7 +515,7 @@ public class FirestoreRepository {
         );
     }
 
-    // Chuyển DocumentSnapshot trên Firestore thành đối tượng Order
+    // Chuyển dữ liệu thô từ DocumentSnapshot thành đối tượng Order
     private Order toOrder(DocumentSnapshot d) {
         return new Order(
                 value(d, "id"),
@@ -453,7 +531,7 @@ public class FirestoreRepository {
         );
     }
 
-    // Chuyển DocumentSnapshot trên Firestore thành đối tượng OrderItem
+    // Chuyển dữ liệu thô từ DocumentSnapshot thành đối tượng OrderItem
     private OrderItem toOrderItem(DocumentSnapshot d) {
         return new OrderItem(
                 value(d, "id"),
@@ -467,7 +545,7 @@ public class FirestoreRepository {
         );
     }
 
-    // Chuyển DocumentSnapshot trên Firestore thành đối tượng User
+    // Chuyển dữ liệu thô từ DocumentSnapshot thành đối tượng User
     private User toUser(DocumentSnapshot d) {
         return new User(
                 value(d, "id"),
@@ -480,19 +558,19 @@ public class FirestoreRepository {
         );
     }
 
-    // Đọc giá trị số nguyên int an toàn từ DocumentSnapshot (tránh lỗi null)
+    // Đọc số nguyên int từ Firebase (nếu trống thì trả về 0 để tránh lỗi NullPointerException)
     private int value(DocumentSnapshot d, String key) {
         Long value = d.getLong(key);
         return value == null ? 0 : value.intValue();
     }
 
-    // Đọc giá trị số nguyên dài long an toàn từ DocumentSnapshot (tránh lỗi null)
+    // Đọc số nguyên dài long từ Firebase (nếu trống thì trả về 0 để tránh lỗi NullPointerException)
     private long longValue(DocumentSnapshot d, String key) {
         Long value = d.getLong(key);
         return value == null ? 0 : value;
     }
 
-    // Đóng gói đối tượng Product thành Map để ghi lên Firestore
+    // Đóng gói đối tượng Product thành dạng Map (cặp tên-giá trị) để lưu lên Firebase
     private Map<String, Object> productData(Product p) {
         Map<String, Object> d = new HashMap<>();
         d.put("id", p.getId());
@@ -504,7 +582,7 @@ public class FirestoreRepository {
         return d;
     }
 
-    // Danh sách 12 sản phẩm mẫu mặc định của cửa hàng
+    // Danh sách 12 sản phẩm mẫu mặc định dùng để đẩy lên Firebase khi kho còn trống
     private Product[] defaultProducts() {
         return new Product[]{
                 new Product(1, "Áo thun cotton basic", "Thời trang", 189000, "Áo thun cotton 100% mềm mịn, thấm hút mồ hôi tốt, form regular dễ phối đồ.", "👕"),

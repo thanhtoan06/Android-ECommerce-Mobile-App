@@ -1,4 +1,4 @@
-// Màn hình Lịch sử đơn mua: tải và hiển thị danh sách các đơn hàng đã đặt của người dùng từ Firestore
+// Màn hình Lịch sử đơn mua: tải danh sách đơn hàng chính thức từ Firebase và lưu bản sao xuống SQLite.
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -14,41 +15,44 @@ import java.util.List;
 
 public class OrderHistoryActivity extends AppCompatActivity {
 
-    // Khai báo các thành phần giao diện trên màn hình Lịch sử đơn mua
+    // Khai báo các thành phần giao diện: danh sách đơn, khung thông báo trống và nhãn đếm số đơn
     private ListView lvOrders;
     private View layoutEmptyOrders;
     private TextView tvOrderCountBadge;
 
-    // Khai báo danh sách đơn hàng, Adapter, FirestoreRepository và email người dùng hiện tại
+    // Khai báo danh sách đơn hàng, Adapter hiển thị, kho chính Firebase, kho bản sao SQLite và email hiện tại
     private final List<Order> orderList = new ArrayList<>();
     private OrderAdapter adapter;
     private FirestoreRepository repository;
+    private DatabaseHelper databaseHelper;
     private String currentUserEmail;
 
-    // Hàm chạy đầu tiên khi mở màn hình Lịch sử đơn mua: kết nối giao diện và tải danh sách đơn hàng
+    // Hàm khởi tạo màn hình Lịch sử đơn mua: kết nối dữ liệu, ánh xạ giao diện và tải danh sách đơn
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Nạp giao diện XML của màn hình Lịch sử đơn mua
         setContentView(R.layout.activity_order_history);
 
-        // Khởi tạo đối tượng kết nối Firestore và lấy email tài khoản đang đăng nhập
+        // Kết nối Firebase (kho chính), SQLite (kho bản sao) và lấy email tài khoản đang đăng nhập
         repository = FirestoreRepository.getInstance();
+        databaseHelper = DatabaseHelper.getInstance(this);
         currentUserEmail = SharedPrefManager.getInstance(this).getEmail();
 
-        // Kết nối các thành phần trên giao diện
+        // Ánh xạ nút quay lại, danh sách đơn, khung thông báo trống và nhãn đếm số đơn từ file XML
         TextView tvBack = findViewById(R.id.tvBack);
         lvOrders = findViewById(R.id.lvOrders);
         layoutEmptyOrders = findViewById(R.id.layoutEmptyOrders);
         tvOrderCountBadge = findViewById(R.id.tvOrderCountBadge);
 
-        // Nút mũi tên quay lại màn hình Tài khoản
+        // Bấm mũi tên quay lại thì đóng màn hình hiện tại để trở về trang trước
         tvBack.setOnClickListener(v -> finish());
 
-        // Khởi tạo Adapter đổ danh sách đơn hàng lên ListView
+        // Tạo OrderAdapter và gắn vào danh sách ListView
         adapter = new OrderAdapter(this, orderList);
         lvOrders.setAdapter(adapter);
 
-        // Nút "Mua sắm ngay" khi chưa có đơn hàng nào: chuyển về danh sách sản phẩm
+        // Bấm nút "Mua sắm ngay" (khi danh sách đơn trống) -> chuyển về màn hình Danh sách sản phẩm
         findViewById(R.id.btnShopNow).setOnClickListener(v -> {
             Intent intent = new Intent(this, ProductListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -56,43 +60,60 @@ public class OrderHistoryActivity extends AppCompatActivity {
             finish();
         });
 
-        // Tải danh sách đơn hàng ngay khi mở màn hình
+        // Tải danh sách đơn hàng từ Firebase ngay khi vừa mở màn hình
         loadOrderData();
     }
 
-    // Tự động làm mới danh sách đơn hàng mỗi khi quay lại màn hình này
+    // Tự động làm mới danh sách đơn hàng mỗi khi người dùng quay lại màn hình này
     @Override
     protected void onResume() {
         super.onResume();
         loadOrderData();
     }
 
-    // Truy vấn danh sách đơn hàng của tài khoản hiện tại từ Firestore
+    // Đọc danh sách đơn hàng chính thức từ Firebase -> hiển thị lên giao diện -> lưu bản sao vào SQLite
     private void loadOrderData() {
         repository.getUserOrders(currentUserEmail, new FirestoreRepository.OrdersCallback() {
             @Override
             public void onResult(List<Order> orders) {
-                // Cập nhật danh sách đơn hàng mới và thông báo Adapter vẽ lại ListView
+                // Cập nhật danh sách đơn hàng mới nhất lên ListView
                 orderList.clear();
                 orderList.addAll(orders);
                 adapter.notifyDataSetChanged();
                 updateOrderVisibility();
+
+                // Tải chi tiết từng đơn hàng từ Firebase và lưu bản sao đầy đủ xuống SQLite
+                for (Order order : orders) {
+                    repository.getOrderItems(order.getId(), new FirestoreRepository.OrderItemsCallback() {
+                        @Override
+                        public void onResult(List<OrderItem> items) {
+                            databaseHelper.saveRemoteOrder(order, items);
+                        }
+
+                        @Override
+                        public void onError(Exception e) { }
+                    });
+                }
             }
 
             @Override
-            public void onError(Exception e) { }
+            public void onError(Exception e) {
+                // Thông báo nếu không kết nối được với Firebase để tải đơn hàng
+                Toast.makeText(OrderHistoryActivity.this,
+                        "Không thể tải đơn hàng từ Firebase.", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
-    // Ẩn/hiện giao diện trống tùy theo số lượng đơn hàng
+    // Kiểm tra số lượng đơn hàng để ẩn/hiện khung danh sách tương ứng và cập nhật huy hiệu đếm đơn
     private void updateOrderVisibility() {
         if (orderList.isEmpty()) {
-            // Chưa có đơn hàng nào: hiện thông báo trống và ẩn danh sách
+            // Chưa có đơn hàng nào: hiện khung thông báo trống, ẩn danh sách và hiển thị "0 đơn"
             layoutEmptyOrders.setVisibility(View.VISIBLE);
             lvOrders.setVisibility(View.GONE);
             tvOrderCountBadge.setText("0 đơn");
         } else {
-            // Có đơn hàng: ẩn thông báo trống, hiện danh sách và cập nhật tổng số đơn
+            // Đã có đơn hàng: ẩn khung trống, hiện danh sách đơn và hiển thị tổng số đơn đã mua
             layoutEmptyOrders.setVisibility(View.GONE);
             lvOrders.setVisibility(View.VISIBLE);
             tvOrderCountBadge.setText(orderList.size() + " đơn");

@@ -1,4 +1,4 @@
-// Đối tượng đại diện cho một dòng sản phẩm trong giỏ hàng (bao gồm thông tin sản phẩm, số lượng và tính thành tiền)
+// Đối tượng đại diện cho một dòng sản phẩm trong giỏ hàng (lưu thông tin sản phẩm, số lượng và tính thành tiền).
 package com.example.e_commerce;
 
 import java.text.NumberFormat;
@@ -6,7 +6,7 @@ import java.util.Locale;
 
 public class CartItem {
 
-    // Khai báo các thuộc tính của một dòng trong giỏ hàng
+    // Khai báo các thuộc tính của một dòng trong giỏ hàng: mã dòng, đối tượng sản phẩm và số lượng
     private int id;
     private Product product;
     private int quantity;
@@ -22,7 +22,7 @@ public class CartItem {
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    // Lấy và cập nhật thông tin sản phẩm
+    // Lấy và cập nhật đối tượng sản phẩm
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
 
@@ -35,7 +35,7 @@ public class CartItem {
         return product != null ? product.getPrice() * quantity : 0;
     }
 
-    // Định dạng thành tiền theo kiểu Việt Nam (ví dụ: 189.000 ₫)
+    // Định dạng thành tiền theo chuẩn tiền Việt Nam (ví dụ: 189.000 ₫)
     public String getFormattedSubtotal() {
         return NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(getSubtotal()) + " ₫";
     }

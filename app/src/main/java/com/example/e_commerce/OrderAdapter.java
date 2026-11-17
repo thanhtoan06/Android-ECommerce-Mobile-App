@@ -1,4 +1,4 @@
-// Bộ chuyển đổi danh sách đơn hàng (Order) thành từng thẻ chi tiết hiển thị trên ListView và tải danh sách sản phẩm đã mua từ Firestore
+// Adapter hiển thị từng thẻ đơn hàng trong Lịch sử mua hàng; tải chi tiết sản phẩm trực tiếp từ Firebase và lưu bản sao SQLite.
 package com.example.e_commerce;
 
 import android.content.Context;
@@ -20,24 +20,27 @@ import java.util.Locale;
 
 public class OrderAdapter extends ArrayAdapter<Order> {
 
-    // Khai báo đối tượng nạp giao diện và kho dữ liệu Firestore
+    // Khai báo bộ nạp giao diện XML, kho chính Firebase và kho bản sao SQLite
     private final LayoutInflater inflater;
     private final FirestoreRepository repository;
+    private final DatabaseHelper databaseHelper;
 
-    // Hàm khởi tạo Adapter nhận vào Context và danh sách đơn hàng
+    // Hàm khởi tạo OrderAdapter: nhận vào Context và danh sách các đơn hàng cần hiển thị
     public OrderAdapter(@NonNull Context context, @NonNull List<Order> orders) {
         super(context, 0, orders);
         this.inflater = LayoutInflater.from(context);
         this.repository = FirestoreRepository.getInstance();
+        this.databaseHelper = DatabaseHelper.getInstance(context);
     }
 
-    // Tạo và gán dữ liệu từng đơn hàng (mã đơn, sản phẩm đã mua, người nhận, tổng tiền) vào giao diện item_order.xml
+    // Tạo và đổ dữ liệu cho từng thẻ đơn hàng (mã đơn, ngày đặt, danh sách món đã mua, người nhận, tổng tiền)
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+        // Khai báo biến ViewHolder giữ sẵn các ô chữ của 1 thẻ đơn hàng để tái sử dụng cho mượt
         ViewHolder holder;
 
-        // Tái sử dụng View cũ để cuộn danh sách đơn hàng mượt mà (ViewHolder)
+        // Nếu thẻ chưa được tạo thì nạp file giao diện item_order.xml và ánh xạ các thành phần con
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.item_order, parent, false);
             holder = new ViewHolder();
@@ -50,50 +53,66 @@ public class OrderAdapter extends ArrayAdapter<Order> {
             holder.tvPaymentMethod = convertView.findViewById(R.id.tvPaymentMethod);
             holder.tvItemCount = convertView.findViewById(R.id.tvItemCount);
             holder.tvOrderTotal = convertView.findViewById(R.id.tvOrderTotal);
+            // Gắn ViewHolder vào thẻ giao diện này để lần sau tái sử dụng ngay
             convertView.setTag(holder);
         } else {
-            // Lấy lại ViewHolder đã gắn sẵn nếu dòng giao diện được tái sử dụng
+            // Lấy lại ViewHolder đã lưu sẵn nếu thẻ giao diện được tái sử dụng
             holder = (ViewHolder) convertView.getTag();
         }
 
-        // Lấy đối tượng Order tại vị trí hiện tại và hiển thị thông tin chung của đơn hàng
+        // Lấy đơn hàng tại vị trí hiện tại và đổ các thông tin chung lên thẻ
         Order order = getItem(position);
         if (order != null) {
-            holder.tvOrderCode.setText(String.format(Locale.getDefault(), "#DH%05d", order.getId()));
+            // Đánh dấu mã đơn hàng đang gắn với thẻ này để tránh vẽ nhầm khi cuộn danh sách nhanh
+            int currentOrderId = order.getId();
+            holder.boundOrderId = currentOrderId;
+
+            // Hiển thị mã đơn hàng (ví dụ: #DH00001), ngày đặt và trạng thái đơn
+            holder.tvOrderCode.setText(String.format(Locale.getDefault(), "#DH%05d", currentOrderId));
             holder.tvOrderDate.setText("📅 " + order.getOrderDate());
             holder.tvOrderStatus.setText("✓ " + order.getStatus());
 
+            // Hiển thị tên + SĐT người nhận, địa chỉ giao hàng và phương thức thanh toán
             holder.tvReceiverInfo.setText("👤 Người nhận: " + order.getReceiverName() + " (" + order.getReceiverPhone() + ")");
             holder.tvReceiverAddress.setText("📍 Địa chỉ: " + order.getReceiverAddress());
             holder.tvPaymentMethod.setText("💳 Thanh toán: " + order.getPaymentMethod());
 
-            // Xóa các dòng sản phẩm cũ trước khi tải danh sách sản phẩm mới của đơn này
+            // Hiển thị sẵn tổng tiền đơn hàng trong lúc chờ tải chi tiết từng món
+            holder.tvItemCount.setText("Tổng tiền:");
+            holder.tvOrderTotal.setText(order.getFormattedTotal());
+
+            // Xóa sạch các dòng sản phẩm cũ của thẻ trước đó (do tái sử dụng giao diện)
             holder.llOrderItems.removeAllViews();
 
-            // Truy vấn danh sách sản phẩm thuộc đơn hàng từ Firestore
-            repository.getOrderItems(order.getId(), new FirestoreRepository.OrderItemsCallback() {
+            // Đọc danh sách chi tiết các món hàng thuộc đơn này từ Firebase (kho chính)
+            repository.getOrderItems(currentOrderId, new FirestoreRepository.OrderItemsCallback() {
                 @Override
                 public void onResult(List<OrderItem> items) {
-                    holder.llOrderItems.removeAllViews();
+                    // Lưu bản sao chi tiết đơn hàng xuống SQLite sau khi tải thành công từ Firebase
+                    databaseHelper.saveRemoteOrder(order, items);
 
-                    // Duyệt qua từng sản phẩm đã mua trong đơn, tạo dòng hiển thị động và tính tổng số lượng
+                    // Kiểm tra thẻ giao diện này vẫn đang hiển thị đúng đơn hàng ban đầu trước khi vẽ
+                    if (holder.boundOrderId != currentOrderId) return;
+
+                    // Xóa danh sách cũ và duyệt từng món hàng để vẽ dòng hiển thị
+                    holder.llOrderItems.removeAllViews();
                     int totalQty = 0;
                     for (OrderItem item : items) {
                         totalQty += item.getQuantity();
 
-                        // Tạo hàng ngang chứa biểu tượng, tên sản phẩm × số lượng và thành tiền
+                        // Tạo một hàng ngang mới chứa: biểu tượng + tên sản phẩm + thành tiền
                         LinearLayout row = new LinearLayout(getContext());
                         row.setOrientation(LinearLayout.HORIZONTAL);
                         row.setPadding(0, 6, 0, 6);
                         row.setGravity(Gravity.CENTER_VERTICAL);
 
-                        // Biểu tượng minh họa sản phẩm
+                        // Tạo ô chữ hiển thị biểu tượng (icon) của sản phẩm và thêm vào hàng
                         TextView tvIcon = new TextView(getContext());
                         tvIcon.setText(item.getProductIcon());
                         tvIcon.setTextSize(18f);
                         row.addView(tvIcon);
 
-                        // Tên sản phẩm và số lượng mua
+                        // Tạo ô chữ hiển thị tên sản phẩm kèm số lượng mua (ví dụ: Áo thun ×2)
                         TextView tvName = new TextView(getContext());
                         LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
                                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
@@ -106,7 +125,7 @@ public class OrderAdapter extends ArrayAdapter<Order> {
                         tvName.setEllipsize(TextUtils.TruncateAt.END);
                         row.addView(tvName);
 
-                        // Thành tiền của dòng sản phẩm
+                        // Tạo ô chữ in đậm hiển thị thành tiền của món hàng đó và thêm vào hàng
                         TextView tvSubtotal = new TextView(getContext());
                         tvSubtotal.setText(item.getFormattedSubtotal());
                         tvSubtotal.setTextColor(getContext().getColor(R.color.text_primary));
@@ -114,18 +133,21 @@ public class OrderAdapter extends ArrayAdapter<Order> {
                         tvSubtotal.setTypeface(null, Typeface.BOLD);
                         row.addView(tvSubtotal);
 
+                        // Đưa nguyên hàng sản phẩm vừa tạo vào khung danh sách món của đơn hàng
                         holder.llOrderItems.addView(row);
                     }
 
-                    // Hiển thị tổng số lượng sản phẩm và tổng số tiền thanh toán của đơn
+                    // Cập nhật lại tổng số lượng sản phẩm và tổng tiền của đơn hàng
                     holder.tvItemCount.setText("Tổng tiền (" + totalQty + " sản phẩm):");
                     holder.tvOrderTotal.setText(order.getFormattedTotal());
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    // Xóa trắng khung danh sách sản phẩm nếu truy vấn bị lỗi
-                    holder.llOrderItems.removeAllViews();
+                    // Nếu lỗi mạng khi tải chi tiết thì làm trống khung danh sách món
+                    if (holder.boundOrderId == currentOrderId) {
+                        holder.llOrderItems.removeAllViews();
+                    }
                 }
             });
         }
@@ -133,8 +155,9 @@ public class OrderAdapter extends ArrayAdapter<Order> {
         return convertView;
     }
 
-    // Lớp giữ tham chiếu các thành phần View của một thẻ đơn hàng
+    // Lớp ViewHolder lưu giữ tham chiếu các thành phần giao diện của 1 thẻ đơn hàng
     private static class ViewHolder {
+        int boundOrderId;
         TextView tvOrderCode;
         TextView tvOrderDate;
         TextView tvOrderStatus;

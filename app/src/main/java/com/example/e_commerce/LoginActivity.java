@@ -1,4 +1,4 @@
-// Màn hình Đăng nhập: kiểm tra phiên đăng nhập cũ, xác thực tài khoản qua Firestore và chuyển sang trang sản phẩm
+// Màn hình Đăng nhập: kiểm tra phiên cũ, xác thực tài khoản qua Firebase và lưu bản sao tài khoản hợp lệ xuống SQLite.
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -11,71 +11,83 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class LoginActivity extends AppCompatActivity {
 
-    // Khai báo các ô nhập liệu và nút bấm trên màn hình Đăng nhập
+    // Khai báo 2 ô nhập chữ (tài khoản, mật khẩu) và 2 nút bấm (Đăng nhập, Đăng ký)
     private EditText edtEmail, edtPassword;
     private Button btnLogin, btnRegister;
 
-    // Hàm chạy đầu tiên khi mở màn hình đăng nhập: kiểm tra phiên cũ, hiển thị giao diện và gắn sự kiện nút bấm
+    // Hàm khởi tạo màn hình Đăng nhập: kiểm tra phiên cũ, nạp giao diện và gắn sự kiện nút bấm
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Kiểm tra bộ nhớ tạm (SharedPreferences): nếu đã đăng nhập từ trước thì vào thẳng trang sản phẩm
+        // Kiểm tra bộ nhớ tạm (SharedPreferences): nếu đã đăng nhập từ lần trước thì vào thẳng trang Sản phẩm
         SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
         if (prefManager.isLoggedIn()) {
             startActivity(new Intent(LoginActivity.this, ProductListActivity.class));
-            finish(); // Đóng trang đăng nhập để bấm nút Quay lại không bị văng ngược về đây
+            finish(); // Đóng màn hình đăng nhập để bấm Back không quay ngược lại đây
             return;
         }
 
-        // Gắn giao diện XML vào code Java để điều khiển
+        // Nạp file giao diện activity_login.xml lên màn hình
         setContentView(R.layout.activity_login);
 
-        // Kết nối các biến Java với các ô nhập và nút bấm trên giao diện
+        // Ánh xạ các ô nhập chữ và nút bấm từ file XML vào biến Java để điều khiển
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
 
-        // Xử lý khi người dùng bấm nút ĐĂNG NHẬP
+        // Bắt sự kiện khi người dùng bấm nút ĐĂNG NHẬP
         btnLogin.setOnClickListener(v -> {
-            // Lấy chữ người dùng nhập và xóa khoảng trắng thừa 2 đầu
+            // Lấy chuỗi tài khoản và mật khẩu người dùng vừa gõ, xóa khoảng trắng thừa hai đầu
             String account = edtEmail.getText().toString().trim();
             String password = edtPassword.getText().toString().trim();
 
-            // Kiểm tra nếu bỏ trống ô nhập thì báo lỗi và dừng lại
+            // Kiểm tra không được bỏ trống ô tài khoản hoặc ô mật khẩu
             if (account.isEmpty() || password.isEmpty()) {
                 Toast.makeText(LoginActivity.this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Gọi Firestore kiểm tra tài khoản và mật khẩu có khớp không
+            // Khóa tạm nút Đăng nhập trong lúc chờ Firebase phản hồi để tránh bấm nhiều lần
+            btnLogin.setEnabled(false);
+
+            // Bước 1: Gửi tài khoản và mật khẩu lên Firebase kiểm tra trước
             FirestoreRepository.getInstance().checkLogin(account, password, new FirestoreRepository.UserCallback() {
                 @Override
                 public void onResult(User user) {
-                    if (user != null) {
-                        // Nếu đúng: Lưu thông tin người dùng vào bộ nhớ tạm (SharedPreferences) để dùng cho các trang sau
-                        prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(), user.getAddress());
-                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công! Xin chào " + user.getFullName(), Toast.LENGTH_SHORT).show();
-
-                        // Chuyển sang màn hình danh sách sản phẩm và đóng trang đăng nhập
-                        startActivity(new Intent(LoginActivity.this, ProductListActivity.class));
-                        finish();
-                    } else {
-                        // Nếu sai: Hiện thông báo lỗi
+                    // Nếu Firebase không tìm thấy tài khoản khớp mật khẩu -> mở lại nút và báo lỗi
+                    if (user == null) {
+                        btnLogin.setEnabled(true);
                         Toast.makeText(LoginActivity.this, "Tên tài khoản hoặc mật khẩu không chính xác!", Toast.LENGTH_SHORT).show();
+                        return;
                     }
+
+                    // Bước 2: Firebase xác thực thành công -> lưu và cập nhật đầy đủ bản sao xuống SQLite
+                    DatabaseHelper databaseHelper = DatabaseHelper.getInstance(LoginActivity.this);
+                    databaseHelper.registerUser(user.getFullName(), user.getEmail(), user.getPassword(), user.getPhone());
+                    databaseHelper.updateUsername(user.getEmail(), user.getFullName());
+                    databaseHelper.updatePhone(user.getEmail(), user.getPhone());
+                    databaseHelper.updateAddress(user.getEmail(), user.getAddress());
+                    databaseHelper.updatePassword(user.getEmail(), user.getPassword());
+
+                    // Bước 3: Lưu phiên đăng nhập vào SharedPreferences và chuyển sang trang Danh sách sản phẩm
+                    prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(), user.getAddress());
+                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công! Xin chào " + user.getFullName(), Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(LoginActivity.this, ProductListActivity.class));
+                    finish();
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    // Thông báo lỗi nếu mất kết nối hoặc không truy vấn được Firestore
-                    Toast.makeText(LoginActivity.this, "Không thể kết nối Firestore.", Toast.LENGTH_SHORT).show();
+                    // Mở lại nút Đăng nhập và thông báo nếu mất kết nối mạng tới Firebase
+                    btnLogin.setEnabled(true);
+                    Toast.makeText(LoginActivity.this, "Không thể kết nối Firebase.", Toast.LENGTH_SHORT).show();
                 }
             });
         });
 
-        // Xử lý khi người dùng bấm nút TẠO TÀI KHOẢN MỚI -> mở trang đăng ký
+        // Bắt sự kiện khi người dùng bấm nút TẠO TÀI KHOẢN MỚI -> mở chuyển sang màn hình Đăng ký
         btnRegister.setOnClickListener(v ->
                 startActivity(new Intent(LoginActivity.this, RegisterActivity.class))
         );

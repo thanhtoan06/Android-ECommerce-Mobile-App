@@ -1,4 +1,4 @@
-// Bộ chuyển đổi danh sách sản phẩm trong giỏ hàng (CartItem) thành từng dòng hiển thị trên ListView và xử lý nút tăng, giảm, xóa
+// Adapter hiển thị từng sản phẩm trong giỏ hàng lên ListView và bắt sự kiện tăng, giảm số lượng hoặc xóa món.
 package com.example.e_commerce;
 
 import android.content.Context;
@@ -38,7 +38,7 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         ViewHolder holder;
 
-        // Tái sử dụng View cũ để cuộn danh sách mượt mà (ViewHolder)
+        // Tái sử dụng View cũ để cuộn danh sách mượt mà (mô hình ViewHolder)
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.item_cart, parent, false);
             holder = new ViewHolder();
@@ -73,17 +73,17 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
             holder.tvQuantity.setText(String.valueOf(item.getQuantity()));
             holder.tvSubtotal.setText(item.getFormattedSubtotal());
 
-            // Gắn sự kiện nút giảm (−): trừ 1 đơn vị số lượng
+            // Gắn sự kiện nút giảm (−): trừ 1 đơn vị số lượng và báo về CartActivity
             holder.btnMinus.setOnClickListener(v -> {
                 if (listener != null) listener.onQuantityChanged(item, item.getQuantity() - 1);
             });
 
-            // Gắn sự kiện nút tăng (+): cộng thêm 1 đơn vị số lượng
+            // Gắn sự kiện nút tăng (+): cộng thêm 1 đơn vị số lượng và báo về CartActivity
             holder.btnPlus.setOnClickListener(v -> {
                 if (listener != null) listener.onQuantityChanged(item, item.getQuantity() + 1);
             });
 
-            // Gắn sự kiện nút xóa: gọi callback xóa sản phẩm khỏi giỏ
+            // Gắn sự kiện nút xóa: gọi callback báo về CartActivity xóa sản phẩm khỏi giỏ
             holder.btnDelete.setOnClickListener(v -> {
                 if (listener != null) listener.onItemDeleted(item);
             });
@@ -92,7 +92,7 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
         return convertView;
     }
 
-    // Lớp giữ tham chiếu các thành phần View của một dòng trong giỏ hàng
+    // Lớp ViewHolder giữ tham chiếu các thành phần giao diện của một dòng trong giỏ hàng
     private static class ViewHolder {
         TextView tvIcon;
         TextView tvCategory;

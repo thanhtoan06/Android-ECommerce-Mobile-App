@@ -1,4 +1,4 @@
-// Màn hình Chi tiết sản phẩm: hiển thị thông tin đầy đủ của một sản phẩm và xử lý thao tác thêm vào giỏ hoặc mua ngay
+// Màn hình Chi tiết sản phẩm: tải thông tin sản phẩm từ Firebase, lưu bản sao SQLite và xử lý Thêm vào giỏ / Mua ngay.
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -12,19 +12,21 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class ProductDetailActivity extends AppCompatActivity {
 
-    // Khai báo khóa truyền mã sản phẩm qua Intent và TextView hiển thị số lượng trên biểu tượng giỏ hàng
+    // Khai báo tên khóa (Key) nhận mã ID sản phẩm truyền từ trang danh sách sang, nhãn đếm giỏ hàng và kho SQLite
     public static final String EXTRA_PRODUCT_ID = "extra_product_id";
     private TextView tvHeaderCartCount;
     private DatabaseHelper databaseHelper;
 
-    // Hàm chạy đầu tiên khi mở màn hình chi tiết: tải thông tin sản phẩm và gắn sự kiện nút mua
+    // Hàm khởi tạo màn hình Chi tiết sản phẩm: tải thông tin từ Firebase, lưu bản sao SQLite và gắn sự kiện nút mua
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Nạp giao diện XML của màn hình Chi tiết sản phẩm
         setContentView(R.layout.activity_product_detail);
+        // Kết nối kho bản sao dữ liệu SQLite dưới máy
         databaseHelper = DatabaseHelper.getInstance(this);
 
-        // Kết nối các biến Java với các thành phần trên giao diện
+        // Ánh xạ các nhãn hiển thị (biểu tượng, danh mục, tên, giá, mô tả) và các nút bấm từ file XML
         TextView tvBack = findViewById(R.id.tvBack);
         TextView tvIcon = findViewById(R.id.tvIcon);
         TextView tvCategory = findViewById(R.id.tvCategory);
@@ -35,80 +37,98 @@ public class ProductDetailActivity extends AppCompatActivity {
         Button btnBuyNow = findViewById(R.id.btnBuyNow);
         tvHeaderCartCount = findViewById(R.id.tvHeaderCartCount);
 
-        // Nút quay lại danh sách sản phẩm
+        // Bấm mũi tên quay lại thì đóng màn hình hiện tại để trở về trang Danh sách sản phẩm
         tvBack.setOnClickListener(v -> finish());
 
-        // Nút mở nhanh màn hình Giỏ hàng trên thanh tiêu đề
+        // Bấm biểu tượng giỏ hàng ở góc trên bên phải thì mở sang màn hình Giỏ hàng
         findViewById(R.id.btnHeaderCart).setOnClickListener(v ->
                 startActivity(new Intent(this, CartActivity.class))
         );
 
-        // Lấy ID sản phẩm được truyền sang và tải dữ liệu từ Firestore
+        // Bước 1: Đọc thông tin chi tiết sản phẩm chính thức từ Firebase theo productId truyền sang
         int productId = getIntent().getIntExtra(EXTRA_PRODUCT_ID, -1);
         ProductRepository.findById(productId, new ProductRepository.ProductCallback() {
             @Override
             public void onResult(Product product) {
-                // Nếu không tìm thấy sản phẩm tương ứng thì thông báo và đóng màn hình
+                // Nếu không tìm thấy sản phẩm trên Firebase thì báo lỗi và đóng màn hình
                 if (product == null) {
                     Toast.makeText(ProductDetailActivity.this, "Không tìm thấy thông tin sản phẩm!", Toast.LENGTH_SHORT).show();
                     finish();
                     return;
                 }
 
-                // Hiển thị thông tin sản phẩm lên giao diện
+                // Lưu bản sao thông tin sản phẩm vừa tải về xuống SQLite
+                databaseHelper.saveProduct(product);
+
+                // Đổ toàn bộ thông tin sản phẩm (biểu tượng, danh mục, tên, giá tiền, mô tả) lên màn hình
                 tvIcon.setText(product.getIcon());
                 tvCategory.setText(product.getCategory());
                 tvName.setText(product.getName());
                 tvPrice.setText(product.getFormattedPrice());
                 tvDescription.setText(product.getDescription());
 
-                // 1. Nút "Thêm vào giỏ": lưu sản phẩm vào collection carts trên Firestore
+                // Gắn sự kiện nút "Thêm vào giỏ": ghi lên Firebase trước -> thành công mới lưu bản sao SQLite
                 btnAddToCart.setOnClickListener(v -> {
                     String userEmail = SharedPrefManager.getInstance(ProductDetailActivity.this).getEmail();
-                    databaseHelper.addToCart(userEmail, product.getId(), 1);
+                    btnAddToCart.setEnabled(false);
+
                     FirestoreRepository.getInstance().addToCart(userEmail, product.getId(), 1, success -> {
-                        if (success) {
-                            updateCartBadge();
-                            new AlertDialog.Builder(ProductDetailActivity.this)
-                                    .setTitle("🛒 Đã thêm vào giỏ hàng")
-                                    .setMessage("Sản phẩm \"" + product.getName() + "\" đã được thêm vào giỏ hàng!")
-                                    .setPositiveButton("Xem giỏ hàng", (dialog, which) ->
-                                            startActivity(new Intent(ProductDetailActivity.this, CartActivity.class))
-                                    )
-                                    .setNegativeButton("Tiếp tục xem", null)
-                                    .show();
-                        } else {
+                        btnAddToCart.setEnabled(true);
+                        if (!success) {
                             Toast.makeText(ProductDetailActivity.this, "Không thể thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show();
+                            return;
                         }
+
+                        // Cập nhật bản sao giỏ hàng dưới SQLite, làm mới số đỏ trên giỏ và hiện hộp thoại xác nhận
+                        databaseHelper.addToCart(userEmail, product.getId(), 1);
+                        updateCartBadge();
+                        new AlertDialog.Builder(ProductDetailActivity.this)
+                                .setTitle("🛒 Đã thêm vào giỏ hàng")
+                                .setMessage("Sản phẩm \"" + product.getName() + "\" đã được thêm vào giỏ hàng!")
+                                .setPositiveButton("Xem giỏ hàng", (dialog, which) ->
+                                        startActivity(new Intent(ProductDetailActivity.this, CartActivity.class))
+                                )
+                                .setNegativeButton("Tiếp tục xem", null)
+                                .show();
                     });
                 });
 
-                // 2. Nút "Mua ngay": thêm vào giỏ trên Firestore rồi mở màn hình Giỏ hàng
+                // Gắn sự kiện nút "Mua ngay": thêm lên Firebase trước -> thành công mới lưu SQLite và mở Giỏ hàng
                 btnBuyNow.setOnClickListener(v -> {
                     String userEmail = SharedPrefManager.getInstance(ProductDetailActivity.this).getEmail();
-                    databaseHelper.addToCart(userEmail, product.getId(), 1);
-                    FirestoreRepository.getInstance().addToCart(userEmail, product.getId(), 1,
-                            success -> startActivity(new Intent(ProductDetailActivity.this, CartActivity.class)));
+                    btnBuyNow.setEnabled(false);
+
+                    FirestoreRepository.getInstance().addToCart(userEmail, product.getId(), 1, success -> {
+                        btnBuyNow.setEnabled(true);
+                        if (!success) {
+                            Toast.makeText(ProductDetailActivity.this, "Không thể thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        // Lưu bản sao vào SQLite và chuyển thẳng sang màn hình Giỏ hàng
+                        databaseHelper.addToCart(userEmail, product.getId(), 1);
+                        startActivity(new Intent(ProductDetailActivity.this, CartActivity.class));
+                    });
                 });
             }
 
             @Override
             public void onError(Exception e) {
-                // Thông báo lỗi và thoát màn hình nếu không tải được dữ liệu từ Firestore
-                Toast.makeText(ProductDetailActivity.this, "Không thể tải sản phẩm.", Toast.LENGTH_SHORT).show();
+                // Thông báo lỗi nếu mất kết nối mạng khi tải chi tiết sản phẩm từ Firebase
+                Toast.makeText(ProductDetailActivity.this, "Không thể tải sản phẩm từ Firebase.", Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
     }
 
-    // Cập nhật lại số lượng giỏ hàng trên góc phải mỗi khi quay lại màn hình này
+    // Tự động cập nhật lại con số hiển thị trên biểu tượng giỏ hàng mỗi khi quay lại màn hình này
     @Override
     protected void onResume() {
         super.onResume();
         updateCartBadge();
     }
 
-    // Lấy tổng số sản phẩm trong giỏ hàng từ Firestore
+    // Đọc tổng số lượng sản phẩm trong giỏ từ Firebase và hiển thị lên huy hiệu góc trên bên phải
     private void updateCartBadge() {
         if (tvHeaderCartCount != null) {
             String userEmail = SharedPrefManager.getInstance(this).getEmail();

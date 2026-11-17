@@ -1,4 +1,4 @@
-//Quản lý cơ sở dữ liệu SQLite cục bộ (gồm 5 bảng: users, products, cart, orders, order_items).
+// Quản lý kho bản sao dữ liệu dưới máy điện thoại (SQLite), gồm 5 bảng: người dùng, sản phẩm, giỏ hàng, đơn hàng và chi tiết đơn hàng.
 package com.example.e_commerce;
 
 import android.content.ContentValues;
@@ -15,10 +15,11 @@ import java.util.Locale;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
+    // Tên file cơ sở dữ liệu lưu trên máy và số phiên bản của cấu trúc bảng
     private static final String DATABASE_NAME = "ecommerce.db";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 7;
 
-    // Tên bảng và các cột của bảng Người dùng (users)
+    // Tên bảng và tên các cột của bảng Người dùng (users)
     public static final String TABLE_USERS = "users";
     public static final String COLUMN_ID = "id";
     public static final String COLUMN_FULL_NAME = "full_name";
@@ -28,7 +29,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_PHONE = "phone";
     public static final String COLUMN_ADDRESS = "address";
 
-    // Tên bảng và các cột của bảng Sản phẩm (products)
+    // Tên bảng và tên các cột của bảng Sản phẩm (products)
     public static final String TABLE_PRODUCTS = "products";
     public static final String COLUMN_PROD_ID = "id";
     public static final String COLUMN_PROD_NAME = "name";
@@ -37,14 +38,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_PROD_DESCRIPTION = "description";
     public static final String COLUMN_PROD_ICON = "icon";
 
-    // Tên bảng và các cột của bảng Giỏ hàng (cart)
+    // Tên bảng và tên các cột của bảng Giỏ hàng (cart)
     public static final String TABLE_CART = "cart";
     public static final String COLUMN_CART_ID = "id";
     public static final String COLUMN_CART_USER_EMAIL = "user_email";
     public static final String COLUMN_CART_PRODUCT_ID = "product_id";
     public static final String COLUMN_CART_QUANTITY = "quantity";
 
-    // Tên bảng và các cột của bảng Đơn hàng (orders)
+    // Tên bảng và tên các cột của bảng Đơn hàng (orders)
     public static final String TABLE_ORDERS = "orders";
     public static final String COLUMN_ORDER_ID = "id";
     public static final String COLUMN_ORDER_USER_EMAIL = "user_email";
@@ -57,7 +58,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ORDER_DATE = "order_date";
     public static final String COLUMN_ORDER_STATUS = "status";
 
-    // Tên bảng và các cột của bảng Chi tiết đơn hàng (order_items)
+    // Tên bảng và tên các cột của bảng Chi tiết từng món trong đơn hàng (order_items)
     public static final String TABLE_ORDER_ITEMS = "order_items";
     public static final String COLUMN_OI_ID = "id";
     public static final String COLUMN_OI_ORDER_ID = "order_id";
@@ -68,9 +69,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_OI_QUANTITY = "quantity";
     public static final String COLUMN_OI_SUBTOTAL = "subtotal";
 
+    // Biến giữ duy nhất 1 kết nối DatabaseHelper dùng chung cho toàn bộ ứng dụng (Singleton)
     private static DatabaseHelper instance;
 
-    // Lấy đối tượng DatabaseHelper dùng chung cho toàn bộ ứng dụng (Singleton)
+    // Chuẩn hóa chuỗi email về chữ thường (nếu trống thì gán email khách mặc định)
+    private String normalizeEmail(String email) {
+        return email == null || email.trim().isEmpty()
+                ? "guest@cart.local" : email.trim().toLowerCase();
+    }
+
+    // Lấy kết nối DatabaseHelper dùng chung cho mọi màn hình trong ứng dụng
     public static synchronized DatabaseHelper getInstance(Context context) {
         if (instance == null) {
             instance = new DatabaseHelper(context.getApplicationContext());
@@ -78,14 +86,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return instance;
     }
 
-    // Hàm khởi tạo kết nối cơ sở dữ liệu SQLite
+    // Hàm khởi tạo kết nối tới file ecommerce.db trên máy
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    // Tự động chạy lần đầu tiên khi tạo database: tạo các bảng và nạp 12 sản phẩm mẫu
+    // Tự động chạy 1 lần duy nhất khi cài app lần đầu: tạo đủ 5 bảng và nạp sẵn 12 sản phẩm mẫu
     @Override
     public void onCreate(SQLiteDatabase db) {
+        // Tạo bảng users lưu bản sao tài khoản người dùng
         String createUsersQuery = "CREATE TABLE " + TABLE_USERS + " ("
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_FULL_NAME + " TEXT NOT NULL, "
@@ -97,28 +106,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + ")";
         db.execSQL(createUsersQuery);
 
+        // Tạo tiếp 4 bảng còn lại và nạp 12 sản phẩm mẫu
         createProductsTable(db);
         seedProductsData(db);
         createCartTable(db);
         createOrdersTable(db);
     }
 
-    // Tự động chạy khi nâng cấp DATABASE_VERSION
+    // Tự động chạy khi tăng DATABASE_VERSION: bổ sung bảng/cột mới mà không làm mất dữ liệu cũ
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        // Giữ nguyên bảng cũ để bảo toàn bản sao giỏ hàng và đơn mua của người dùng
         if (oldVersion < 5) {
             ensureUserColumns(db);
-        } else {
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_ORDER_ITEMS);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_ORDERS);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_CART);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_PRODUCTS);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
-            onCreate(db);
         }
+        createProductsTable(db);
+        createCartTable(db);
+        createOrdersTable(db);
+        checkAndSeedProductsIfEmpty(db);
     }
 
-    // Chạy mỗi khi mở database: đảm bảo các bảng luôn tồn tại và có sẵn dữ liệu sản phẩm
+    // Chạy mỗi lần mở database: kiểm tra chắc chắn các bảng và cột đều tồn tại đầy đủ
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
@@ -129,6 +137,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         checkAndSeedProductsIfEmpty(db);
     }
 
+    // Bổ sung cột số điện thoại và địa chỉ vào bảng users nếu máy đang dùng phiên bản cũ
     private void ensureUserColumns(SQLiteDatabase db) {
         try {
             db.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN " + COLUMN_PHONE + " TEXT");
@@ -138,7 +147,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } catch (Exception ignored) {}
     }
 
-    // Tạo bảng lưu danh sách sản phẩm (products)
+    // Tạo bảng products (lưu danh sách sản phẩm bán trong cửa hàng)
     private void createProductsTable(SQLiteDatabase db) {
         String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_PRODUCTS + " ("
                 + COLUMN_PROD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -151,7 +160,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
-    // Tạo bảng lưu giỏ hàng của người dùng (cart)
+    // Tạo bảng cart (lưu bản sao các món hàng khách đã thêm vào giỏ)
     private void createCartTable(SQLiteDatabase db) {
         String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_CART + " ("
                 + COLUMN_CART_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -162,8 +171,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
-    // Tạo 2 bảng lưu đơn hàng (orders) và chi tiết từng món trong đơn (order_items)
+    // Tạo 2 bảng: orders (thông tin chung đơn hàng) và order_items (chi tiết từng món trong đơn)
     private void createOrdersTable(SQLiteDatabase db) {
+        // Tạo bảng orders
         String sqlOrders = "CREATE TABLE IF NOT EXISTS " + TABLE_ORDERS + " ("
                 + COLUMN_ORDER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_ORDER_USER_EMAIL + " TEXT NOT NULL, "
@@ -178,6 +188,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + ")";
         db.execSQL(sqlOrders);
 
+        // Tạo bảng order_items
         String sqlOrderItems = "CREATE TABLE IF NOT EXISTS " + TABLE_ORDER_ITEMS + " ("
                 + COLUMN_OI_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_OI_ORDER_ID + " INTEGER NOT NULL, "
@@ -191,7 +202,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(sqlOrderItems);
     }
 
-    // Kiểm tra nếu bảng sản phẩm đang trống thì tự động thêm 12 sản phẩm mẫu vào
+    // Đếm số sản phẩm trong bảng products: nếu đang bằng 0 (trống) thì tự động nạp 12 sản phẩm mẫu
     private void checkAndSeedProductsIfEmpty(SQLiteDatabase db) {
         Cursor cursor = null;
         try {
@@ -205,8 +216,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Thêm sẵn 12 sản phẩm mẫu vào bảng products
+    // Nạp sẵn danh sách 12 sản phẩm mẫu vào bảng products để cửa hàng có dữ liệu ban đầu
     private void seedProductsData(SQLiteDatabase db) {
+        // Khai báo mảng 12 sản phẩm mặc định (mã, tên, danh mục, giá, mô tả, biểu tượng)
         Product[] defaultProducts = {
                 new Product(1, "Áo thun cotton basic", "Thời trang", 189000,
                         "Áo thun cotton 100% mềm mịn, thấm hút mồ hôi tốt, form regular dễ phối đồ. Phù hợp mặc hằng ngày, đi làm hoặc đi chơi.", "👕"),
@@ -234,6 +246,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "Áo Hoodie chất nỉ lót bông mềm mại giữ ấm hoàn hảo, form dáng oversize trẻ trung, năng động, phong cách đường phố cá tính.", "🧥")
         };
 
+        // Duyệt qua từng sản phẩm và chèn vào bảng products (nếu trùng ID thì bỏ qua)
         for (Product product : defaultProducts) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_PROD_ID, product.getId());
@@ -246,7 +259,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Lấy toàn bộ danh sách sản phẩm từ SQLite để hiển thị lên màn hình
+    // Đọc toàn bộ danh sách sản phẩm từ bản sao SQLite, sắp xếp theo ID tăng dần
     public List<Product> getAllProducts() {
         List<Product> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -265,12 +278,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 } while (cursor.moveToNext());
             }
         } finally {
+            // Đóng con trỏ dữ liệu sau khi đọc xong để tránh rò rỉ bộ nhớ
             if (cursor != null) cursor.close();
         }
         return list;
     }
 
-    // Tìm thông tin chi tiết của 1 sản phẩm theo mã ID
+    // Tìm thông tin chi tiết của 1 sản phẩm từ bản sao SQLite dựa vào mã ID
     public Product getProductById(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
@@ -291,7 +305,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return null;
     }
 
-    // Thêm sản phẩm vào giỏ hàng (nếu đã có thì cộng thêm số lượng, chưa có thì thêm dòng mới)
+    // Lưu hoặc cập nhật bản sao sản phẩm nhận từ Firebase xuống bảng products của SQLite
+    public void saveProduct(Product product) {
+        if (product == null) return;
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_PROD_ID, product.getId());
+        values.put(COLUMN_PROD_NAME, product.getName());
+        values.put(COLUMN_PROD_CATEGORY, product.getCategory());
+        values.put(COLUMN_PROD_PRICE, product.getPrice());
+        values.put(COLUMN_PROD_DESCRIPTION, product.getDescription());
+        values.put(COLUMN_PROD_ICON, product.getIcon());
+        getWritableDatabase().insertWithOnConflict(TABLE_PRODUCTS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    // Lưu bản sao món hàng vào bảng cart SQLite (cộng dồn số lượng nếu đã có sẵn)
     public boolean addToCart(String userEmail, int productId, int quantity) {
         if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
         userEmail = userEmail.trim().toLowerCase();
@@ -299,6 +326,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = null;
         try {
+            // Kiểm tra xem người dùng này đã có sẵn sản phẩm này trong bảng cart chưa
             cursor = db.query(TABLE_CART,
                     new String[]{COLUMN_CART_ID, COLUMN_CART_QUANTITY},
                     COLUMN_CART_USER_EMAIL + " = ? AND " + COLUMN_CART_PRODUCT_ID + " = ?",
@@ -306,12 +334,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     null, null, null);
 
             if (cursor != null && cursor.moveToFirst()) {
+                // Nếu đã có -> lấy số lượng cũ cộng thêm số lượng mới và cập nhật lại
                 int cartId = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_CART_ID));
                 int newQty = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_CART_QUANTITY)) + quantity;
                 ContentValues values = new ContentValues();
                 values.put(COLUMN_CART_QUANTITY, newQty);
                 return db.update(TABLE_CART, values, COLUMN_CART_ID + " = ?", new String[]{String.valueOf(cartId)}) > 0;
             } else {
+                // Nếu chưa có -> chèn một dòng mới vào bảng cart
                 ContentValues values = new ContentValues();
                 values.put(COLUMN_CART_USER_EMAIL, userEmail);
                 values.put(COLUMN_CART_PRODUCT_ID, productId);
@@ -323,7 +353,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Lấy danh sách sản phẩm trong giỏ hàng của người dùng (kết nối 2 bảng cart và products)
+    // Lấy toàn bộ bản sao món hàng trong giỏ của 1 người dùng (nối bảng cart và bảng products)
     public List<CartItem> getCartItems(String userEmail) {
         if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
         userEmail = userEmail.trim().toLowerCase();
@@ -331,6 +361,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         List<CartItem> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
+        // Câu lệnh SQL nối bảng cart với bảng products theo mã sản phẩm để lấy đủ thông tin
         String query = "SELECT c." + COLUMN_CART_ID + ", c." + COLUMN_CART_QUANTITY + ", "
                 + "p." + COLUMN_PROD_ID + ", p." + COLUMN_PROD_NAME + ", p." + COLUMN_PROD_CATEGORY + ", "
                 + "p." + COLUMN_PROD_PRICE + ", p." + COLUMN_PROD_DESCRIPTION + ", p." + COLUMN_PROD_ICON
@@ -362,31 +393,49 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return list;
     }
 
-    // Cập nhật số lượng sản phẩm trong giỏ (nếu giảm về <= 0 thì xóa khỏi giỏ)
+    // Cập nhật số lượng mới của 1 dòng trong bảng cart theo mã cartId (nếu <= 0 thì xóa dòng đó)
     public boolean updateCartQuantity(int cartId, int newQuantity) {
         SQLiteDatabase db = this.getWritableDatabase();
         if (newQuantity <= 0) {
             return db.delete(TABLE_CART, COLUMN_CART_ID + " = ?", new String[]{String.valueOf(cartId)}) > 0;
         }
+
         ContentValues values = new ContentValues();
         values.put(COLUMN_CART_QUANTITY, newQuantity);
         return db.update(TABLE_CART, values, COLUMN_CART_ID + " = ?", new String[]{String.valueOf(cartId)}) > 0;
     }
 
-    // Xóa một sản phẩm cụ thể khỏi giỏ hàng
+    // Xóa 1 dòng sản phẩm khỏi bảng cart theo mã dòng cartId
     public boolean removeCartItem(int cartId) {
         SQLiteDatabase db = this.getWritableDatabase();
         return db.delete(TABLE_CART, COLUMN_CART_ID + " = ?", new String[]{String.valueOf(cartId)}) > 0;
     }
 
-    // Xóa toàn bộ sản phẩm trong giỏ hàng của người dùng
+    // Xóa bản sao 1 sản phẩm khỏi bảng cart theo email người dùng và mã sản phẩm (sau khi Firebase xóa thành công)
+    public boolean removeCartItem(String userEmail, int productId) {
+        return getWritableDatabase().delete(TABLE_CART,
+                COLUMN_CART_USER_EMAIL + " = ? AND " + COLUMN_CART_PRODUCT_ID + " = ?",
+                new String[]{normalizeEmail(userEmail), String.valueOf(productId)}) > 0;
+    }
+
+    // Cập nhật số lượng bản sao trong bảng cart theo email và mã sản phẩm (sau khi Firebase cập nhật thành công)
+    public boolean updateCartQuantity(String userEmail, int productId, int newQuantity) {
+        if (newQuantity <= 0) return removeCartItem(userEmail, productId);
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_CART_QUANTITY, newQuantity);
+        return getWritableDatabase().update(TABLE_CART, values,
+                COLUMN_CART_USER_EMAIL + " = ? AND " + COLUMN_CART_PRODUCT_ID + " = ?",
+                new String[]{normalizeEmail(userEmail), String.valueOf(productId)}) > 0;
+    }
+
+    // Xóa sạch toàn bộ bản sao giỏ hàng của một tài khoản email trong SQLite
     public boolean clearCart(String userEmail) {
         if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
         SQLiteDatabase db = this.getWritableDatabase();
         return db.delete(TABLE_CART, COLUMN_CART_USER_EMAIL + " = ?", new String[]{userEmail.trim().toLowerCase()}) >= 0;
     }
 
-    // Tính tổng số lượng sản phẩm hiện có trong giỏ hàng
+    // Tính tổng số lượng sản phẩm trong bản sao giỏ hàng để hiển thị huy hiệu số đỏ
     public int getCartCount(String userEmail) {
         if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
         SQLiteDatabase db = this.getReadableDatabase();
@@ -403,7 +452,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return 0;
     }
 
-    // Tạo đơn hàng mới: lưu thông tin đơn, lưu từng sản phẩm vào order_items và xóa giỏ hàng
+    // Lấy số lượng hiện có của 1 sản phẩm cụ thể trong bản sao giỏ hàng của người dùng
+    public int getCartQuantity(String userEmail, int productId) {
+        if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(TABLE_CART, new String[]{COLUMN_CART_QUANTITY},
+                    "LOWER(" + COLUMN_CART_USER_EMAIL + ") = ? AND " + COLUMN_CART_PRODUCT_ID + " = ?",
+                    new String[]{userEmail.trim().toLowerCase(), String.valueOf(productId)},
+                    null, null, null);
+            return cursor != null && cursor.moveToFirst() ? cursor.getInt(0) : 0;
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+    }
+
+    // Tạo đơn hàng cục bộ trong SQLite (lưu orders -> lưu order_items -> xóa cart trong cùng 1 Transaction)
     public long createOrder(String userEmail, String receiverName, String receiverPhone,
                             String receiverAddress, String note, String paymentMethod,
                             List<CartItem> cartItems) {
@@ -411,16 +476,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
         userEmail = userEmail.trim().toLowerCase();
 
+        // Tính tổng tiền của toàn bộ đơn hàng
         long totalAmount = 0;
         for (CartItem item : cartItems) totalAmount += item.getSubtotal();
 
+        // Lấy ngày giờ đặt hàng hiện tại và đặt trạng thái mặc định
         String orderDate = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
         String status = "Đặt hàng thành công";
 
         SQLiteDatabase db = this.getWritableDatabase();
-        db.beginTransaction(); // Dùng Transaction để đảm bảo lưu đủ cả đơn hàng lẫn chi tiết món
+        // Mở Transaction để đảm bảo lưu trọn vẹn cả đơn hàng lẫn chi tiết từng món
+        db.beginTransaction();
         long orderId = -1;
         try {
+            // Bước 1: Chèn thông tin chung của đơn hàng vào bảng orders
             ContentValues orderValues = new ContentValues();
             orderValues.put(COLUMN_ORDER_USER_EMAIL, userEmail);
             orderValues.put(COLUMN_ORDER_RECEIVER_NAME, receiverName.trim());
@@ -434,6 +503,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             orderId = db.insert(TABLE_ORDERS, null, orderValues);
             if (orderId == -1) return -1;
 
+            // Bước 2: Duyệt từng món trong giỏ để lưu vào bảng chi tiết order_items
             for (CartItem item : cartItems) {
                 Product p = item.getProduct();
                 ContentValues itemValues = new ContentValues();
@@ -447,15 +517,64 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 if (db.insert(TABLE_ORDER_ITEMS, null, itemValues) == -1) return -1;
             }
 
+            // Bước 3: Xóa sạch giỏ hàng của người dùng sau khi đặt đơn thành công
             db.delete(TABLE_CART, COLUMN_CART_USER_EMAIL + " = ?", new String[]{userEmail});
             db.setTransactionSuccessful();
             return orderId;
+        } finally {
+            // Kết thúc Transaction (ghi dữ liệu nếu thành công, hoàn tác nếu có lỗi)
+            db.endTransaction();
+        }
+    }
+
+    // Lưu bản sao đơn hàng đã được Firebase tạo thành công vào SQLite (giữ nguyên mã đơn từ Firebase)
+    public boolean saveRemoteOrder(Order order, List<OrderItem> items) {
+        if (order == null || items == null || items.isEmpty()) return false;
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            // Bước 1: Chèn hoặc ghi đè thông tin chung của đơn hàng vào bảng orders
+            ContentValues orderValues = new ContentValues();
+            orderValues.put(COLUMN_ORDER_ID, order.getId());
+            orderValues.put(COLUMN_ORDER_USER_EMAIL, normalizeEmail(order.getUserEmail()));
+            orderValues.put(COLUMN_ORDER_RECEIVER_NAME, order.getReceiverName());
+            orderValues.put(COLUMN_ORDER_RECEIVER_PHONE, order.getReceiverPhone());
+            orderValues.put(COLUMN_ORDER_RECEIVER_ADDRESS, order.getReceiverAddress());
+            orderValues.put(COLUMN_ORDER_NOTE, order.getNote());
+            orderValues.put(COLUMN_ORDER_PAYMENT_METHOD, order.getPaymentMethod());
+            orderValues.put(COLUMN_ORDER_TOTAL_AMOUNT, order.getTotalAmount());
+            orderValues.put(COLUMN_ORDER_DATE, order.getOrderDate());
+            orderValues.put(COLUMN_ORDER_STATUS, order.getStatus());
+            if (db.insertWithOnConflict(TABLE_ORDERS, null, orderValues, SQLiteDatabase.CONFLICT_REPLACE) == -1) return false;
+
+            // Bước 2: Xóa chi tiết cũ của mã đơn này (nếu có) và chèn danh sách món hàng mới từ Firebase
+            db.delete(TABLE_ORDER_ITEMS, COLUMN_OI_ORDER_ID + " = ?",
+                    new String[]{String.valueOf(order.getId())});
+            for (OrderItem item : items) {
+                ContentValues itemValues = new ContentValues();
+                itemValues.put(COLUMN_OI_ID, item.getId());
+                itemValues.put(COLUMN_OI_ORDER_ID, order.getId());
+                itemValues.put(COLUMN_OI_PRODUCT_ID, item.getProductId());
+                itemValues.put(COLUMN_OI_PRODUCT_NAME, item.getProductName());
+                itemValues.put(COLUMN_OI_PRODUCT_ICON, item.getProductIcon());
+                itemValues.put(COLUMN_OI_PRICE, item.getPrice());
+                itemValues.put(COLUMN_OI_QUANTITY, item.getQuantity());
+                itemValues.put(COLUMN_OI_SUBTOTAL, item.getSubtotal());
+                if (db.insertWithOnConflict(TABLE_ORDER_ITEMS, null, itemValues,
+                        SQLiteDatabase.CONFLICT_REPLACE) == -1) return false;
+            }
+
+            // Bước 3: Dọn sạch bản sao giỏ hàng của người dùng trong SQLite và xác nhận Transaction
+            db.delete(TABLE_CART, COLUMN_CART_USER_EMAIL + " = ?",
+                    new String[]{normalizeEmail(order.getUserEmail())});
+            db.setTransactionSuccessful();
+            return true;
         } finally {
             db.endTransaction();
         }
     }
 
-    // Lấy danh sách lịch sử đơn hàng của người dùng (đơn mới nhất xếp trên cùng)
+    // Đọc danh sách các đơn hàng đã đặt từ bản sao SQLite (sắp xếp đơn mới nhất lên đầu)
     public List<Order> getUserOrders(String userEmail) {
         if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
         userEmail = userEmail.trim().toLowerCase();
@@ -487,7 +606,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return list;
     }
 
-    // Lấy danh sách chi tiết từng sản phẩm thuộc một đơn hàng cụ thể
+    // Đọc danh sách chi tiết các món hàng bên trong 1 đơn hàng từ bản sao SQLite theo mã orderId
     public List<OrderItem> getOrderItems(long orderId) {
         List<OrderItem> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -514,7 +633,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return list;
     }
 
-    // Kiểm tra xem email này đã được đăng ký tài khoản chưa
+    // Kiểm tra xem địa chỉ email này đã tồn tại trong bảng users của bản sao SQLite chưa
     public boolean checkEmailExists(String email) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
@@ -528,7 +647,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Lưu thông tin tài khoản mới vào bảng users với avatar mặc định (kèm SĐT)
+    // Lưu bản sao tài khoản người dùng vào bảng users của SQLite (sau khi Firebase đăng ký/tải về thành công)
     public boolean registerUser(String fullName, String email, String password, String phone) {
         if (checkEmailExists(email)) return false;
         SQLiteDatabase db = this.getWritableDatabase();
@@ -542,12 +661,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.insert(TABLE_USERS, null, values) != -1;
     }
 
-    // Lưu thông tin tài khoản mới (tương thích ngược)
+    // Lưu bản sao tài khoản rút gọn (không truyền SĐT thì tự gán chuỗi rỗng)
     public boolean registerUser(String fullName, String email, String password) {
         return registerUser(fullName, email, password, "");
     }
 
-    // Kiểm tra đăng nhập (cho phép nhập email, họ tên hoặc tên trước dấu @) và trả về đối tượng User
+    // Kiểm tra đăng nhập trên bản sao SQLite (hỗ trợ khớp email, họ tên hoặc phần trước ký tự @)
     public User checkLogin(String account, String password) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
@@ -586,7 +705,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Lấy thông tin người dùng theo email
+    // Tìm và trả về thông tin bản sao tài khoản từ SQLite dựa theo địa chỉ email
     public User getUserByEmail(String email) {
         if (email == null || email.trim().isEmpty()) return null;
         SQLiteDatabase db = this.getReadableDatabase();
@@ -622,7 +741,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Kiểm tra xem mật khẩu hiện tại của tài khoản có đúng không
+    // Kiểm tra mật khẩu trên bản sao SQLite (luồng chính kiểm tra trên Firebase trước)
     public boolean checkPassword(String email, String password) {
         if (email == null || password == null) return false;
         SQLiteDatabase db = this.getReadableDatabase();
@@ -639,7 +758,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Kiểm tra tên đăng nhập đã được người dùng khác sử dụng chưa
+    // Kiểm tra trùng tên hiển thị trên bản sao SQLite (luồng chính kiểm tra trên Firebase trước)
     public boolean checkUsernameExists(String username, String currentEmail) {
         if (username == null || username.trim().isEmpty()) return false;
         SQLiteDatabase db = this.getReadableDatabase();
@@ -656,7 +775,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Cập nhật tên đăng nhập / họ tên mới cho người dùng
+    // Cập nhật tên hiển thị mới vào bản sao SQLite (sau khi Firebase cập nhật thành công)
     public boolean updateUsername(String email, String newUsername) {
         if (email == null || newUsername == null || newUsername.trim().isEmpty()) return false;
         SQLiteDatabase db = this.getWritableDatabase();
@@ -668,7 +787,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rows > 0;
     }
 
-    // Cập nhật số điện thoại cho người dùng
+    // Cập nhật số điện thoại mới vào bản sao SQLite (sau khi Firebase cập nhật thành công)
     public boolean updatePhone(String email, String newPhone) {
         if (email == null) return false;
         SQLiteDatabase db = this.getWritableDatabase();
@@ -680,7 +799,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rows > 0;
     }
 
-    // Cập nhật địa chỉ cho người dùng
+    // Cập nhật địa chỉ giao hàng mới vào bản sao SQLite (sau khi Firebase cập nhật thành công)
     public boolean updateAddress(String email, String newAddress) {
         if (email == null) return false;
         SQLiteDatabase db = this.getWritableDatabase();
@@ -692,7 +811,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rows > 0;
     }
 
-    // Cập nhật mật khẩu mới cho người dùng
+    // Cập nhật mật khẩu mới vào bản sao SQLite (sau khi Firebase cập nhật thành công)
     public boolean updatePassword(String email, String newPassword) {
         if (email == null || newPassword == null || newPassword.trim().isEmpty()) return false;
         SQLiteDatabase db = this.getWritableDatabase();
