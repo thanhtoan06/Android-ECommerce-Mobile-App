@@ -1,6 +1,4 @@
-/**
- * CartActivity.java: Màn hình Giỏ hàng hiển thị sản phẩm đã chọn từ SQLite, cho phép tăng/giảm số lượng, xóa và chuyển sang thanh toán.
- */
+// Màn hình Giỏ hàng: hiển thị danh sách sản phẩm đã chọn từ Firestore, cho phép tăng/giảm số lượng, xóa món và chuyển sang thanh toán
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -24,6 +22,7 @@ import java.util.Locale;
 
 public class CartActivity extends AppCompatActivity implements CartAdapter.OnCartItemListener {
 
+    // Khai báo các thành phần giao diện trên màn hình Giỏ hàng
     private ListView lvCartItems;
     private View layoutEmptyCart;
     private View layoutCheckoutBar;
@@ -32,9 +31,10 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     private TextView btnClearAllCart;
     private Button btnCheckout;
 
+    // Khai báo danh sách dữ liệu giỏ hàng, Adapter, FirestoreRepository và email người dùng hiện tại
     private final List<CartItem> cartItemList = new ArrayList<>();
     private CartAdapter adapter;
-    private DatabaseHelper databaseHelper;
+    private FirestoreRepository repository;
     private String currentUserEmail;
 
     // Hàm chạy đầu tiên khi mở màn hình Giỏ hàng: kết nối giao diện và gắn sự kiện các nút bấm
@@ -43,7 +43,8 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cart);
 
-        databaseHelper = DatabaseHelper.getInstance(this);
+        // Khởi tạo đối tượng kết nối Firestore và lấy email tài khoản đang đăng nhập
+        repository = FirestoreRepository.getInstance();
         currentUserEmail = SharedPrefManager.getInstance(this).getEmail();
 
         // Kết nối các biến Java với các thành phần trên giao diện
@@ -71,7 +72,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
             }
         });
 
-        // Nút "Khám phá sản phẩm" khi giỏ hàng đang trống
+        // Nút "Khám phá sản phẩm" khi giỏ hàng đang trống: quay lại danh sách sản phẩm
         findViewById(R.id.btnShopNow).setOnClickListener(v -> {
             Intent intent = new Intent(this, ProductListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -79,16 +80,17 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
             finish();
         });
 
-        // Nút "Xóa tất cả": hỏi xác nhận rồi xóa sạch giỏ hàng trong SQLite
+        // Nút "Xóa tất cả": hỏi xác nhận rồi xóa sạch giỏ hàng trên Firestore
         btnClearAllCart.setOnClickListener(v -> {
             if (cartItemList.isEmpty()) return;
             new AlertDialog.Builder(this)
                     .setTitle("Xóa giỏ hàng")
                     .setMessage("Bạn có chắc chắn muốn xóa toàn bộ sản phẩm khỏi giỏ hàng?")
                     .setPositiveButton("Xóa tất cả", (dialog, which) -> {
-                        databaseHelper.clearCart(currentUserEmail);
-                        loadCartData();
-                        Toast.makeText(this, "Đã xóa toàn bộ giỏ hàng!", Toast.LENGTH_SHORT).show();
+                        repository.clearCart(currentUserEmail, success -> {
+                            loadCartData();
+                            Toast.makeText(this, "Đã xóa toàn bộ giỏ hàng!", Toast.LENGTH_SHORT).show();
+                        });
                     })
                     .setNegativeButton("Hủy", null)
                     .show();
@@ -114,26 +116,43 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         loadCartData();
     }
 
-    // Đọc danh sách giỏ hàng từ SQLite, tính tổng số lượng + tổng tiền và cập nhật giao diện
+    // Đọc danh sách giỏ hàng từ Firestore và cập nhật giao diện
     private void loadCartData() {
-        cartItemList.clear();
-        cartItemList.addAll(databaseHelper.getCartItems(currentUserEmail));
-        adapter.notifyDataSetChanged();
+        repository.getCartItems(currentUserEmail, new FirestoreRepository.CartCallback() {
+            @Override
+            public void onResult(List<CartItem> items) {
+                // Làm mới danh sách giỏ hàng và thông báo Adapter cập nhật lại ListView
+                cartItemList.clear();
+                cartItemList.addAll(items);
+                adapter.notifyDataSetChanged();
+                updateCartVisibility();
+            }
 
+            @Override
+            public void onError(Exception e) {
+                // Thông báo nếu tải dữ liệu giỏ hàng thất bại
+                Toast.makeText(CartActivity.this, "Không thể tải giỏ hàng.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // Ẩn/hiện giao diện trống và tính tổng tiền thanh toán
+    private void updateCartVisibility() {
         if (cartItemList.isEmpty()) {
-            // Hiển thị màn hình thông báo giỏ hàng trống
+            // Giỏ hàng trống: hiện khung thông báo trống, ẩn danh sách và thanh thanh toán
             layoutEmptyCart.setVisibility(View.VISIBLE);
             lvCartItems.setVisibility(View.GONE);
             layoutCheckoutBar.setVisibility(View.GONE);
             btnClearAllCart.setVisibility(View.GONE);
             tvCartHeaderTitle.setText("Giỏ hàng của tôi");
         } else {
-            // Hiển thị danh sách món hàng và thanh tổng thanh toán
+            // Giỏ hàng có sản phẩm: hiện danh sách, nút xóa tất cả và thanh thanh toán
             layoutEmptyCart.setVisibility(View.GONE);
             lvCartItems.setVisibility(View.VISIBLE);
             layoutCheckoutBar.setVisibility(View.VISIBLE);
             btnClearAllCart.setVisibility(View.VISIBLE);
 
+            // Cộng dồn tổng tiền và tổng số lượng sản phẩm trong giỏ
             long total = 0;
             int totalQuantity = 0;
             for (CartItem item : cartItemList) {
@@ -141,6 +160,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                 totalQuantity += item.getQuantity();
             }
 
+            // Hiển thị tổng số lượng lên tiêu đề, nút thanh toán và định dạng tổng tiền VNĐ
             tvCartHeaderTitle.setText("Giỏ hàng (" + totalQuantity + ")");
             tvCartTotalPrice.setText(NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(total) + " ₫");
             btnCheckout.setText("THANH TOÁN (" + totalQuantity + ")");
@@ -151,18 +171,18 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     @Override
     public void onQuantityChanged(CartItem item, int newQuantity) {
         if (newQuantity <= 0) {
+            // Nếu giảm số lượng về 0 -> hiện hộp thoại hỏi xác nhận xóa sản phẩm
             new AlertDialog.Builder(this)
                     .setTitle("Xóa sản phẩm")
                     .setMessage("Bạn có muốn xóa \"" + item.getProduct().getName() + "\" khỏi giỏ hàng?")
                     .setPositiveButton("Xóa", (dialog, which) -> {
-                        databaseHelper.removeCartItem(item.getId());
-                        loadCartData();
+                        repository.removeCartItem(currentUserEmail, item.getProduct().getId(), success -> loadCartData());
                     })
                     .setNegativeButton("Giữ lại", null)
                     .show();
         } else {
-            databaseHelper.updateCartQuantity(item.getId(), newQuantity);
-            loadCartData();
+            // Cập nhật số lượng mới lên Firestore rồi tải lại giỏ hàng
+            repository.updateCartQuantity(currentUserEmail, item.getProduct().getId(), newQuantity, success -> loadCartData());
         }
     }
 
@@ -173,8 +193,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                 .setTitle("Xóa sản phẩm")
                 .setMessage("Bạn có muốn xóa \"" + item.getProduct().getName() + "\" khỏi giỏ hàng?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    databaseHelper.removeCartItem(item.getId());
-                    loadCartData();
+                    repository.removeCartItem(currentUserEmail, item.getProduct().getId(), success -> loadCartData());
                     Toast.makeText(this, "Đã xóa sản phẩm khỏi giỏ hàng!", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Hủy", null)
@@ -211,6 +230,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
             }
         }
 
+        // Chuyển về màn hình Danh sách sản phẩm
         menuHome.setOnClickListener(v -> {
             Intent intent = new Intent(this, ProductListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -218,10 +238,12 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
             finish();
         });
 
+        // Đang ở trang Giỏ hàng nên chỉ hiện thông báo nhẹ
         menuCart.setOnClickListener(v ->
                 Toast.makeText(this, "Bạn đang ở trang Giỏ hàng", Toast.LENGTH_SHORT).show()
         );
 
+        // Chuyển sang màn hình Tài khoản
         menuAccount.setOnClickListener(v -> {
             startActivity(new Intent(this, AccountActivity.class));
             finish();

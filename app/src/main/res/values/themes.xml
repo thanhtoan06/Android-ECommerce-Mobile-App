@@ -1,3 +1,4 @@
+<!-- Khai báo giao diện và các thuộc tính chủ đề mặc định của ứng dụng. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.Ecommerce" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>

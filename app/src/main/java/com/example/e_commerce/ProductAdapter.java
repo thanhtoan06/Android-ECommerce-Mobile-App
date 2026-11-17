@@ -1,6 +1,4 @@
-/**
- * ProductAdapter.java: Bộ chuyển đổi dữ liệu mảng Product[] thành từng dòng giao diện hiển thị trên ListView.
- */
+// Bộ chuyển đổi mảng sản phẩm (Product) thành từng dòng giao diện (item_product.xml) để hiển thị lên ListView
 package com.example.e_commerce;
 
 import android.content.Context;
@@ -15,6 +13,7 @@ import androidx.annotation.Nullable;
 
 public class ProductAdapter extends ArrayAdapter<Product> {
 
+    // Khai báo đối tượng nạp giao diện XML cho từng dòng sản phẩm
     private final LayoutInflater inflater;
 
     // Hàm khởi tạo Adapter nhận vào Context và mảng sản phẩm
@@ -40,6 +39,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
             holder.tvDescription = convertView.findViewById(R.id.tvDescription);
             convertView.setTag(holder);
         } else {
+            // Lấy lại ViewHolder đã lưu sẵn nếu dòng giao diện được tái sử dụng
             holder = (ViewHolder) convertView.getTag();
         }
 

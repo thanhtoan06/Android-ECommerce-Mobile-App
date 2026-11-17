@@ -1,6 +1,4 @@
-/**
- * CheckoutActivity.java: Màn hình xác nhận thông tin giao hàng, phương thức thanh toán và lưu đơn hàng mới vào SQLite.
- */
+// Màn hình Thanh toán: hiển thị tóm tắt đơn hàng, nhập thông tin người nhận, chọn phương thức thanh toán và lưu đơn hàng lên Firestore
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -23,6 +21,7 @@ import java.util.Locale;
 
 public class CheckoutActivity extends AppCompatActivity {
 
+    // Khai báo các thành phần nhập liệu và hiển thị trên màn hình Thanh toán
     private EditText etReceiverName;
     private EditText etReceiverPhone;
     private EditText etReceiverAddress;
@@ -34,19 +33,21 @@ public class CheckoutActivity extends AppCompatActivity {
     private TextView tvCheckoutGrandTotal;
     private Button btnConfirmOrder;
 
-    private DatabaseHelper databaseHelper;
+    // Khai báo đối tượng truy xuất dữ liệu, quản lý phiên và danh sách sản phẩm thanh toán
+    private FirestoreRepository repository;
     private SharedPrefManager prefManager;
     private String currentUserEmail;
     private List<CartItem> cartItems;
     private long totalAmount = 0;
 
-    // Hàm chạy đầu tiên khi mở màn hình thanh toán: kết nối giao diện, điền sẵn tên và tải tóm tắt giỏ hàng
+    // Hàm chạy đầu tiên khi mở màn hình thanh toán: kết nối giao diện, điền sẵn thông tin và tải tóm tắt giỏ hàng
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
 
-        databaseHelper = DatabaseHelper.getInstance(this);
+        // Khởi tạo đối tượng kết nối Firestore, SharedPreferences và lấy email người dùng
+        repository = FirestoreRepository.getInstance();
         prefManager = SharedPrefManager.getInstance(this);
         currentUserEmail = prefManager.getEmail();
 
@@ -63,36 +64,21 @@ public class CheckoutActivity extends AppCompatActivity {
         tvCheckoutGrandTotal = findViewById(R.id.tvCheckoutGrandTotal);
         btnConfirmOrder = findViewById(R.id.btnConfirmOrder);
 
+        // Nút quay lại màn hình Giỏ hàng
         tvCheckoutBack.setOnClickListener(v -> finish());
 
-        // Tự động điền sẵn tên tài khoản đang đăng nhập vào ô Người nhận
+        // Tự động điền sẵn tên, số điện thoại và địa chỉ nếu tài khoản đã lưu trước đó
         String savedUsername = prefManager.getUsername();
         if (savedUsername != null && !savedUsername.isEmpty() && !"Người dùng".equals(savedUsername)) {
             etReceiverName.setText(savedUsername);
         }
 
-        // Tự động điền sẵn số điện thoại và địa chỉ nếu người dùng đã cập nhật trước đó
-        User currentUser = databaseHelper.getUserByEmail(currentUserEmail);
-        String savedPhone = "";
-        String savedAddress = "";
-        if (currentUser != null) {
-            savedPhone = currentUser.getPhone();
-            savedAddress = currentUser.getAddress();
-            if ((savedUsername == null || savedUsername.isEmpty() || "Người dùng".equals(savedUsername))
-                    && currentUser.getFullName() != null && !currentUser.getFullName().isEmpty()) {
-                etReceiverName.setText(currentUser.getFullName());
-            }
-        }
-        if (savedPhone == null || savedPhone.isEmpty()) {
-            savedPhone = prefManager.getPhone();
-        }
-        if (savedAddress == null || savedAddress.isEmpty()) {
-            savedAddress = prefManager.getAddress();
-        }
-
+        String savedPhone = prefManager.getPhone();
         if (savedPhone != null && !savedPhone.trim().isEmpty()) {
             etReceiverPhone.setText(savedPhone.trim());
         }
+
+        String savedAddress = prefManager.getAddress();
         if (savedAddress != null && !savedAddress.trim().isEmpty()) {
             etReceiverAddress.setText(savedAddress.trim());
         }
@@ -106,26 +92,46 @@ public class CheckoutActivity extends AppCompatActivity {
             }
         });
 
-        // Tải danh sách sản phẩm từ giỏ hàng SQLite và tính tổng tiền
+        // Tải danh sách sản phẩm từ giỏ hàng Firestore và tính tổng tiền
         loadCartSummary();
 
         // Gắn sự kiện cho nút Xác nhận đặt hàng
         btnConfirmOrder.setOnClickListener(v -> handlePlaceOrder());
     }
 
-    // Đọc danh sách sản phẩm trong giỏ hàng SQLite, hiển thị tóm tắt và tính tổng thanh toán
+    // Đọc danh sách sản phẩm trong giỏ hàng Firestore
     private void loadCartSummary() {
-        cartItems = databaseHelper.getCartItems(currentUserEmail);
+        repository.getCartItems(currentUserEmail, new FirestoreRepository.CartCallback() {
+            @Override
+            public void onResult(List<CartItem> items) {
+                // Lưu danh sách giỏ hàng lấy được và vẽ lên phần tóm tắt đơn hàng
+                cartItems = items;
+                renderCartSummary();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Báo lỗi và đóng màn hình thanh toán nếu không đọc được giỏ hàng
+                Toast.makeText(CheckoutActivity.this, "Không thể tải giỏ hàng.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
+
+    // Hiển thị danh sách từng món hàng tóm tắt lên giao diện và tính tổng tiền thanh toán
+    private void renderCartSummary() {
         if (cartItems == null || cartItems.isEmpty()) {
             Toast.makeText(this, "Giỏ hàng rỗng!", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
+        // Xóa các dòng cũ (nếu có) trước khi nạp danh sách sản phẩm mới
         llOrderItemsContainer.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(this);
         totalAmount = 0;
 
+        // Duyệt từng sản phẩm trong giỏ, nạp layout item_checkout_summary và cộng dồn tổng tiền
         for (int i = 0; i < cartItems.size(); i++) {
             CartItem item = cartItems.get(i);
             totalAmount += item.getSubtotal();
@@ -145,6 +151,7 @@ public class CheckoutActivity extends AppCompatActivity {
 
             llOrderItemsContainer.addView(itemView);
 
+            // Thêm đường kẻ phân cách giữa các sản phẩm
             if (i < cartItems.size() - 1) {
                 View divider = new View(this);
                 divider.setLayoutParams(new LinearLayout.LayoutParams(
@@ -154,19 +161,21 @@ public class CheckoutActivity extends AppCompatActivity {
             }
         }
 
+        // Định dạng tổng tiền theo tiền tệ Việt Nam và hiển thị lên các nhãn tổng thanh toán
         String formattedTotal = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(totalAmount) + " ₫";
         tvCheckoutItemsSubtotal.setText(formattedTotal);
         tvCheckoutGrandTotal.setText(formattedTotal);
         btnConfirmOrder.setText("ĐẶT HÀNG • " + formattedTotal);
     }
 
-    // Kiểm tra thông tin giao hàng người dùng nhập và lưu đơn hàng mới vào SQLite
+    // Kiểm tra thông tin giao hàng người dùng nhập và lưu đơn hàng mới vào Firestore
     private void handlePlaceOrder() {
         String name = etReceiverName.getText().toString().trim();
         String phone = etReceiverPhone.getText().toString().trim();
         String address = etReceiverAddress.getText().toString().trim();
         String note = etOrderNote.getText().toString().trim();
 
+        // Kiểm tra tính hợp lệ của họ tên, số điện thoại và địa chỉ
         if (name.isEmpty()) {
             etReceiverName.setError("Vui lòng nhập họ và tên người nhận!");
             etReceiverName.requestFocus();
@@ -191,6 +200,7 @@ public class CheckoutActivity extends AppCompatActivity {
             return;
         }
 
+        // Xác định phương thức thanh toán được chọn từ RadioGroup
         String paymentMethod;
         int checkedId = rgPaymentMethods.getCheckedRadioButtonId();
         if (checkedId == R.id.rbBankTransfer) {
@@ -201,36 +211,35 @@ public class CheckoutActivity extends AppCompatActivity {
             paymentMethod = "Thanh toán khi nhận hàng (COD)";
         }
 
-        // Lưu đơn hàng vào bảng orders, order_items và tự động làm trống giỏ hàng
-        long orderId = databaseHelper.createOrder(
-                currentUserEmail, name, phone, address, note, paymentMethod, cartItems
-        );
+        // Gửi yêu cầu tạo đơn hàng lên Firestore và cập nhật lại SĐT, địa chỉ cho tài khoản
+        repository.createOrder(currentUserEmail, name, phone, address, note, paymentMethod, cartItems,
+                new FirestoreRepository.OrderCallback() {
+                    @Override
+                    public void onResult(long orderId) {
+                        if (orderId == -1) {
+                            Toast.makeText(CheckoutActivity.this, "Có lỗi xảy ra khi tạo đơn hàng.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        // Lưu lại số điện thoại và địa chỉ mới nhất vào hồ sơ tài khoản để tiện cho lần mua sau
+                        repository.updateUser(currentUserEmail, java.util.Collections.singletonMap("phone", phone),
+                                ok -> prefManager.updatePhone(phone));
+                        repository.updateUser(currentUserEmail, java.util.Collections.singletonMap("address", address),
+                                ok -> prefManager.updateAddress(address));
+                        showOrderSuccessDialog(orderId, name, phone, address, paymentMethod);
+                    }
 
-        if (orderId != -1) {
-            // Tự động lưu SĐT và Địa chỉ vào tài khoản nếu người dùng chưa cập nhật trước đó
-            if (currentUserEmail != null && !currentUserEmail.isEmpty() && !"guest@cart.local".equalsIgnoreCase(currentUserEmail)) {
-                User user = databaseHelper.getUserByEmail(currentUserEmail);
-                if (user != null) {
-                    if (user.getPhone().isEmpty() && !phone.isEmpty()) {
-                        databaseHelper.updatePhone(currentUserEmail, phone);
-                        prefManager.updatePhone(phone);
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(CheckoutActivity.this, "Có lỗi xảy ra khi tạo đơn hàng.", Toast.LENGTH_LONG).show();
                     }
-                    if (user.getAddress().isEmpty() && !address.isEmpty()) {
-                        databaseHelper.updateAddress(currentUserEmail, address);
-                        prefManager.updateAddress(address);
-                    }
-                }
-            }
-            showOrderSuccessDialog(orderId, name, phone, address, paymentMethod);
-        } else {
-            Toast.makeText(this, "Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại!", Toast.LENGTH_LONG).show();
-        }
+                });
     }
 
     // Hiển thị hộp thoại thông báo đặt hàng thành công kèm mã đơn và điều hướng tiếp theo
     private void showOrderSuccessDialog(long orderId, String name, String phone, String address, String paymentMethod) {
         String formattedTotal = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(totalAmount) + " ₫";
 
+        // Ghép nội dung thông báo chi tiết đơn hàng vừa đặt
         String message = "🎉 Cảm ơn quý khách đã mua sắm!\n\n"
                 + "• Mã đơn hàng: #DH" + String.format(Locale.getDefault(), "%05d", orderId) + "\n"
                 + "• Người nhận: " + name + " (" + phone + ")\n"
@@ -238,6 +247,7 @@ public class CheckoutActivity extends AppCompatActivity {
                 + "• Phương thức: " + paymentMethod + "\n"
                 + "• Tổng thanh toán: " + formattedTotal;
 
+        // Hiện hộp thoại không cho bấm ra ngoài để người dùng chọn hướng đi tiếp
         new AlertDialog.Builder(this)
                 .setTitle("✅ ĐẶT HÀNG THÀNH CÔNG")
                 .setMessage(message)

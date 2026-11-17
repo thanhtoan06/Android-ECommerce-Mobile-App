@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- dialog_change_username.xml: Hộp thoại cho phép người dùng đổi tên đăng nhập / họ tên tài khoản. -->
+<!-- Giao diện hộp thoại thay đổi tên người dùng -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -17,6 +17,7 @@
         android:textSize="18sp"
         android:textStyle="bold" />
 
+    <!-- Dòng mô tả hướng dẫn -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -26,7 +27,7 @@
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
-    <!-- Nhãn ô nhập -->
+    <!-- Nhãn ô nhập tên đăng nhập -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -50,13 +51,14 @@
         android:textColorHint="@color/text_tertiary"
         android:textSize="14sp" />
 
-    <!-- Các nút thao tác (Hủy và Lưu) -->
+    <!-- Cụm nút thao tác (Hủy và Lưu) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="end"
         android:orientation="horizontal">
 
+        <!-- Nút hủy bỏ và đóng hộp thoại -->
         <Button
             android:id="@+id/btnCancelUsername"
             android:layout_width="wrap_content"
@@ -70,6 +72,7 @@
             android:textStyle="bold"
             app:backgroundTint="@null" />
 
+        <!-- Nút lưu tên đăng nhập mới lên Firestore -->
         <Button
             android:id="@+id/btnSaveUsername"
             android:layout_width="wrap_content"

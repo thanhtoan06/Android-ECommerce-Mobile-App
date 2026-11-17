@@ -1,6 +1,4 @@
-/**
- * LoginActivity.java: Xử lý màn hình đăng nhập (kiểm tra tài khoản trong SQLite, lưu phiên đăng nhập và chuyển trang).
- */
+// Màn hình Đăng nhập: kiểm tra phiên đăng nhập cũ, xác thực tài khoản qua Firestore và chuyển sang trang sản phẩm
 package com.example.e_commerce;
 
 import android.content.Intent;
@@ -13,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class LoginActivity extends AppCompatActivity {
 
+    // Khai báo các ô nhập liệu và nút bấm trên màn hình Đăng nhập
     private EditText edtEmail, edtPassword;
     private Button btnLogin, btnRegister;
 
@@ -50,20 +49,30 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // Gọi SQLite kiểm tra tài khoản và mật khẩu có khớp trong database không
-            User user = DatabaseHelper.getInstance(LoginActivity.this).checkLogin(account, password);
-            if (user != null) {
-                // Nếu đúng: Lưu thông tin người dùng vào bộ nhớ tạm (SharedPreferences) để dùng cho các trang sau
-                prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(), user.getAddress());
-                Toast.makeText(LoginActivity.this, "Đăng nhập thành công! Xin chào " + user.getFullName(), Toast.LENGTH_SHORT).show();
+            // Gọi Firestore kiểm tra tài khoản và mật khẩu có khớp không
+            FirestoreRepository.getInstance().checkLogin(account, password, new FirestoreRepository.UserCallback() {
+                @Override
+                public void onResult(User user) {
+                    if (user != null) {
+                        // Nếu đúng: Lưu thông tin người dùng vào bộ nhớ tạm (SharedPreferences) để dùng cho các trang sau
+                        prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(), user.getAddress());
+                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công! Xin chào " + user.getFullName(), Toast.LENGTH_SHORT).show();
 
-                // Chuyển sang màn hình danh sách sản phẩm và đóng trang đăng nhập
-                startActivity(new Intent(LoginActivity.this, ProductListActivity.class));
-                finish();
-            } else {
-                // Nếu sai: Hiện thông báo lỗi
-                Toast.makeText(LoginActivity.this, "Tên tài khoản hoặc mật khẩu không chính xác!", Toast.LENGTH_SHORT).show();
-            }
+                        // Chuyển sang màn hình danh sách sản phẩm và đóng trang đăng nhập
+                        startActivity(new Intent(LoginActivity.this, ProductListActivity.class));
+                        finish();
+                    } else {
+                        // Nếu sai: Hiện thông báo lỗi
+                        Toast.makeText(LoginActivity.this, "Tên tài khoản hoặc mật khẩu không chính xác!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    // Thông báo lỗi nếu mất kết nối hoặc không truy vấn được Firestore
+                    Toast.makeText(LoginActivity.this, "Không thể kết nối Firestore.", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         // Xử lý khi người dùng bấm nút TẠO TÀI KHOẢN MỚI -> mở trang đăng ký

@@ -1,6 +1,4 @@
-/**
- * Product.java: Đối tượng lưu trữ thông tin của một sản phẩm (id, tên, danh mục, giá, mô tả, icon).
- */
+// Đối tượng lưu trữ thông tin một sản phẩm (mã, tên, danh mục, giá bán, mô tả và biểu tượng)
 package com.example.e_commerce;
 
 import java.text.NumberFormat;
@@ -8,6 +6,7 @@ import java.util.Locale;
 
 public class Product {
 
+    // Khai báo các thuộc tính cố định của một sản phẩm
     private final int id;
     private final String name;
     private final String category;

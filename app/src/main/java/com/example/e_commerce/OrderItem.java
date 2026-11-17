@@ -1,6 +1,4 @@
-/**
- * OrderItem.java: Đối tượng lưu trữ chi tiết từng sản phẩm bên trong một đơn hàng (tên, icon, giá, số lượng, thành tiền).
- */
+// Đối tượng lưu trữ thông tin chi tiết từng sản phẩm thuộc một đơn hàng (mã đơn, tên sản phẩm, biểu tượng, đơn giá, số lượng và thành tiền)
 package com.example.e_commerce;
 
 import java.text.NumberFormat;
@@ -8,6 +6,7 @@ import java.util.Locale;
 
 public class OrderItem {
 
+    // Khai báo các thuộc tính của một dòng sản phẩm trong đơn hàng
     private int id;
     private int orderId;
     private int productId;
@@ -17,6 +16,7 @@ public class OrderItem {
     private int quantity;
     private long subtotal;
 
+    // Hàm khởi tạo rỗng phục vụ việc ánh xạ dữ liệu từ Firestore
     public OrderItem() {}
 
     // Hàm khởi tạo thông tin một món hàng trong đơn hàng
@@ -32,35 +32,35 @@ public class OrderItem {
         this.subtotal = subtotal;
     }
 
-    // Lấy mã dòng chi tiết đơn hàng
+    // Lấy và cập nhật mã dòng chi tiết đơn hàng
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    // Lấy mã đơn hàng chứa sản phẩm này
+    // Lấy và cập nhật mã đơn hàng chứa sản phẩm này
     public int getOrderId() { return orderId; }
     public void setOrderId(int orderId) { this.orderId = orderId; }
 
-    // Lấy mã sản phẩm
+    // Lấy và cập nhật mã sản phẩm
     public int getProductId() { return productId; }
     public void setProductId(int productId) { this.productId = productId; }
 
-    // Lấy tên sản phẩm lúc đặt hàng
+    // Lấy và cập nhật tên sản phẩm lúc đặt hàng
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
 
-    // Lấy biểu tượng icon sản phẩm
+    // Lấy và cập nhật biểu tượng icon sản phẩm
     public String getProductIcon() { return productIcon; }
     public void setProductIcon(String productIcon) { this.productIcon = productIcon; }
 
-    // Lấy đơn giá lúc đặt hàng
+    // Lấy và cập nhật đơn giá lúc đặt hàng
     public long getPrice() { return price; }
     public void setPrice(long price) { this.price = price; }
 
-    // Lấy số lượng mua
+    // Lấy và cập nhật số lượng mua
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
 
-    // Lấy thành tiền gốc dạng số nguyên
+    // Lấy và cập nhật thành tiền gốc dạng số nguyên
     public long getSubtotal() { return subtotal; }
     public void setSubtotal(long subtotal) { this.subtotal = subtotal; }
 

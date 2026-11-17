@@ -1,3 +1,4 @@
+// File: settings.gradle.kts. Chuc nang: Cau hinh Gradle cua du an.
 pluginManagement {
     repositories {
         google {

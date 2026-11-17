@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- dialog_change_phone.xml: Hộp thoại cho phép người dùng đổi/cập nhật số điện thoại. -->
+<!-- Giao diện hộp thoại thay đổi số điện thoại tài khoản -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -17,6 +17,7 @@
         android:textSize="18sp"
         android:textStyle="bold" />
 
+    <!-- Dòng mô tả hướng dẫn -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -26,7 +27,7 @@
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
-    <!-- Nhãn ô nhập -->
+    <!-- Nhãn ô nhập số điện thoại -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -50,13 +51,14 @@
         android:textColorHint="@color/text_tertiary"
         android:textSize="14sp" />
 
-    <!-- Các nút thao tác (Hủy và Lưu) -->
+    <!-- Cụm nút thao tác (Hủy và Lưu) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="end"
         android:orientation="horizontal">
 
+        <!-- Nút hủy bỏ và đóng hộp thoại -->
         <Button
             android:id="@+id/btnCancelPhone"
             android:layout_width="wrap_content"
@@ -70,6 +72,7 @@
             android:textStyle="bold"
             app:backgroundTint="@null" />
 
+        <!-- Nút lưu số điện thoại mới lên Firestore -->
         <Button
             android:id="@+id/btnSavePhone"
             android:layout_width="wrap_content"

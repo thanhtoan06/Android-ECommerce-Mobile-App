@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- AndroidManifest.xml: Khai báo cấu hình chung của ứng dụng, icon, giao diện và danh sách các màn hình (Activity). -->
+<!-- Khai báo cấu hình ứng dụng và danh sách các màn hình (Activity) của hệ thống -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 

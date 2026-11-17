@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- activity_account.xml: Giao diện màn hình Tài khoản cá nhân (thông tin người dùng, lịch sử đơn mua, đăng xuất). -->
+<!-- Giao diện màn hình quản lý thông tin tài khoản cá nhân -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -20,6 +20,7 @@
         android:orientation="horizontal"
         android:paddingHorizontal="12dp">
 
+        <!-- Nút quay lại màn hình trước -->
         <TextView
             android:id="@+id/tvBack"
             android:layout_width="38dp"
@@ -33,6 +34,7 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <!-- Tiêu đề màn hình -->
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -43,6 +45,7 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <!-- Khoảng trống căn giữa tiêu đề -->
         <View
             android:layout_width="38dp"
             android:layout_height="38dp" />
@@ -63,7 +66,7 @@
             android:paddingTop="12dp"
             android:paddingBottom="20dp">
 
-            <!-- Khung hồ sơ người dùng (Avatar tròn, Tên, Email) -->
+            <!-- Khung hồ sơ người dùng (Avatar, Tên, Email) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -84,7 +87,7 @@
                     android:text="👤"
                     android:textSize="42sp" />
 
-                <!-- Tên người dùng -->
+                <!-- Hiển thị tên người dùng -->
                 <TextView
                     android:id="@+id/tvAccountName"
                     android:layout_width="wrap_content"
@@ -95,7 +98,7 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <!-- Email tài khoản -->
+                <!-- Hiển thị email tài khoản -->
                 <TextView
                     android:id="@+id/tvAccountEmail"
                     android:layout_width="wrap_content"
@@ -106,7 +109,7 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <!-- Nhóm thông tin chi tiết tài khoản -->
+            <!-- Tiêu đề nhóm thông tin chi tiết -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -118,6 +121,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
+            <!-- Thẻ chứa các dòng thông tin chi tiết tài khoản -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -127,7 +131,7 @@
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="6dp">
 
-                <!-- Tên tài khoản -->
+                <!-- Dòng tên tài khoản (bấm để sửa) -->
                 <LinearLayout
                     android:id="@+id/layoutUsernameRow"
                     android:layout_width="match_parent"
@@ -153,6 +157,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
+                    <!-- Giá trị tên tài khoản -->
                     <TextView
                         android:id="@+id/tvDetailUsername"
                         android:layout_width="wrap_content"
@@ -163,12 +168,13 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <!-- Đường kẻ phân cách -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
 
-                <!-- Email liên kết -->
+                <!-- Dòng email liên kết -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="46dp"
@@ -190,6 +196,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
+                    <!-- Giá trị email liên kết -->
                     <TextView
                         android:id="@+id/tvDetailEmail"
                         android:layout_width="wrap_content"
@@ -200,12 +207,13 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <!-- Đường kẻ phân cách -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
 
-                <!-- Số điện thoại -->
+                <!-- Dòng số điện thoại (bấm để sửa) -->
                 <LinearLayout
                     android:id="@+id/layoutPhoneRow"
                     android:layout_width="match_parent"
@@ -231,6 +239,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
+                    <!-- Giá trị số điện thoại -->
                     <TextView
                         android:id="@+id/tvDetailPhone"
                         android:layout_width="wrap_content"
@@ -241,12 +250,13 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <!-- Đường kẻ phân cách -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
 
-                <!-- Địa chỉ nhận hàng -->
+                <!-- Dòng địa chỉ nhận hàng (bấm để sửa) -->
                 <LinearLayout
                     android:id="@+id/layoutAddressRow"
                     android:layout_width="match_parent"
@@ -273,6 +283,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
+                    <!-- Giá trị địa chỉ nhận hàng -->
                     <TextView
                         android:id="@+id/tvDetailAddress"
                         android:layout_width="0dp"
@@ -289,7 +300,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Nhóm cài đặt tài khoản -->
+            <!-- Tiêu đề nhóm cài đặt tài khoản -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -301,6 +312,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
+            <!-- Thẻ chứa các nút chức năng cài đặt tài khoản -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -344,12 +356,13 @@
                         android:textSize="22sp" />
                 </LinearLayout>
 
+                <!-- Đường kẻ phân cách -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
 
-                <!-- Nút đổi số điện thoại -->
+                <!-- Nút cập nhật số điện thoại -->
                 <LinearLayout
                     android:id="@+id/btnChangePhone"
                     android:layout_width="match_parent"
@@ -383,12 +396,13 @@
                         android:textSize="22sp" />
                 </LinearLayout>
 
+                <!-- Đường kẻ phân cách -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
 
-                <!-- Nút đổi địa chỉ nhận hàng -->
+                <!-- Nút cập nhật địa chỉ nhận hàng -->
                 <LinearLayout
                     android:id="@+id/btnChangeAddress"
                     android:layout_width="match_parent"
@@ -422,6 +436,7 @@
                         android:textSize="22sp" />
                 </LinearLayout>
 
+                <!-- Đường kẻ phân cách -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -462,7 +477,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Nhóm đơn hàng -->
+            <!-- Tiêu đề nhóm đơn hàng -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -474,6 +489,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
+            <!-- Thẻ chứa nút lịch sử đơn mua -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -483,7 +499,7 @@
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="4dp">
 
-                <!-- Nút mở Lịch sử đơn mua -->
+                <!-- Nút mở màn hình Lịch sử đơn mua -->
                 <LinearLayout
                     android:id="@+id/btnOrderHistory"
                     android:layout_width="match_parent"

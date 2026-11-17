@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- activity_product_list.xml: Giao diện trang chủ mua sắm (gồm thông tin người dùng, tab lọc danh mục, danh sách sản phẩm và menu dưới). -->
+<!-- Giao diện màn hình danh sách và lọc sản phẩm theo danh mục -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
@@ -9,7 +9,7 @@
     android:orientation="vertical"
     tools:context=".ProductListActivity">
 
-    <!-- Thanh tiêu đề phía trên cùng (Avatar + Xin chào Tên + Email + Tab danh mục) -->
+    <!-- Thanh tiêu đề phía trên cùng (Avatar, lời chào, email và tab danh mục) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,13 +20,14 @@
         android:paddingTop="14dp"
         android:paddingBottom="12dp">
 
-        <!-- Hàng hiển thị Avatar, Tên tài khoản và Email -->
+        <!-- Hàng hiển thị Avatar, tên tài khoản và email -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <!-- Biểu tượng ảnh đại diện người dùng -->
             <TextView
                 android:id="@+id/tvHeaderAvatar"
                 android:layout_width="42dp"
@@ -36,6 +37,7 @@
                 android:text="👤"
                 android:textSize="22sp" />
 
+            <!-- Cụm hiển thị lời chào và email người dùng -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -43,6 +45,7 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
+                <!-- Lời chào kèm tên người dùng đang đăng nhập -->
                 <TextView
                     android:id="@+id/tvUserGreeting"
                     android:layout_width="match_parent"
@@ -54,6 +57,7 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
+                <!-- Email tài khoản hiện tại -->
                 <TextView
                     android:id="@+id/tvUserEmail"
                     android:layout_width="match_parent"
@@ -67,13 +71,14 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Thanh tab lọc theo danh mục sản phẩm (cuộn ngang) -->
+        <!-- Khung cuộn ngang chứa các nút lọc danh mục -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:scrollbars="none">
 
+            <!-- Vùng chứa danh sách các tab danh mục (tạo động từ code) -->
             <LinearLayout
                 android:id="@+id/layoutCategoryTabs"
                 android:layout_width="wrap_content"
@@ -82,7 +87,7 @@
         </HorizontalScrollView>
     </LinearLayout>
 
-    <!-- Danh sách sản phẩm cuộn dọc -->
+    <!-- Danh sách hiển thị các sản phẩm cuộn dọc -->
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"

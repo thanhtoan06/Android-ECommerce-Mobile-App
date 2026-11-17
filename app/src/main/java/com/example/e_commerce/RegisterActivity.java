@@ -1,6 +1,4 @@
-/**
- * RegisterActivity.java: Xử lý màn hình đăng ký tài khoản mới (kiểm tra dữ liệu nhập và lưu vào SQLite).
- */
+// Màn hình Đăng ký: kiểm tra tính hợp lệ của thông tin, kiểm tra trùng email và tạo tài khoản mới trên Firestore
 package com.example.e_commerce;
 
 import android.os.Bundle;
@@ -12,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class RegisterActivity extends AppCompatActivity {
 
+    // Khai báo các ô nhập liệu và nút bấm trên màn hình Đăng ký
     private EditText edtFullName, edtRegisterEmail, edtRegisterPhone, edtRegisterPassword, edtConfirmPassword;
     private Button btnSubmitRegister, btnBackToLogin;
 
@@ -32,13 +31,14 @@ public class RegisterActivity extends AppCompatActivity {
 
         // Xử lý khi người dùng bấm nút HOÀN TẤT ĐĂNG KÝ
         btnSubmitRegister.setOnClickListener(v -> {
+            // Lấy chuỗi người dùng nhập vào và loại bỏ khoảng trắng thừa ở hai đầu
             String name = edtFullName.getText().toString().trim();
             String email = edtRegisterEmail.getText().toString().trim();
             String phone = edtRegisterPhone.getText().toString().trim();
             String pass = edtRegisterPassword.getText().toString().trim();
             String confirmPass = edtConfirmPassword.getText().toString().trim();
 
-            // Kiểm tra dữ liệu hợp lệ trước khi lưu vào database
+            // Kiểm tra dữ liệu hợp lệ trước khi lưu lên Firestore
             if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || pass.isEmpty() || confirmPass.isEmpty()) {
                 Toast.makeText(this, "Vui lòng điền đủ thông tin!", Toast.LENGTH_SHORT).show();
             } else if (phone.length() < 9 || phone.length() > 11) {
@@ -48,19 +48,19 @@ public class RegisterActivity extends AppCompatActivity {
             } else if (!pass.equals(confirmPass)) {
                 Toast.makeText(this, "Mật khẩu xác nhận không khớp!", Toast.LENGTH_SHORT).show();
             } else {
-                // Kiểm tra trùng email và lưu tài khoản mới (avatar mặc định 👤) vào SQLite
-                DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
-                if (dbHelper.checkEmailExists(email)) {
-                    Toast.makeText(this, "Email này đã được đăng ký! Vui lòng chọn email khác.", Toast.LENGTH_LONG).show();
-                } else {
-                    boolean isRegistered = dbHelper.registerUser(name, email, pass, phone);
-                    if (isRegistered) {
-                        Toast.makeText(this, "Đăng ký thành công! Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show();
-                        finish(); // Đóng trang đăng ký để quay về màn hình đăng nhập
+                // Kiểm tra trùng email và lưu tài khoản mới lên Firestore
+                FirestoreRepository repository = FirestoreRepository.getInstance();
+                repository.checkEmailExists(email, exists -> {
+                    if (exists) {
+                        Toast.makeText(this, "Email này đã được đăng ký! Vui lòng chọn email khác.", Toast.LENGTH_LONG).show();
                     } else {
-                        Toast.makeText(this, "Đăng ký thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+                        // Tiến hành tạo tài khoản mới trên Firestore và quay về màn hình Đăng nhập nếu thành công
+                        repository.registerUser(name, email, pass, phone, success -> {
+                            Toast.makeText(this, success ? "Đăng ký thành công! Vui lòng đăng nhập." : "Đăng ký thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+                            if (success) finish();
+                        });
                     }
-                }
+                });
             }
         });
 

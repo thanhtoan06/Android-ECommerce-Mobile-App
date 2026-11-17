@@ -1,6 +1,4 @@
-/**
- * CartAdapter.java: Bộ chuyển đổi danh sách CartItem thành từng dòng giao diện trong giỏ hàng (kèm nút tăng/giảm số lượng và xóa).
- */
+// Bộ chuyển đổi danh sách sản phẩm trong giỏ hàng (CartItem) thành từng dòng hiển thị trên ListView và xử lý nút tăng, giảm, xóa
 package com.example.e_commerce;
 
 import android.content.Context;
@@ -23,6 +21,7 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
         void onItemDeleted(CartItem item);
     }
 
+    // Khai báo đối tượng nạp giao diện và bộ lắng nghe sự kiện thao tác trên từng dòng
     private final LayoutInflater inflater;
     private final OnCartItemListener listener;
 
@@ -54,31 +53,37 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
             holder.btnDelete = convertView.findViewById(R.id.btnDeleteCartItem);
             convertView.setTag(holder);
         } else {
+            // Lấy lại ViewHolder đã lưu sẵn nếu dòng giao diện được tái sử dụng
             holder = (ViewHolder) convertView.getTag();
         }
 
+        // Lấy đối tượng CartItem tại vị trí hiện tại và đổ dữ liệu lên giao diện
         CartItem item = getItem(position);
         if (item != null) {
             Product product = item.getProduct();
             if (product != null) {
+                // Hiển thị biểu tượng, danh mục, tên và đơn giá sản phẩm
                 holder.tvIcon.setText(product.getIcon());
                 holder.tvCategory.setText(product.getCategory());
                 holder.tvName.setText(product.getName());
                 holder.tvUnitPrice.setText("Đơn giá: " + product.getFormattedPrice());
             }
 
+            // Hiển thị số lượng và thành tiền của dòng sản phẩm này
             holder.tvQuantity.setText(String.valueOf(item.getQuantity()));
             holder.tvSubtotal.setText(item.getFormattedSubtotal());
 
-            // Gắn sự kiện nút giảm (−), tăng (+) và nút xóa
+            // Gắn sự kiện nút giảm (−): trừ 1 đơn vị số lượng
             holder.btnMinus.setOnClickListener(v -> {
                 if (listener != null) listener.onQuantityChanged(item, item.getQuantity() - 1);
             });
 
+            // Gắn sự kiện nút tăng (+): cộng thêm 1 đơn vị số lượng
             holder.btnPlus.setOnClickListener(v -> {
                 if (listener != null) listener.onQuantityChanged(item, item.getQuantity() + 1);
             });
 
+            // Gắn sự kiện nút xóa: gọi callback xóa sản phẩm khỏi giỏ
             holder.btnDelete.setOnClickListener(v -> {
                 if (listener != null) listener.onItemDeleted(item);
             });

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- item_cart.xml: Giao diện một dòng sản phẩm trong giỏ hàng (icon, tên, đơn giá, thành tiền, nút tăng/giảm số lượng và xóa). -->
+<!-- Giao diện một sản phẩm trong danh sách giỏ hàng -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -23,6 +23,7 @@
             android:layout_height="64dp"
             android:background="@drawable/bg_chip_blue">
 
+            <!-- Biểu tượng minh họa sản phẩm -->
             <TextView
                 android:id="@+id/tvCartIcon"
                 android:layout_width="match_parent"
@@ -31,7 +32,7 @@
                 android:textSize="30sp" />
         </FrameLayout>
 
-        <!-- Danh mục, tên và đơn giá -->
+        <!-- Cụm thông tin danh mục, tên và đơn giá -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -39,6 +40,7 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
+            <!-- Nhãn danh mục sản phẩm -->
             <TextView
                 android:id="@+id/tvCartCategory"
                 android:layout_width="wrap_content"
@@ -50,6 +52,7 @@
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
+            <!-- Tên sản phẩm -->
             <TextView
                 android:id="@+id/tvCartName"
                 android:layout_width="match_parent"
@@ -62,6 +65,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
+            <!-- Đơn giá của 1 sản phẩm -->
             <TextView
                 android:id="@+id/tvCartUnitPrice"
                 android:layout_width="wrap_content"
@@ -72,7 +76,7 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <!-- Nút xóa sản phẩm khỏi giỏ -->
+        <!-- Nút xóa sản phẩm này khỏi giỏ -->
         <TextView
             android:id="@+id/btnDeleteCartItem"
             android:layout_width="32dp"
@@ -85,6 +89,7 @@
             android:textSize="14sp" />
     </LinearLayout>
 
+    <!-- Đường kẻ phân cách -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -98,6 +103,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <!-- Nhãn thành tiền -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -105,6 +111,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
+        <!-- Giá trị thành tiền (đơn giá × số lượng) -->
         <TextView
             android:id="@+id/tvCartSubtotal"
             android:layout_width="0dp"
@@ -123,6 +130,7 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <!-- Nút giảm số lượng đi 1 -->
             <TextView
                 android:id="@+id/btnMinus"
                 android:layout_width="30dp"
@@ -136,6 +144,7 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <!-- Hiển thị số lượng hiện tại -->
             <TextView
                 android:id="@+id/tvQuantity"
                 android:layout_width="32dp"
@@ -146,6 +155,7 @@
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
+            <!-- Nút tăng số lượng thêm 1 -->
             <TextView
                 android:id="@+id/btnPlus"
                 android:layout_width="30dp"

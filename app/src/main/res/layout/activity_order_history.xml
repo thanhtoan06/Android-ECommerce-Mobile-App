@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- activity_order_history.xml: Giao diện màn hình Lịch sử đơn mua (danh sách đơn đã đặt hoặc thông báo chưa có đơn). -->
+<!-- Giao diện màn hình lịch sử đơn hàng của người dùng -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -21,6 +21,7 @@
         android:orientation="horizontal"
         android:paddingHorizontal="12dp">
 
+        <!-- Nút quay lại màn hình trước -->
         <TextView
             android:id="@+id/tvBack"
             android:layout_width="38dp"
@@ -34,6 +35,7 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <!-- Tiêu đề màn hình -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
@@ -45,6 +47,7 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <!-- Nhãn đếm tổng số đơn hàng -->
         <TextView
             android:id="@+id/tvOrderCountBadge"
             android:layout_width="wrap_content"
@@ -58,7 +61,7 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Khung nội dung chính -->
+    <!-- Khung nội dung chính (hiển thị trạng thái trống hoặc danh sách đơn hàng) -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -73,6 +76,7 @@
             android:padding="24dp"
             android:visibility="gone">
 
+            <!-- Biểu tượng hộp đơn hàng trống -->
             <FrameLayout
                 android:layout_width="96dp"
                 android:layout_height="96dp"
@@ -86,6 +90,7 @@
                     android:textSize="48sp" />
             </FrameLayout>
 
+            <!-- Dòng thông báo chính khi chưa có đơn -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -95,6 +100,7 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
+            <!-- Dòng mô tả chi tiết -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -104,6 +110,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
+            <!-- Nút chuyển về trang danh sách sản phẩm -->
             <Button
                 android:id="@+id/btnShopNow"
                 android:layout_width="wrap_content"

@@ -1,6 +1,4 @@
-/**
- * CartItem.java: Đối tượng lưu trữ một món hàng trong giỏ (mã giỏ hàng, thông tin sản phẩm và số lượng).
- */
+// Đối tượng đại diện cho một dòng sản phẩm trong giỏ hàng (bao gồm thông tin sản phẩm, số lượng và tính thành tiền)
 package com.example.e_commerce;
 
 import java.text.NumberFormat;
@@ -8,6 +6,7 @@ import java.util.Locale;
 
 public class CartItem {
 
+    // Khai báo các thuộc tính của một dòng trong giỏ hàng
     private int id;
     private Product product;
     private int quantity;
@@ -19,15 +18,15 @@ public class CartItem {
         this.quantity = quantity;
     }
 
-    // Lấy mã dòng giỏ hàng
+    // Lấy và cập nhật mã dòng giỏ hàng
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    // Lấy thông tin sản phẩm
+    // Lấy và cập nhật thông tin sản phẩm
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
 
-    // Lấy số lượng đặt mua
+    // Lấy và cập nhật số lượng đặt mua
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
 

@@ -1,6 +1,4 @@
-/**
- * SharedPrefManager.java: Lưu trữ và quản lý phiên đăng nhập hiện tại của người dùng bằng SharedPreferences.
- */
+// Lớp quản lý phiên đăng nhập bằng SharedPreferences: lưu trữ, cập nhật và xóa thông tin người dùng đang đăng nhập
 package com.example.e_commerce;
 
 import android.content.Context;
@@ -8,6 +6,7 @@ import android.content.SharedPreferences;
 
 public class SharedPrefManager {
 
+    // Tên file SharedPreferences và các khóa (key) dùng để lưu thông tin tài khoản
     private static final String PREF_NAME = "user_prefs";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
     private static final String KEY_EMAIL = "email";
@@ -16,6 +15,7 @@ public class SharedPrefManager {
     private static final String KEY_PHONE = "phone";
     private static final String KEY_ADDRESS = "address";
 
+    // Khai báo đối tượng Singleton và công cụ đọc/ghi SharedPreferences
     private static SharedPrefManager instance;
     private final SharedPreferences sharedPreferences;
     private final SharedPreferences.Editor editor;
@@ -34,7 +34,7 @@ public class SharedPrefManager {
         return instance;
     }
 
-    // Lưu thông tin tài khoản vào bộ nhớ tạm sau khi đăng nhập thành công
+    // Lưu đầy đủ thông tin tài khoản vào bộ nhớ tạm sau khi đăng nhập thành công
     public void saveUser(String email, String username, String avatar, String phone, String address) {
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
         editor.putString(KEY_EMAIL, email);
@@ -45,7 +45,7 @@ public class SharedPrefManager {
         editor.apply();
     }
 
-    // Lưu thông tin tài khoản vào bộ nhớ tạm
+    // Hàm nạp chồng: lưu thông tin cơ bản khi chưa có số điện thoại và địa chỉ
     public void saveUser(String email, String username, String avatar) {
         saveUser(email, username, avatar, "", "");
     }

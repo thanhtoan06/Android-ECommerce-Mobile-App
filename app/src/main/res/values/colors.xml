@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Khai báo bảng màu dùng chung cho toàn bộ ứng dụng. -->
 <resources>
     <color name="black">#FF0F172A</color>
     <color name="white">#FFFFFFFF</color>
