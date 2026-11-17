@@ -39,6 +39,7 @@ public class CheckoutActivity extends AppCompatActivity {
     private String currentUserEmail;
     private List<CartItem> cartItems;
     private long totalAmount = 0;
+    private DatabaseHelper databaseHelper;
 
     // Hàm chạy đầu tiên khi mở màn hình thanh toán: kết nối giao diện, điền sẵn thông tin và tải tóm tắt giỏ hàng
     @Override
@@ -48,6 +49,7 @@ public class CheckoutActivity extends AppCompatActivity {
 
         // Khởi tạo đối tượng kết nối Firestore, SharedPreferences và lấy email người dùng
         repository = FirestoreRepository.getInstance();
+        databaseHelper = DatabaseHelper.getInstance(this);
         prefManager = SharedPrefManager.getInstance(this);
         currentUserEmail = prefManager.getEmail();
 
@@ -212,6 +214,7 @@ public class CheckoutActivity extends AppCompatActivity {
         }
 
         // Gửi yêu cầu tạo đơn hàng lên Firestore và cập nhật lại SĐT, địa chỉ cho tài khoản
+        databaseHelper.createOrder(currentUserEmail, name, phone, address, note, paymentMethod, cartItems);
         repository.createOrder(currentUserEmail, name, phone, address, note, paymentMethod, cartItems,
                 new FirestoreRepository.OrderCallback() {
                     @Override
@@ -223,8 +226,10 @@ public class CheckoutActivity extends AppCompatActivity {
                         // Lưu lại số điện thoại và địa chỉ mới nhất vào hồ sơ tài khoản để tiện cho lần mua sau
                         repository.updateUser(currentUserEmail, java.util.Collections.singletonMap("phone", phone),
                                 ok -> prefManager.updatePhone(phone));
+                        databaseHelper.updatePhone(currentUserEmail, phone);
                         repository.updateUser(currentUserEmail, java.util.Collections.singletonMap("address", address),
                                 ok -> prefManager.updateAddress(address));
+                        databaseHelper.updateAddress(currentUserEmail, address);
                         showOrderSuccessDialog(orderId, name, phone, address, paymentMethod);
                     }
 

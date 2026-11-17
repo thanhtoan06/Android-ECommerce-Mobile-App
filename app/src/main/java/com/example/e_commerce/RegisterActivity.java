@@ -50,11 +50,13 @@ public class RegisterActivity extends AppCompatActivity {
             } else {
                 // Kiểm tra trùng email và lưu tài khoản mới lên Firestore
                 FirestoreRepository repository = FirestoreRepository.getInstance();
+                DatabaseHelper databaseHelper = DatabaseHelper.getInstance(this);
                 repository.checkEmailExists(email, exists -> {
                     if (exists) {
                         Toast.makeText(this, "Email này đã được đăng ký! Vui lòng chọn email khác.", Toast.LENGTH_LONG).show();
                     } else {
                         // Tiến hành tạo tài khoản mới trên Firestore và quay về màn hình Đăng nhập nếu thành công
+                        databaseHelper.registerUser(name, email, pass, phone);
                         repository.registerUser(name, email, pass, phone, success -> {
                             Toast.makeText(this, success ? "Đăng ký thành công! Vui lòng đăng nhập." : "Đăng ký thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
                             if (success) finish();

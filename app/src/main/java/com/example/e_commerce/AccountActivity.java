@@ -21,6 +21,7 @@ public class AccountActivity extends AppCompatActivity {
     // Khai báo biến quản lý phiên đăng nhập, kho dữ liệu Firestore và các TextView hiển thị thông tin
     private SharedPrefManager prefManager;
     private FirestoreRepository repository;
+    private DatabaseHelper databaseHelper;
     private TextView tvAccountName, tvDetailUsername, tvDetailPhone, tvDetailAddress;
 
     // Hàm chạy đầu tiên khi mở màn hình Tài khoản: hiển thị thông tin người dùng và gắn sự kiện các nút
@@ -31,6 +32,7 @@ public class AccountActivity extends AppCompatActivity {
 
         // Khởi tạo đối tượng kết nối Firestore và SharedPreferences
         repository = FirestoreRepository.getInstance();
+        databaseHelper = DatabaseHelper.getInstance(this);
         prefManager = SharedPrefManager.getInstance(this);
 
         // Kết nối các biến Java với các thành phần trên giao diện
@@ -185,6 +187,7 @@ public class AccountActivity extends AppCompatActivity {
                 if (exists) { Toast.makeText(this, "Tên đăng nhập này đã được sử dụng bởi tài khoản khác!", Toast.LENGTH_LONG).show(); return; }
                 java.util.Map<String, Object> values = new java.util.HashMap<>();
                 values.put("fullName", newUsername);
+                databaseHelper.updateUsername(currentEmail, newUsername);
                 repository.updateUser(currentEmail, values, ok -> {
                     if (ok) { prefManager.updateUsername(newUsername); tvAccountName.setText(newUsername); tvDetailUsername.setText(newUsername); dialog.dismiss(); }
                     Toast.makeText(this, ok ? "Đổi tên đăng nhập thành công!" : "Đổi tên đăng nhập thất bại!", Toast.LENGTH_SHORT).show();
@@ -251,6 +254,7 @@ public class AccountActivity extends AppCompatActivity {
                 if (ok) { prefManager.updatePhone(newPhone); tvDetailPhone.setText(newPhone); dialog.dismiss(); }
                 Toast.makeText(this, ok ? "Cập nhật số điện thoại thành công!" : "Cập nhật số điện thoại thất bại!", Toast.LENGTH_SHORT).show();
             });
+            databaseHelper.updatePhone(currentEmail, newPhone);
         });
 
         dialog.show();
@@ -306,6 +310,7 @@ public class AccountActivity extends AppCompatActivity {
                 if (ok) { prefManager.updateAddress(newAddress); tvDetailAddress.setText(newAddress); dialog.dismiss(); }
                 Toast.makeText(this, ok ? "Cập nhật địa chỉ thành công!" : "Cập nhật địa chỉ thất bại!", Toast.LENGTH_SHORT).show();
             });
+            databaseHelper.updateAddress(currentEmail, newAddress);
         });
 
         dialog.show();
@@ -372,6 +377,7 @@ public class AccountActivity extends AppCompatActivity {
                     Toast.makeText(this, ok ? "Đổi mật khẩu thành công!" : "Đổi mật khẩu thất bại!", Toast.LENGTH_SHORT).show();
                     if (ok) dialog.dismiss();
                 });
+                databaseHelper.updatePassword(currentEmail, newPass);
             });
         });
 

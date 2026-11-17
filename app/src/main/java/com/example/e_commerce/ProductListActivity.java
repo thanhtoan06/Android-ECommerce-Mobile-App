@@ -26,12 +26,16 @@ public class ProductListActivity extends AppCompatActivity {
     private Product[] allProducts = new Product[0];      // Toàn bộ sản phẩm lấy từ Firestore
     private Product[] filteredProducts = new Product[0]; // Danh sách sản phẩm sau khi lọc theo danh mục
     private String selectedCategory = "Tất cả";          // Danh mục đang được chọn
+    private DatabaseHelper databaseHelper;
 
     // Hàm chạy đầu tiên khi mở màn hình chính: hiển thị tên + email, tải sản phẩm và gắn sự kiện bấm
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_list);
+        // Khởi tạo SQLite song song; Firestore vẫn là nguồn dữ liệu chính để hiển thị.
+        databaseHelper = DatabaseHelper.getInstance(this);
+        databaseHelper.getReadableDatabase();
 
         // Lấy thông tin người dùng đang đăng nhập từ SharedPreferences
         SharedPrefManager prefManager = SharedPrefManager.getInstance(this);

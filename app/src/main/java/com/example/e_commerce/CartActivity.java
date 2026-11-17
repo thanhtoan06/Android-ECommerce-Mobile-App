@@ -35,6 +35,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     private final List<CartItem> cartItemList = new ArrayList<>();
     private CartAdapter adapter;
     private FirestoreRepository repository;
+    private DatabaseHelper databaseHelper;
     private String currentUserEmail;
 
     // Hàm chạy đầu tiên khi mở màn hình Giỏ hàng: kết nối giao diện và gắn sự kiện các nút bấm
@@ -45,6 +46,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
 
         // Khởi tạo đối tượng kết nối Firestore và lấy email tài khoản đang đăng nhập
         repository = FirestoreRepository.getInstance();
+        databaseHelper = DatabaseHelper.getInstance(this);
         currentUserEmail = SharedPrefManager.getInstance(this).getEmail();
 
         // Kết nối các biến Java với các thành phần trên giao diện
@@ -87,6 +89,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                     .setTitle("Xóa giỏ hàng")
                     .setMessage("Bạn có chắc chắn muốn xóa toàn bộ sản phẩm khỏi giỏ hàng?")
                     .setPositiveButton("Xóa tất cả", (dialog, which) -> {
+                        databaseHelper.clearCart(currentUserEmail);
                         repository.clearCart(currentUserEmail, success -> {
                             loadCartData();
                             Toast.makeText(this, "Đã xóa toàn bộ giỏ hàng!", Toast.LENGTH_SHORT).show();
@@ -176,12 +179,14 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                     .setTitle("Xóa sản phẩm")
                     .setMessage("Bạn có muốn xóa \"" + item.getProduct().getName() + "\" khỏi giỏ hàng?")
                     .setPositiveButton("Xóa", (dialog, which) -> {
+                        databaseHelper.removeCartItem(item.getId());
                         repository.removeCartItem(currentUserEmail, item.getProduct().getId(), success -> loadCartData());
                     })
                     .setNegativeButton("Giữ lại", null)
                     .show();
         } else {
             // Cập nhật số lượng mới lên Firestore rồi tải lại giỏ hàng
+            databaseHelper.updateCartQuantity(item.getId(), newQuantity);
             repository.updateCartQuantity(currentUserEmail, item.getProduct().getId(), newQuantity, success -> loadCartData());
         }
     }
@@ -193,6 +198,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                 .setTitle("Xóa sản phẩm")
                 .setMessage("Bạn có muốn xóa \"" + item.getProduct().getName() + "\" khỏi giỏ hàng?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
+                    databaseHelper.removeCartItem(item.getId());
                     repository.removeCartItem(currentUserEmail, item.getProduct().getId(), success -> loadCartData());
                     Toast.makeText(this, "Đã xóa sản phẩm khỏi giỏ hàng!", Toast.LENGTH_SHORT).show();
                 })

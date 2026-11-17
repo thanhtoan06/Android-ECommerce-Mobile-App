@@ -15,12 +15,14 @@ public class ProductDetailActivity extends AppCompatActivity {
     // Khai báo khóa truyền mã sản phẩm qua Intent và TextView hiển thị số lượng trên biểu tượng giỏ hàng
     public static final String EXTRA_PRODUCT_ID = "extra_product_id";
     private TextView tvHeaderCartCount;
+    private DatabaseHelper databaseHelper;
 
     // Hàm chạy đầu tiên khi mở màn hình chi tiết: tải thông tin sản phẩm và gắn sự kiện nút mua
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_detail);
+        databaseHelper = DatabaseHelper.getInstance(this);
 
         // Kết nối các biến Java với các thành phần trên giao diện
         TextView tvBack = findViewById(R.id.tvBack);
@@ -63,6 +65,7 @@ public class ProductDetailActivity extends AppCompatActivity {
                 // 1. Nút "Thêm vào giỏ": lưu sản phẩm vào collection carts trên Firestore
                 btnAddToCart.setOnClickListener(v -> {
                     String userEmail = SharedPrefManager.getInstance(ProductDetailActivity.this).getEmail();
+                    databaseHelper.addToCart(userEmail, product.getId(), 1);
                     FirestoreRepository.getInstance().addToCart(userEmail, product.getId(), 1, success -> {
                         if (success) {
                             updateCartBadge();
@@ -83,6 +86,7 @@ public class ProductDetailActivity extends AppCompatActivity {
                 // 2. Nút "Mua ngay": thêm vào giỏ trên Firestore rồi mở màn hình Giỏ hàng
                 btnBuyNow.setOnClickListener(v -> {
                     String userEmail = SharedPrefManager.getInstance(ProductDetailActivity.this).getEmail();
+                    databaseHelper.addToCart(userEmail, product.getId(), 1);
                     FirestoreRepository.getInstance().addToCart(userEmail, product.getId(), 1,
                             success -> startActivity(new Intent(ProductDetailActivity.this, CartActivity.class)));
                 });
