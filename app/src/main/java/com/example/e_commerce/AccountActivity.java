@@ -22,7 +22,7 @@ public class AccountActivity extends AppCompatActivity {
 
     private SharedPrefManager prefManager;
     private DatabaseHelper dbHelper;
-    private TextView tvAccountName, tvDetailUsername;
+    private TextView tvAccountName, tvDetailUsername, tvDetailPhone, tvDetailAddress;
 
     // Hàm chạy đầu tiên khi mở màn hình Tài khoản: hiển thị thông tin người dùng và gắn sự kiện các nút
     @Override
@@ -40,32 +40,74 @@ public class AccountActivity extends AppCompatActivity {
         TextView tvAccountEmail = findViewById(R.id.tvAccountEmail);
         tvDetailUsername = findViewById(R.id.tvDetailUsername);
         TextView tvDetailEmail = findViewById(R.id.tvDetailEmail);
+        tvDetailPhone = findViewById(R.id.tvDetailPhone);
+        tvDetailAddress = findViewById(R.id.tvDetailAddress);
         Button btnLogout = findViewById(R.id.btnLogout);
 
         View layoutUsernameRow = findViewById(R.id.layoutUsernameRow);
+        View layoutPhoneRow = findViewById(R.id.layoutPhoneRow);
+        View layoutAddressRow = findViewById(R.id.layoutAddressRow);
+
         View btnChangeUsername = findViewById(R.id.btnChangeUsername);
+        View btnChangePhone = findViewById(R.id.btnChangePhone);
+        View btnChangeAddress = findViewById(R.id.btnChangeAddress);
         View btnChangePassword = findViewById(R.id.btnChangePassword);
 
-        // Đọc thông tin người dùng đang đăng nhập từ SharedPreferences
+        // Đọc thông tin người dùng đang đăng nhập từ SharedPreferences và SQLite
         String username = prefManager.getUsername();
         String email = prefManager.getEmail();
         String avatar = prefManager.getAvatar();
 
-        // Hiển thị avatar mặc định, tên và email lên giao diện
+        User currentUser = dbHelper.getUserByEmail(email);
+        String phone = "";
+        String address = "";
+        if (currentUser != null) {
+            phone = currentUser.getPhone();
+            address = currentUser.getAddress();
+            if (currentUser.getFullName() != null && !currentUser.getFullName().isEmpty()) {
+                username = currentUser.getFullName();
+            }
+        } else {
+            phone = prefManager.getPhone();
+            address = prefManager.getAddress();
+        }
+
+        // Hiển thị avatar mặc định, tên, email, sđt và địa chỉ lên giao diện
         tvAvatar.setText(avatar);
         String displayName = !username.isEmpty() ? username : (!email.isEmpty() ? email : "Người dùng");
         tvAccountName.setText(displayName);
         tvAccountEmail.setText(!email.isEmpty() ? email : "Chưa cập nhật email");
         tvDetailUsername.setText(!username.isEmpty() ? username : "Chưa thiết lập");
         tvDetailEmail.setText(!email.isEmpty() ? email : "Chưa thiết lập");
+        tvDetailPhone.setText(!phone.isEmpty() ? phone : "Chưa thiết lập");
+        tvDetailAddress.setText(!address.isEmpty() ? address : "Chưa thiết lập");
 
         // Nút mũi tên quay lại màn hình trước
         tvBack.setOnClickListener(v -> finish());
 
-        // Mở dialog đổi tên đăng nhập khi bấm vào nút trong Cài đặt hoặc dòng Tên tài khoản
-        View.OnClickListener changeUsernameListener = v -> showChangeUsernameDialog();
-        if (btnChangeUsername != null) btnChangeUsername.setOnClickListener(changeUsernameListener);
-        if (layoutUsernameRow != null) layoutUsernameRow.setOnClickListener(changeUsernameListener);
+        // Mở dialog đổi tên đăng nhập
+        if (btnChangeUsername != null) {
+            btnChangeUsername.setOnClickListener(v -> showChangeUsernameDialog());
+        }
+        if (layoutUsernameRow != null) {
+            layoutUsernameRow.setOnClickListener(v -> showChangeUsernameDialog());
+        }
+
+        // Mở dialog cập nhật số điện thoại
+        if (btnChangePhone != null) {
+            btnChangePhone.setOnClickListener(v -> showChangePhoneDialog());
+        }
+        if (layoutPhoneRow != null) {
+            layoutPhoneRow.setOnClickListener(v -> showChangePhoneDialog());
+        }
+
+        // Mở dialog cập nhật địa chỉ nhận hàng
+        if (btnChangeAddress != null) {
+            btnChangeAddress.setOnClickListener(v -> showChangeAddressDialog());
+        }
+        if (layoutAddressRow != null) {
+            layoutAddressRow.setOnClickListener(v -> showChangeAddressDialog());
+        }
 
         // Mở dialog đổi mật khẩu
         if (btnChangePassword != null) {
@@ -152,6 +194,117 @@ public class AccountActivity extends AppCompatActivity {
                 dialog.dismiss();
             } else {
                 Toast.makeText(this, "Đổi tên đăng nhập thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.show();
+    }
+
+    // Hiển thị hộp thoại cập nhật số điện thoại
+    private void showChangePhoneDialog() {
+        String currentEmail = prefManager.getEmail();
+        User user = dbHelper.getUserByEmail(currentEmail);
+        String currentPhone = (user != null && !user.getPhone().isEmpty()) ? user.getPhone() : prefManager.getPhone();
+
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_change_phone, null);
+        EditText edtNewPhone = dialogView.findViewById(R.id.edtNewPhone);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancelPhone);
+        Button btnSave = dialogView.findViewById(R.id.btnSavePhone);
+
+        if (!currentPhone.isEmpty()) {
+            edtNewPhone.setText(currentPhone);
+            edtNewPhone.setSelection(currentPhone.length());
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String newPhone = edtNewPhone.getText().toString().trim();
+
+            if (newPhone.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập số điện thoại!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (newPhone.length() < 9 || newPhone.length() > 11) {
+                Toast.makeText(this, "Số điện thoại không hợp lệ (9 - 11 chữ số)!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (newPhone.equals(currentPhone.trim())) {
+                Toast.makeText(this, "Số điện thoại mới không có thay đổi!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            boolean isUpdated = dbHelper.updatePhone(currentEmail, newPhone);
+            if (isUpdated) {
+                prefManager.updatePhone(newPhone);
+                tvDetailPhone.setText(newPhone);
+                Toast.makeText(this, "Cập nhật số điện thoại thành công!", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            } else {
+                Toast.makeText(this, "Cập nhật số điện thoại thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.show();
+    }
+
+    // Hiển thị hộp thoại cập nhật địa chỉ giao hàng
+    private void showChangeAddressDialog() {
+        String currentEmail = prefManager.getEmail();
+        User user = dbHelper.getUserByEmail(currentEmail);
+        String currentAddress = (user != null && !user.getAddress().isEmpty()) ? user.getAddress() : prefManager.getAddress();
+
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_change_address, null);
+        EditText edtNewAddress = dialogView.findViewById(R.id.edtNewAddress);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancelAddress);
+        Button btnSave = dialogView.findViewById(R.id.btnSaveAddress);
+
+        if (!currentAddress.isEmpty()) {
+            edtNewAddress.setText(currentAddress);
+            edtNewAddress.setSelection(currentAddress.length());
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String newAddress = edtNewAddress.getText().toString().trim();
+
+            if (newAddress.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập địa chỉ nhận hàng!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (newAddress.equalsIgnoreCase(currentAddress.trim())) {
+                Toast.makeText(this, "Địa chỉ mới không có thay đổi!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            boolean isUpdated = dbHelper.updateAddress(currentEmail, newAddress);
+            if (isUpdated) {
+                prefManager.updateAddress(newAddress);
+                tvDetailAddress.setText(newAddress);
+                Toast.makeText(this, "Cập nhật địa chỉ thành công!", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            } else {
+                Toast.makeText(this, "Cập nhật địa chỉ thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
             }
         });
 

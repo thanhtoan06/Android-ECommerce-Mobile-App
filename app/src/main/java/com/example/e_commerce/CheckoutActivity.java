@@ -71,6 +71,32 @@ public class CheckoutActivity extends AppCompatActivity {
             etReceiverName.setText(savedUsername);
         }
 
+        // Tự động điền sẵn số điện thoại và địa chỉ nếu người dùng đã cập nhật trước đó
+        User currentUser = databaseHelper.getUserByEmail(currentUserEmail);
+        String savedPhone = "";
+        String savedAddress = "";
+        if (currentUser != null) {
+            savedPhone = currentUser.getPhone();
+            savedAddress = currentUser.getAddress();
+            if ((savedUsername == null || savedUsername.isEmpty() || "Người dùng".equals(savedUsername))
+                    && currentUser.getFullName() != null && !currentUser.getFullName().isEmpty()) {
+                etReceiverName.setText(currentUser.getFullName());
+            }
+        }
+        if (savedPhone == null || savedPhone.isEmpty()) {
+            savedPhone = prefManager.getPhone();
+        }
+        if (savedAddress == null || savedAddress.isEmpty()) {
+            savedAddress = prefManager.getAddress();
+        }
+
+        if (savedPhone != null && !savedPhone.trim().isEmpty()) {
+            etReceiverPhone.setText(savedPhone.trim());
+        }
+        if (savedAddress != null && !savedAddress.trim().isEmpty()) {
+            etReceiverAddress.setText(savedAddress.trim());
+        }
+
         // Ẩn/hiện thông tin chuyển khoản ngân hàng khi người dùng đổi phương thức thanh toán
         rgPaymentMethods.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbBankTransfer) {
@@ -181,6 +207,20 @@ public class CheckoutActivity extends AppCompatActivity {
         );
 
         if (orderId != -1) {
+            // Tự động lưu SĐT và Địa chỉ vào tài khoản nếu người dùng chưa cập nhật trước đó
+            if (currentUserEmail != null && !currentUserEmail.isEmpty() && !"guest@cart.local".equalsIgnoreCase(currentUserEmail)) {
+                User user = databaseHelper.getUserByEmail(currentUserEmail);
+                if (user != null) {
+                    if (user.getPhone().isEmpty() && !phone.isEmpty()) {
+                        databaseHelper.updatePhone(currentUserEmail, phone);
+                        prefManager.updatePhone(phone);
+                    }
+                    if (user.getAddress().isEmpty() && !address.isEmpty()) {
+                        databaseHelper.updateAddress(currentUserEmail, address);
+                        prefManager.updateAddress(address);
+                    }
+                }
+            }
             showOrderSuccessDialog(orderId, name, phone, address, paymentMethod);
         } else {
             Toast.makeText(this, "Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại!", Toast.LENGTH_LONG).show();

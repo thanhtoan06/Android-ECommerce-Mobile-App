@@ -18,7 +18,7 @@ import java.util.Locale;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "ecommerce.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     // Tên bảng và các cột của bảng Người dùng (users)
     public static final String TABLE_USERS = "users";
@@ -27,6 +27,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_EMAIL = "email";
     public static final String COLUMN_PASSWORD = "password";
     public static final String COLUMN_AVATAR = "avatar";
+    public static final String COLUMN_PHONE = "phone";
+    public static final String COLUMN_ADDRESS = "address";
 
     // Tên bảng và các cột của bảng Sản phẩm (products)
     public static final String TABLE_PRODUCTS = "products";
@@ -91,7 +93,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_FULL_NAME + " TEXT NOT NULL, "
                 + COLUMN_EMAIL + " TEXT UNIQUE NOT NULL, "
                 + COLUMN_PASSWORD + " TEXT NOT NULL, "
-                + COLUMN_AVATAR + " TEXT DEFAULT '👤'"
+                + COLUMN_AVATAR + " TEXT DEFAULT '👤', "
+                + COLUMN_PHONE + " TEXT, "
+                + COLUMN_ADDRESS + " TEXT"
                 + ")";
         db.execSQL(createUsersQuery);
 
@@ -101,25 +105,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         createOrdersTable(db);
     }
 
-    // Tự động chạy khi nâng cấp DATABASE_VERSION: xóa bảng cũ và tạo lại cấu trúc bảng mới gọn sạch
+    // Tự động chạy khi nâng cấp DATABASE_VERSION
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ORDER_ITEMS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ORDERS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CART);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_PRODUCTS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
-        onCreate(db);
+        if (oldVersion < 5) {
+            ensureUserColumns(db);
+        } else {
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_ORDER_ITEMS);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_ORDERS);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_CART);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_PRODUCTS);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
+            onCreate(db);
+        }
     }
 
     // Chạy mỗi khi mở database: đảm bảo các bảng luôn tồn tại và có sẵn dữ liệu sản phẩm
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
+        ensureUserColumns(db);
         createProductsTable(db);
         createCartTable(db);
         createOrdersTable(db);
         checkAndSeedProductsIfEmpty(db);
+    }
+
+    private void ensureUserColumns(SQLiteDatabase db) {
+        try {
+            db.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN " + COLUMN_PHONE + " TEXT");
+        } catch (Exception ignored) {}
+        try {
+            db.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN " + COLUMN_ADDRESS + " TEXT");
+        } catch (Exception ignored) {}
     }
 
     // Tạo bảng lưu danh sách sản phẩm (products)
@@ -512,8 +530,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Lưu thông tin tài khoản mới vào bảng users với avatar mặc định
-    public boolean registerUser(String fullName, String email, String password) {
+    // Lưu thông tin tài khoản mới vào bảng users với avatar mặc định (kèm SĐT)
+    public boolean registerUser(String fullName, String email, String password, String phone) {
         if (checkEmailExists(email)) return false;
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -521,7 +539,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_EMAIL, email.trim().toLowerCase());
         values.put(COLUMN_PASSWORD, password);
         values.put(COLUMN_AVATAR, "👤");
+        values.put(COLUMN_PHONE, phone != null ? phone.trim() : "");
+        values.put(COLUMN_ADDRESS, "");
         return db.insert(TABLE_USERS, null, values) != -1;
+    }
+
+    // Lưu thông tin tài khoản mới (tương thích ngược)
+    public boolean registerUser(String fullName, String email, String password) {
+        return registerUser(fullName, email, password, "");
     }
 
     // Kiểm tra đăng nhập (cho phép nhập email, họ tên hoặc tên trước dấu @) và trả về đối tượng User
@@ -533,7 +558,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         try {
             cursor = db.query(TABLE_USERS,
-                    new String[]{COLUMN_ID, COLUMN_FULL_NAME, COLUMN_EMAIL, COLUMN_PASSWORD, COLUMN_AVATAR},
+                    null,
                     "(LOWER(" + COLUMN_EMAIL + ") = ? OR LOWER(" + COLUMN_FULL_NAME + ") = ? OR LOWER(" + COLUMN_EMAIL + ") LIKE ?) AND " + COLUMN_PASSWORD + " = ?",
                     new String[]{cleanAccount, cleanAccount, prefixMatch, password},
                     null, null, null);
@@ -546,7 +571,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String avatar = "👤";
                 int avatarIndex = cursor.getColumnIndex(COLUMN_AVATAR);
                 if (avatarIndex != -1 && !cursor.isNull(avatarIndex)) avatar = cursor.getString(avatarIndex);
-                return new User(id, fullName, userEmail, userPassword, avatar);
+
+                String phone = "";
+                int phoneIndex = cursor.getColumnIndex(COLUMN_PHONE);
+                if (phoneIndex != -1 && !cursor.isNull(phoneIndex)) phone = cursor.getString(phoneIndex);
+
+                String address = "";
+                int addressIndex = cursor.getColumnIndex(COLUMN_ADDRESS);
+                if (addressIndex != -1 && !cursor.isNull(addressIndex)) address = cursor.getString(addressIndex);
+
+                return new User(id, fullName, userEmail, userPassword, avatar, phone, address);
             }
             return null;
         } finally {
@@ -561,7 +595,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = null;
         try {
             cursor = db.query(TABLE_USERS,
-                    new String[]{COLUMN_ID, COLUMN_FULL_NAME, COLUMN_EMAIL, COLUMN_PASSWORD, COLUMN_AVATAR},
+                    null,
                     "LOWER(" + COLUMN_EMAIL + ") = ?",
                     new String[]{email.trim().toLowerCase()},
                     null, null, null);
@@ -573,7 +607,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String avatar = "👤";
                 int avatarIndex = cursor.getColumnIndex(COLUMN_AVATAR);
                 if (avatarIndex != -1 && !cursor.isNull(avatarIndex)) avatar = cursor.getString(avatarIndex);
-                return new User(id, fullName, userEmail, userPassword, avatar);
+
+                String phone = "";
+                int phoneIndex = cursor.getColumnIndex(COLUMN_PHONE);
+                if (phoneIndex != -1 && !cursor.isNull(phoneIndex)) phone = cursor.getString(phoneIndex);
+
+                String address = "";
+                int addressIndex = cursor.getColumnIndex(COLUMN_ADDRESS);
+                if (addressIndex != -1 && !cursor.isNull(addressIndex)) address = cursor.getString(addressIndex);
+
+                return new User(id, fullName, userEmail, userPassword, avatar, phone, address);
             }
             return null;
         } finally {
@@ -621,6 +664,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_FULL_NAME, newUsername.trim());
+        int rows = db.update(TABLE_USERS, values,
+                "LOWER(" + COLUMN_EMAIL + ") = ?",
+                new String[]{email.trim().toLowerCase()});
+        return rows > 0;
+    }
+
+    // Cập nhật số điện thoại cho người dùng
+    public boolean updatePhone(String email, String newPhone) {
+        if (email == null) return false;
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_PHONE, newPhone != null ? newPhone.trim() : "");
+        int rows = db.update(TABLE_USERS, values,
+                "LOWER(" + COLUMN_EMAIL + ") = ?",
+                new String[]{email.trim().toLowerCase()});
+        return rows > 0;
+    }
+
+    // Cập nhật địa chỉ cho người dùng
+    public boolean updateAddress(String email, String newAddress) {
+        if (email == null) return false;
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ADDRESS, newAddress != null ? newAddress.trim() : "");
         int rows = db.update(TABLE_USERS, values,
                 "LOWER(" + COLUMN_EMAIL + ") = ?",
                 new String[]{email.trim().toLowerCase()});

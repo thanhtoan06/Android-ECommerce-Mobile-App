@@ -54,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
             User user = DatabaseHelper.getInstance(LoginActivity.this).checkLogin(account, password);
             if (user != null) {
                 // Nếu đúng: Lưu thông tin người dùng vào bộ nhớ tạm (SharedPreferences) để dùng cho các trang sau
-                prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar());
+                prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(), user.getAddress());
                 Toast.makeText(LoginActivity.this, "Đăng nhập thành công! Xin chào " + user.getFullName(), Toast.LENGTH_SHORT).show();
 
                 // Chuyển sang màn hình danh sách sản phẩm và đóng trang đăng nhập

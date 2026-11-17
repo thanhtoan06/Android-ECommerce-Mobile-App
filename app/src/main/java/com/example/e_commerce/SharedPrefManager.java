@@ -13,6 +13,8 @@ public class SharedPrefManager {
     private static final String KEY_EMAIL = "email";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_AVATAR = "avatar";
+    private static final String KEY_PHONE = "phone";
+    private static final String KEY_ADDRESS = "address";
 
     private static SharedPrefManager instance;
     private final SharedPreferences sharedPreferences;
@@ -33,17 +35,36 @@ public class SharedPrefManager {
     }
 
     // Lưu thông tin tài khoản vào bộ nhớ tạm sau khi đăng nhập thành công
-    public void saveUser(String email, String username, String avatar) {
+    public void saveUser(String email, String username, String avatar, String phone, String address) {
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
         editor.putString(KEY_EMAIL, email);
         editor.putString(KEY_USERNAME, username);
         editor.putString(KEY_AVATAR, (avatar != null && !avatar.isEmpty()) ? avatar : "👤");
+        editor.putString(KEY_PHONE, phone != null ? phone : "");
+        editor.putString(KEY_ADDRESS, address != null ? address : "");
         editor.apply();
+    }
+
+    // Lưu thông tin tài khoản vào bộ nhớ tạm
+    public void saveUser(String email, String username, String avatar) {
+        saveUser(email, username, avatar, "", "");
     }
 
     // Cập nhật lại tên tài khoản / tên đăng nhập trong bộ nhớ tạm
     public void updateUsername(String username) {
         editor.putString(KEY_USERNAME, username);
+        editor.apply();
+    }
+
+    // Cập nhật lại số điện thoại trong bộ nhớ tạm
+    public void updatePhone(String phone) {
+        editor.putString(KEY_PHONE, phone != null ? phone : "");
+        editor.apply();
+    }
+
+    // Cập nhật lại địa chỉ trong bộ nhớ tạm
+    public void updateAddress(String address) {
+        editor.putString(KEY_ADDRESS, address != null ? address : "");
         editor.apply();
     }
 
@@ -65,6 +86,16 @@ public class SharedPrefManager {
     // Lấy biểu tượng avatar mặc định của người dùng đang đăng nhập
     public String getAvatar() {
         return sharedPreferences.getString(KEY_AVATAR, "👤");
+    }
+
+    // Lấy số điện thoại của người dùng đang đăng nhập
+    public String getPhone() {
+        return sharedPreferences.getString(KEY_PHONE, "");
+    }
+
+    // Lấy địa chỉ của người dùng đang đăng nhập
+    public String getAddress() {
+        return sharedPreferences.getString(KEY_ADDRESS, "");
     }
 
     // Xóa toàn bộ thông tin phiên đăng nhập khi người dùng bấm Đăng xuất
