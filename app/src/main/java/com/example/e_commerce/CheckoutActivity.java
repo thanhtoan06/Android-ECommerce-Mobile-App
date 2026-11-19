@@ -514,7 +514,7 @@ public class CheckoutActivity extends AppCompatActivity {
             etReceiverPhone.requestFocus();
             return;
         }
-        if (phone.length() < 9 || phone.length() > 11) {
+        if (!PhoneNumberRules.isValid(phone)) {
             etReceiverPhone.setError("Số điện thoại không hợp lệ (9 - 11 chữ số)!");
             etReceiverPhone.requestFocus();
             return;

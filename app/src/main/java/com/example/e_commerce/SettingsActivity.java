@@ -166,27 +166,38 @@ public class SettingsActivity extends AppCompatActivity {
                 return;
             }
 
-            repository.checkUsernameExists(newUsername, currentEmail, exists -> {
-                if (exists) {
-                    Toast.makeText(this, "Tên đăng nhập này đã được sử dụng bởi tài khoản khác!", Toast.LENGTH_LONG)
-                            .show();
-                    return;
-                }
-
-                Map<String, Object> values = new HashMap<>();
-                values.put("fullName", newUsername);
-                repository.updateUser(currentEmail, values, ok -> {
-                    if (!ok) {
-                        Toast.makeText(this, "Đổi tên đăng nhập thất bại!", Toast.LENGTH_SHORT).show();
+            repository.checkUsernameExists(newUsername, currentEmail, new FirestoreRepository.UsernameCallback() {
+                @Override
+                public void onResult(boolean exists) {
+                    if (exists) {
+                        Toast.makeText(SettingsActivity.this,
+                                "Tên đăng nhập này đã được sử dụng bởi tài khoản khác!", Toast.LENGTH_LONG).show();
                         return;
                     }
 
-                    prefManager.updateUsername(newUsername);
-                    tvAccountName.setText(newUsername);
-                    tvDetailUsername.setText(newUsername);
-                    dialog.dismiss();
-                    Toast.makeText(this, "Đổi tên đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                });
+                    Map<String, Object> values = new HashMap<>();
+                    values.put("fullName", newUsername);
+                    repository.updateUser(currentEmail, values, ok -> {
+                        if (!ok) {
+                            Toast.makeText(SettingsActivity.this, "Đổi tên đăng nhập thất bại!", Toast.LENGTH_SHORT)
+                                    .show();
+                            return;
+                        }
+
+                        prefManager.updateUsername(newUsername);
+                        tvAccountName.setText(newUsername);
+                        tvDetailUsername.setText(newUsername);
+                        dialog.dismiss();
+                        Toast.makeText(SettingsActivity.this, "Đổi tên đăng nhập thành công!", Toast.LENGTH_SHORT)
+                                .show();
+                    });
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    Toast.makeText(SettingsActivity.this, "Không thể kiểm tra tên đăng nhập. Vui lòng thử lại.",
+                            Toast.LENGTH_LONG).show();
+                }
             });
         });
 
@@ -221,7 +232,7 @@ public class SettingsActivity extends AppCompatActivity {
                 Toast.makeText(this, "Vui lòng nhập số điện thoại!", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (newPhone.length() < 9 || newPhone.length() > 11) {
+            if (!PhoneNumberRules.isValid(newPhone)) {
                 Toast.makeText(this, "Số điện thoại không hợp lệ (9 - 11 chữ số)!", Toast.LENGTH_SHORT).show();
                 return;
             }

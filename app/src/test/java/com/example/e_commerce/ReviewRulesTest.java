@@ -16,11 +16,7 @@ public class ReviewRulesTest {
     }
 
     @Test
-    public void demoOrderProgressionMatchesReviewEligibility() {
-        assertEquals("Chờ xác nhận", ReviewRules.nextDemoStatus("Đặt hàng thành công"));
-        assertEquals("Đang giao", ReviewRules.nextDemoStatus("Chờ xác nhận"));
-        assertEquals("Đã giao", ReviewRules.nextDemoStatus("Đang giao"));
-        assertEquals(null, ReviewRules.nextDemoStatus("Đã giao"));
+    public void deliveredStatusIsRecognizedForReviewEligibility() {
         assertTrue(ReviewRules.isDelivered("Đã giao"));
         assertFalse(ReviewRules.isDelivered("Đang giao"));
     }

@@ -16,6 +16,11 @@ public class Order implements Serializable {
     private String note;
     private String paymentMethod;
     private long totalAmount;
+    private long itemsSubtotal = -1;
+    private long productDiscount;
+    private long shippingFee = -1;
+    private long shippingDiscount;
+    private long pointsDiscount;
     private String orderDate;
     private String status;
     private Date deliveredAt;
@@ -100,6 +105,46 @@ public class Order implements Serializable {
 
     public void setTotalAmount(long totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public long getItemsSubtotal() {
+        return itemsSubtotal;
+    }
+
+    public void setItemsSubtotal(long itemsSubtotal) {
+        this.itemsSubtotal = itemsSubtotal;
+    }
+
+    public long getProductDiscount() {
+        return productDiscount;
+    }
+
+    public void setProductDiscount(long productDiscount) {
+        this.productDiscount = productDiscount;
+    }
+
+    public long getShippingFee() {
+        return shippingFee;
+    }
+
+    public void setShippingFee(long shippingFee) {
+        this.shippingFee = shippingFee;
+    }
+
+    public long getShippingDiscount() {
+        return shippingDiscount;
+    }
+
+    public void setShippingDiscount(long shippingDiscount) {
+        this.shippingDiscount = shippingDiscount;
+    }
+
+    public long getPointsDiscount() {
+        return pointsDiscount;
+    }
+
+    public void setPointsDiscount(long pointsDiscount) {
+        this.pointsDiscount = pointsDiscount;
     }
 
     public String getOrderDate() {

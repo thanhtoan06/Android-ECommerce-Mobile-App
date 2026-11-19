@@ -46,7 +46,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
             statusFilter = requestedFilter;
         }
 
-        TextView tvBack = findViewById(R.id.tvBack);
+        ImageView tvBack = findViewById(R.id.tvBack);
         lvOrders = findViewById(R.id.lvOrders);
         layoutEmptyOrders = findViewById(R.id.layoutEmptyOrders);
         tvOrderCountBadge = findViewById(R.id.tvOrderCountBadge);

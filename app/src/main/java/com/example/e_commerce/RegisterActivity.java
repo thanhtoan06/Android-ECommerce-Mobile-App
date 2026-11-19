@@ -104,7 +104,7 @@ public class RegisterActivity extends AppCompatActivity {
             Toast.makeText(this, "Địa chỉ email không hợp lệ!", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (phone.length() < 9 || phone.length() > 11) {
+        if (!PhoneNumberRules.isValid(phone)) {
             Toast.makeText(this, "Số điện thoại không hợp lệ (9 - 11 chữ số)!", Toast.LENGTH_SHORT).show();
             return;
         }

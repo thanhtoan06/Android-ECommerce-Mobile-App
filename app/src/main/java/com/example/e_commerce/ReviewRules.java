@@ -37,19 +37,6 @@ public final class ReviewRules {
         return "Đã giao".equals(status);
     }
 
-    public static String nextDemoStatus(String currentStatus) {
-        if (currentStatus == null || currentStatus.isEmpty() || "Đặt hàng thành công".equals(currentStatus)) {
-            return "Chờ xác nhận";
-        }
-        if ("Chờ xác nhận".equals(currentStatus)) {
-            return "Đang giao";
-        }
-        if ("Đang giao".equals(currentStatus)) {
-            return "Đã giao";
-        }
-        return null;
-    }
-
     public static boolean matchesStatusFilter(String status, String filter) {
         if (FILTER_ALL.equals(filter)) {
             return true;

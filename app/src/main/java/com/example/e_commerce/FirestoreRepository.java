@@ -23,6 +23,7 @@ import java.util.Map;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -72,12 +73,6 @@ public class FirestoreRepository {
         void onError(Exception e);
     }
 
-    public interface OrderStatusCallback {
-        void onResult(String status);
-
-        void onError(Exception e);
-    }
-
     public interface OrderReturnCallback {
         void onSuccess();
 
@@ -92,6 +87,12 @@ public class FirestoreRepository {
 
     public interface OrderCallback {
         void onResult(long id);
+
+        void onError(Exception e);
+    }
+
+    public interface UsernameCallback {
+        void onResult(boolean exists);
 
         void onError(Exception e);
     }
@@ -154,23 +155,33 @@ public class FirestoreRepository {
 
     public void addToCart(String email, int productId, int quantity, BooleanCallback callback) {
         String normalized = normalizeEmail(email);
-
         String docId = normalized + "_" + productId;
+        if (productId <= 0 || quantity <= 0) {
+            callback.onResult(false);
+            return;
+        }
 
-        firestore.collection("carts").document(docId).get().addOnSuccessListener(document -> {
-
-            int current = (document.exists() && document.getLong("quantity") != null)
-                    ? document.getLong("quantity").intValue()
-                    : 0;
+        DocumentReference cartRef = firestore.collection("carts").document(docId);
+        DocumentReference productRef = firestore.collection("products").document(String.valueOf(productId));
+        firestore.runTransaction(transaction -> {
+            DocumentSnapshot cart = transaction.get(cartRef);
+            DocumentSnapshot product = transaction.get(productRef);
+            Long stock = product.getLong("stock");
+            Long existingQuantity = cart.getLong("quantity");
+            long currentQuantity = existingQuantity == null ? 0 : existingQuantity;
+            if (!product.exists() || stock == null || stock < 0 || currentQuantity < 0
+                    || quantity > stock - currentQuantity) {
+                return false;
+            }
 
             Map<String, Object> values = new HashMap<>();
             values.put("userEmail", normalized);
             values.put("productId", productId);
-            values.put("quantity", current + quantity);
-
-            firestore.collection("carts").document(docId).set(values)
-                    .addOnCompleteListener(task -> callback.onResult(task.isSuccessful()));
-        }).addOnFailureListener(e -> callback.onResult(false));
+            values.put("quantity", Math.addExact(currentQuantity, quantity));
+            transaction.set(cartRef, values);
+            return true;
+        }).addOnSuccessListener(callback::onResult)
+                .addOnFailureListener(error -> callback.onResult(false));
     }
 
     public void syncCartItem(String email, int productId, int quantity, BooleanCallback callback) {
@@ -202,39 +213,57 @@ public class FirestoreRepository {
             List<CartItem> items = new ArrayList<>();
             int totalDocs = snapshot.size();
             AtomicInteger completedCount = new AtomicInteger(0);
+            AtomicReference<Exception> loadError = new AtomicReference<>();
+            AtomicBoolean callbackDelivered = new AtomicBoolean(false);
 
             for (DocumentSnapshot cart : snapshot.getDocuments()) {
                 Long productId = cart.getLong("productId");
                 Long quantity = cart.getLong("quantity");
 
-                if (productId == null || quantity == null) {
-                    if (completedCount.incrementAndGet() == totalDocs) {
-                        callback.onResult(items);
-                    }
+                if (productId == null || productId <= 0 || productId > Integer.MAX_VALUE
+                        || quantity == null || quantity <= 0 || quantity > Integer.MAX_VALUE) {
+                    loadError.compareAndSet(null, new IllegalStateException("Dữ liệu giỏ hàng không hợp lệ."));
+                    completeCartLoad(completedCount, totalDocs, callbackDelivered, loadError, items, callback);
                     continue;
                 }
 
                 getProductById(productId.intValue(), new ProductCallback() {
                     @Override
                     public void onResult(Product product) {
-                        if (product != null) {
-                            items.add(new CartItem(product.getId(), product, quantity.intValue()));
+                        if (product == null) {
+                            loadError.compareAndSet(null,
+                                    new IllegalStateException("Không tìm thấy sản phẩm trong giỏ hàng."));
+                        } else {
+                            synchronized (items) {
+                                items.add(new CartItem(product.getId(), product, quantity.intValue()));
+                            }
                         }
-
-                        if (completedCount.incrementAndGet() == totalDocs) {
-                            callback.onResult(items);
-                        }
+                        completeCartLoad(completedCount, totalDocs, callbackDelivered, loadError, items, callback);
                     }
 
                     @Override
                     public void onError(Exception e) {
-                        if (completedCount.incrementAndGet() == totalDocs) {
-                            callback.onResult(items);
-                        }
+                        loadError.compareAndSet(null, e);
+                        completeCartLoad(completedCount, totalDocs, callbackDelivered, loadError, items, callback);
                     }
                 });
             }
         }).addOnFailureListener(callback::onError);
+    }
+
+    private void completeCartLoad(AtomicInteger completedCount, int totalDocs, AtomicBoolean callbackDelivered,
+            AtomicReference<Exception> loadError, List<CartItem> items, CartCallback callback) {
+        if (completedCount.incrementAndGet() != totalDocs || !callbackDelivered.compareAndSet(false, true)) {
+            return;
+        }
+        Exception error = loadError.get();
+        if (error != null) {
+            callback.onError(error);
+            return;
+        }
+        synchronized (items) {
+            callback.onResult(new ArrayList<>(items));
+        }
     }
 
     public void updateCartQuantity(String email, int productId, int quantity, BooleanCallback callback) {
@@ -1009,116 +1038,6 @@ public class FirestoreRepository {
         return timestamp == null ? null : timestamp.toDate();
     }
 
-    public void advanceOrderStatusForDemo(long orderId, String email, OrderStatusCallback callback) {
-        String normalizedEmail = normalizeEmail(email);
-        DocumentReference orderRef = firestore.collection("orders").document(String.valueOf(orderId));
-        getOrderItems(orderId, new OrderItemsCallback() {
-            @Override
-            public void onResult(List<OrderItem> items) {
-                if (items == null || items.isEmpty()) {
-                    callback.onError(new IllegalStateException("Đơn hàng chưa có sản phẩm để cập nhật."));
-                    return;
-                }
-
-                Map<Integer, Long> quantities = new HashMap<>();
-                Map<Integer, DocumentReference> productRefs = new HashMap<>();
-                for (OrderItem item : items) {
-                    if (item.getProductId() <= 0 || item.getQuantity() <= 0) {
-                        callback.onError(new IllegalStateException("Sản phẩm trong đơn hàng không hợp lệ."));
-                        return;
-                    }
-                    try {
-                        quantities.merge(item.getProductId(), (long) item.getQuantity(), Math::addExact);
-                    } catch (ArithmeticException error) {
-                        callback.onError(new IllegalStateException("Số lượng sản phẩm không hợp lệ.", error));
-                        return;
-                    }
-                    productRefs.put(item.getProductId(),
-                            firestore.collection("products").document(String.valueOf(item.getProductId())));
-                }
-
-                firestore.runTransaction(transaction -> {
-                    DocumentSnapshot order = transaction.get(orderRef);
-                    if (!order.exists() || !normalizedEmail.equals(order.getString("userEmail"))) {
-                        throw new IllegalStateException("Không tìm thấy đơn hàng thuộc tài khoản này.");
-                    }
-                    String currentStatus = order.getString("status");
-                    String nextStatus = ReviewRules.nextDemoStatus(currentStatus);
-                    if (nextStatus == null) {
-                        return currentStatus == null ? "" : currentStatus;
-                    }
-
-                    Map<Integer, DocumentSnapshot> productSnapshots = new HashMap<>();
-                    for (Integer productId : quantities.keySet()) {
-                        productSnapshots.put(productId, transaction.get(productRefs.get(productId)));
-                    }
-                    Map<Integer, DocumentReference> soldOrderRefs = new HashMap<>();
-                    Map<Integer, DocumentSnapshot> soldOrderMarkers = new HashMap<>();
-                    if (ReviewRules.isDelivered(nextStatus)) {
-                        for (Integer productId : quantities.keySet()) {
-                            DocumentReference soldOrderRef = productRefs.get(productId)
-                                    .collection("soldOrders").document(String.valueOf(orderId));
-                            soldOrderRefs.put(productId, soldOrderRef);
-                            soldOrderMarkers.put(productId, transaction.get(soldOrderRef));
-                        }
-                    }
-                    for (Map.Entry<Integer, Long> entry : quantities.entrySet()) {
-                        DocumentSnapshot product = productSnapshots.get(entry.getKey());
-                        if (!product.exists()) {
-                            throw new IllegalStateException("Không tìm thấy sản phẩm trong đơn hàng.");
-                        }
-                    }
-
-                    Map<String, Object> orderUpdate = new HashMap<>();
-                    orderUpdate.put("status", nextStatus);
-                    orderUpdate.put("updatedAt", FieldValue.serverTimestamp());
-                    if (ReviewRules.isDelivered(nextStatus)) {
-                        orderUpdate.put("deliveredAt", FieldValue.serverTimestamp());
-                        for (Map.Entry<Integer, Long> entry : quantities.entrySet()) {
-                            int productId = entry.getKey();
-                            if (soldOrderMarkers.get(productId).exists()) {
-                                continue;
-                            }
-                            DocumentSnapshot product = productSnapshots.get(entry.getKey());
-                            long soldCount = Math.max(0, longValue(product, "soldCount"));
-                            long updatedSoldCount = Math.addExact(soldCount, entry.getValue());
-                            transaction.update(productRefs.get(productId), "soldCount", updatedSoldCount);
-                            Map<String, Object> soldOrder = new HashMap<>();
-                            soldOrder.put("orderId", orderId);
-                            soldOrder.put("quantity", entry.getValue());
-                            soldOrder.put("createdAt", FieldValue.serverTimestamp());
-                            transaction.set(soldOrderRefs.get(productId), soldOrder);
-                        }
-                    }
-                    transaction.update(orderRef, orderUpdate);
-
-                    String notificationId = "order_" + orderId + "_status_"
-                            + Integer.toHexString(nextStatus.hashCode());
-                    DocumentReference notificationRef = firestore.collection("notifications").document(notificationId);
-                    Map<String, Object> notification = new HashMap<>();
-                    notification.put("userEmail", normalizedEmail);
-                    notification.put("type", "order_status");
-                    notification.put("title", "Cập nhật đơn hàng");
-                    notification.put("message", "Đơn hàng #DH"
-                            + String.format(Locale.getDefault(), "%05d", orderId)
-                            + " chuyển sang trạng thái: " + nextStatus + ".");
-                    notification.put("orderId", orderId);
-                    notification.put("status", nextStatus);
-                    notification.put("createdAt", FieldValue.serverTimestamp());
-                    notification.put("isRead", false);
-                    transaction.set(notificationRef, notification);
-                    return nextStatus;
-                }).addOnSuccessListener(callback::onResult)
-                        .addOnFailureListener(callback::onError);
-            }
-
-            @Override
-            public void onError(Exception error) {
-                callback.onError(error);
-            }
-        });
-    }
-
     public void registerUser(String fullName, String email, String phone, BooleanCallback callback) {
         String normalized = normalizeEmail(email);
         Map<String, Object> data = new HashMap<>();
@@ -1162,7 +1081,7 @@ public class FirestoreRepository {
     }
 
     private boolean isPhoneMatch(String input, String target) {
-        if (input == null || target == null) {
+        if (!PhoneNumberRules.isValid(input) || target == null) {
             return false;
         }
         String cleanInput = input.trim().replaceAll("[^0-9]", "");
@@ -1193,12 +1112,12 @@ public class FirestoreRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    public void checkUsernameExists(String username, String currentEmail, Consumer<Boolean> callback) {
+    public void checkUsernameExists(String username, String currentEmail, UsernameCallback callback) {
         firestore.collection("users").whereEqualTo("fullName", username.trim()).get().addOnSuccessListener(s -> {
             boolean isDuplicate = !s.isEmpty()
                     && !(s.size() == 1 && s.getDocuments().get(0).getId().equals(normalizeEmail(currentEmail)));
-            callback.accept(isDuplicate);
-        }).addOnFailureListener(e -> callback.accept(false));
+            callback.onResult(isDuplicate);
+        }).addOnFailureListener(callback::onError);
     }
 
     public void updateUser(String email, Map<String, Object> values, BooleanCallback callback) {
@@ -1262,6 +1181,13 @@ public class FirestoreRepository {
                 d.getString("receiverPhone"), d.getString("receiverAddress"), d.getString("note"),
                 d.getString("paymentMethod"), longValue(d, "totalAmount"), d.getString("orderDate"),
                 d.getString("status"));
+        Long itemsSubtotal = d.getLong("itemsSubtotal");
+        Long shippingFee = d.getLong("shippingFee");
+        order.setItemsSubtotal(itemsSubtotal == null ? -1 : itemsSubtotal);
+        order.setProductDiscount(longValue(d, "productDiscount"));
+        order.setShippingFee(shippingFee == null ? -1 : shippingFee);
+        order.setShippingDiscount(longValue(d, "shippingDiscount"));
+        order.setPointsDiscount(longValue(d, "pointsDiscount"));
         Timestamp deliveredAt = d.getTimestamp("deliveredAt");
         order.setDeliveredAt(deliveredAt == null ? null : deliveredAt.toDate());
         order.setReturnReason(d.getString("returnReason"));

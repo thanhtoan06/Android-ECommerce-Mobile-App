@@ -35,11 +35,17 @@ public class OrderDetailActivity extends AppCompatActivity {
     private TextView tvPaymentMethodDetail;
     private TextView tvSubtotalLabel;
     private TextView tvSubtotalAmount;
+    private View layoutProductDiscountRow;
+    private TextView tvProductDiscountAmount;
+    private TextView tvShippingFeeAmount;
+    private View layoutShippingDiscountRow;
+    private TextView tvShippingDiscountAmount;
+    private View layoutPointsDiscountRow;
+    private TextView tvPointsDiscountAmount;
     private TextView tvTotalAmountDetail;
     private TextView tvOrderReturnInfo;
     private LinearLayout llOrderDetailProducts;
     private ProgressBar pbLoadingProducts;
-    private com.google.android.material.button.MaterialButton btnAdvanceOrderDemo;
     private com.google.android.material.button.MaterialButton btnReturnOrder;
 
     private FirestoreRepository repository;
@@ -53,8 +59,6 @@ public class OrderDetailActivity extends AppCompatActivity {
         repository = FirestoreRepository.getInstance();
 
         initViews();
-        btnAdvanceOrderDemo.setVisibility(isDebugBuild() ? View.VISIBLE : View.GONE);
-        btnAdvanceOrderDemo.setOnClickListener(v -> advanceOrderStatusForDemo());
         btnReturnOrder.setOnClickListener(v -> showReturnReasonOptions());
 
         View samplePreview = findViewById(R.id.layoutSampleProductPreview);
@@ -120,18 +124,23 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvPaymentMethodDetail = findViewById(R.id.tvPaymentMethodDetail);
         tvSubtotalLabel = findViewById(R.id.tvSubtotalLabel);
         tvSubtotalAmount = findViewById(R.id.tvSubtotalAmount);
+        layoutProductDiscountRow = findViewById(R.id.layoutProductDiscountRow);
+        tvProductDiscountAmount = findViewById(R.id.tvProductDiscountAmount);
+        tvShippingFeeAmount = findViewById(R.id.tvShippingFeeAmount);
+        layoutShippingDiscountRow = findViewById(R.id.layoutShippingDiscountRow);
+        tvShippingDiscountAmount = findViewById(R.id.tvShippingDiscountAmount);
+        layoutPointsDiscountRow = findViewById(R.id.layoutPointsDiscountRow);
+        tvPointsDiscountAmount = findViewById(R.id.tvPointsDiscountAmount);
         tvTotalAmountDetail = findViewById(R.id.tvTotalAmountDetail);
         tvOrderReturnInfo = findViewById(R.id.tvOrderReturnInfo);
         llOrderDetailProducts = findViewById(R.id.llOrderDetailProducts);
         pbLoadingProducts = findViewById(R.id.pbLoadingProducts);
-        btnAdvanceOrderDemo = findViewById(R.id.btnAdvanceOrderDemo);
         btnReturnOrder = findViewById(R.id.btnReturnOrder);
     }
 
     private void bindOrderDetails(Order order) {
         tvOrderDetailCode.setText(String.format(Locale.getDefault(), "#DH%05d", order.getId()));
         tvOrderDetailStatus.setText(order.getStatus());
-        updateDemoStatusButton(order);
         updateReturnControls(order);
         tvOrderDetailDate.setText(order.getOrderDate());
 
@@ -146,7 +155,18 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
 
         tvPaymentMethodDetail.setText(order.getPaymentMethod());
-        tvSubtotalAmount.setText(order.getFormattedTotal());
+        tvSubtotalAmount.setText(order.getItemsSubtotal() < 0
+                ? "—"
+                : formatMoney(order.getItemsSubtotal()));
+        layoutProductDiscountRow.setVisibility(order.getProductDiscount() > 0 ? View.VISIBLE : View.GONE);
+        tvProductDiscountAmount.setText("-" + formatMoney(order.getProductDiscount()));
+        tvShippingFeeAmount.setText(order.getShippingFee() < 0
+                ? "Chưa có dữ liệu"
+                : formatMoney(order.getShippingFee()));
+        layoutShippingDiscountRow.setVisibility(order.getShippingDiscount() > 0 ? View.VISIBLE : View.GONE);
+        tvShippingDiscountAmount.setText("-" + formatMoney(order.getShippingDiscount()));
+        layoutPointsDiscountRow.setVisibility(order.getPointsDiscount() > 0 ? View.VISIBLE : View.GONE);
+        tvPointsDiscountAmount.setText("-" + formatMoney(order.getPointsDiscount()));
         tvTotalAmountDetail.setText(order.getFormattedTotal());
     }
 
@@ -193,10 +213,12 @@ public class OrderDetailActivity extends AppCompatActivity {
         int paddingVertical = (int) (6 * density);
 
         int totalQty = 0;
+        long displayedItemsSubtotal = 0;
 
         for (int i = 0; i < items.size(); i++) {
             OrderItem item = items.get(i);
             totalQty += item.getQuantity();
+            displayedItemsSubtotal += item.getSubtotal();
 
             LinearLayout itemRow = new LinearLayout(this);
             itemRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -283,19 +305,9 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
 
         tvSubtotalLabel.setText("Tiền hàng (" + totalQty + " món)");
-    }
-
-    private void updateDemoStatusButton(Order order) {
-        if (OrderReturnRules.STATUS_RETURNED.equals(order.getStatus())) {
-            btnAdvanceOrderDemo.setText("Đơn đã hoàn trả");
-            btnAdvanceOrderDemo.setEnabled(false);
-            return;
+        if (currentOrder.getItemsSubtotal() < 0) {
+            tvSubtotalAmount.setText(formatMoney(displayedItemsSubtotal));
         }
-        String nextStatus = ReviewRules.nextDemoStatus(order.getStatus());
-        btnAdvanceOrderDemo.setText(nextStatus == null
-                ? "Đơn đã giao"
-                : "Demo: Chuyển sang " + nextStatus);
-        btnAdvanceOrderDemo.setEnabled(nextStatus != null);
     }
 
     private void updateReturnControls(Order order) {
@@ -408,36 +420,8 @@ public class OrderDetailActivity extends AppCompatActivity {
         return reason.trim();
     }
 
-    private void advanceOrderStatusForDemo() {
-        if (!isDebugBuild() || currentOrder == null) {
-            return;
-        }
-        btnAdvanceOrderDemo.setEnabled(false);
-        String email = SharedPrefManager.getInstance(this).getEmail();
-        repository.advanceOrderStatusForDemo(currentOrder.getId(), email,
-                new FirestoreRepository.OrderStatusCallback() {
-                    @Override
-                    public void onResult(String status) {
-                        currentOrder.setStatus(status);
-                        if (ReviewRules.isDelivered(status)) {
-                            currentOrder.setDeliveredAt(new Date());
-                        }
-                        displayOrder(currentOrder);
-                    }
-
-                    @Override
-                    public void onError(Exception error) {
-                        btnAdvanceOrderDemo.setEnabled(true);
-                        Toast.makeText(OrderDetailActivity.this,
-                                error.getMessage() == null
-                                        ? "Không thể cập nhật trạng thái đơn hàng."
-                                        : error.getMessage(),
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
+    private String formatMoney(long amount) {
+        return java.text.NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(amount) + " ₫";
     }
 
-    private boolean isDebugBuild() {
-        return (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-    }
 }
