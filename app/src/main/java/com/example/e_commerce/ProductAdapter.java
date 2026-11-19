@@ -109,7 +109,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
                     holder.tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
             holder.tvOriginalPrice.setVisibility(View.VISIBLE);
             holder.tvPrice.setText(formatMoney(product.getPrice() - bestDiscount));
-            holder.tvProductVoucherTag.setText(voucherDiscountLabel(bestProductVoucher));
+            holder.tvProductVoucherTag.setText(voucherDiscountLabel(bestProductVoucher, bestDiscount));
             holder.layoutProductVoucherTag.setVisibility(View.VISIBLE);
         } else {
             holder.tvOriginalPrice.setVisibility(View.GONE);
@@ -119,11 +119,11 @@ public class ProductAdapter extends ArrayAdapter<Product> {
         holder.tvProductFreeShipping.setVisibility(hasFreeShippingVoucher ? View.VISIBLE : View.GONE);
     }
 
-    private String voucherDiscountLabel(Voucher voucher) {
+    private String voucherDiscountLabel(Voucher voucher, long actualDiscount) {
         if ("percentage_per_item".equals(voucher.getDiscountType())) {
             return "Voucher -" + voucher.getValue() + "%";
         }
-        return "Voucher -" + formatMoney(voucher.getValue());
+        return "Voucher -" + formatMoney(actualDiscount);
     }
 
     private String formatMoney(long amount) {
