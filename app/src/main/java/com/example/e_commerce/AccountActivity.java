@@ -44,8 +44,7 @@ public class AccountActivity extends AppCompatActivity {
         databaseHelper = DatabaseHelper.getInstance(this);
         prefManager = SharedPrefManager.getInstance(this);
 
-        // Ánh xạ các ô chữ hiển thị thông tin và nút đăng xuất từ giao diện XML
-        TextView tvBack = findViewById(R.id.tvBack);
+        // Ánh xạ các thành phần hiển thị thông tin và nút thao tác từ giao diện XML
         TextView tvAvatar = findViewById(R.id.tvAvatar);
         tvAccountName = findViewById(R.id.tvAccountName);
         TextView tvAccountEmail = findViewById(R.id.tvAccountEmail);
@@ -55,13 +54,10 @@ public class AccountActivity extends AppCompatActivity {
         tvDetailAddress = findViewById(R.id.tvDetailAddress);
         Button btnLogout = findViewById(R.id.btnLogout);
 
-        // Ánh xạ các dòng thông tin và nút bấm chỉnh sửa
+        // Ánh xạ các dòng thông tin cá nhân và nút bấm chức năng
         View layoutUsernameRow = findViewById(R.id.layoutUsernameRow);
         View layoutPhoneRow = findViewById(R.id.layoutPhoneRow);
         View layoutAddressRow = findViewById(R.id.layoutAddressRow);
-        View btnChangeUsername = findViewById(R.id.btnChangeUsername);
-        View btnChangePhone = findViewById(R.id.btnChangePhone);
-        View btnChangeAddress = findViewById(R.id.btnChangeAddress);
         View btnChangePassword = findViewById(R.id.btnChangePassword);
 
         // Lấy thông tin cơ bản của tài khoản đang đăng nhập từ SharedPreferences
@@ -117,28 +113,13 @@ public class AccountActivity extends AppCompatActivity {
             }
         });
 
-        // Bấm mũi tên quay lại thì đóng màn hình hiện tại
-        tvBack.setOnClickListener(v -> finish());
-
-        // Gắn sự kiện mở hộp thoại đổi Tên khi bấm nút sửa hoặc chạm vào dòng Tên
-        if (btnChangeUsername != null) btnChangeUsername.setOnClickListener(v -> showChangeUsernameDialog());
+        // Gắn sự kiện mở các hộp thoại chỉnh sửa trực tiếp khi chạm vào dòng tương ứng
         if (layoutUsernameRow != null) layoutUsernameRow.setOnClickListener(v -> showChangeUsernameDialog());
-
-        // Gắn sự kiện mở hộp thoại đổi SĐT khi bấm nút sửa hoặc chạm vào dòng Số điện thoại
-        if (btnChangePhone != null) btnChangePhone.setOnClickListener(v -> showChangePhoneDialog());
         if (layoutPhoneRow != null) layoutPhoneRow.setOnClickListener(v -> showChangePhoneDialog());
-
-        // Gắn sự kiện mở hộp thoại đổi Địa chỉ khi bấm nút sửa hoặc chạm vào dòng Địa chỉ
-        if (btnChangeAddress != null) btnChangeAddress.setOnClickListener(v -> showChangeAddressDialog());
         if (layoutAddressRow != null) layoutAddressRow.setOnClickListener(v -> showChangeAddressDialog());
 
         // Gắn sự kiện mở hộp thoại Đổi mật khẩu
         if (btnChangePassword != null) btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
-
-        // Bấm nút Lịch sử đơn hàng -> chuyển sang màn hình danh sách đơn đã mua
-        findViewById(R.id.btnOrderHistory).setOnClickListener(v ->
-                startActivity(new Intent(AccountActivity.this, OrderHistoryActivity.class))
-        );
 
         // Bấm nút Đăng xuất -> hỏi xác nhận -> xóa phiên đăng nhập -> quay về màn hình Đăng nhập
         btnLogout.setOnClickListener(v -> {
