@@ -1,4 +1,4 @@
-// Màn hình Chi tiết đơn hàng: hiển thị đầy đủ thông tin sản phẩm, người nhận, địa chỉ và thanh toán từ Firebase/SQLite.
+
 package com.example.e_commerce;
 
 import android.graphics.Typeface;
@@ -20,7 +20,6 @@ import java.util.Locale;
 
 public class OrderDetailActivity extends AppCompatActivity {
 
-    // Khai báo các thành phần hiển thị trên giao diện chi tiết đơn hàng
     private TextView tvOrderDetailCode;
     private TextView tvOrderDetailStatus;
     private TextView tvOrderDetailDate;
@@ -34,9 +33,7 @@ public class OrderDetailActivity extends AppCompatActivity {
     private LinearLayout llOrderDetailProducts;
     private ProgressBar pbLoadingProducts;
 
-    // Kho dữ liệu Firebase và SQLite
     private FirestoreRepository repository;
-    private DatabaseHelper databaseHelper;
     private Order currentOrder;
 
     @Override
@@ -45,51 +42,62 @@ public class OrderDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_order_detail);
 
         repository = FirestoreRepository.getInstance();
-        databaseHelper = DatabaseHelper.getInstance(this);
 
-        // Ánh xạ các thành phần giao diện
         initViews();
 
-        // Đảm bảo dòng xem trước mẫu luôn ẩn khi chạy ứng dụng thật
         View samplePreview = findViewById(R.id.layoutSampleProductPreview);
         if (samplePreview != null) {
             samplePreview.setVisibility(View.GONE);
         }
 
-        // Nút quay lại tròn tối giản
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        // Lấy dữ liệu đơn hàng từ Intent
         currentOrder = (Order) getIntent().getSerializableExtra("order");
         if (currentOrder == null) {
             int orderId = getIntent().getIntExtra("order_id", -1);
-            if (orderId != -1) {
-                // Thử tìm trong SQLite nếu truyền ID
-                String email = SharedPrefManager.getInstance(this).getEmail();
-                List<Order> orders = databaseHelper.getUserOrders(email);
-                for (Order o : orders) {
-                    if (o.getId() == orderId) {
-                        currentOrder = o;
-                        break;
-                    }
-                }
+            if (orderId == -1) {
+                Toast.makeText(this, "Không tìm thấy thông tin đơn hàng.", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
             }
-        }
-
-        if (currentOrder == null) {
-            Toast.makeText(this, "Không tìm thấy thông tin đơn hàng.", Toast.LENGTH_SHORT).show();
-            finish();
+            loadOrderById(orderId);
             return;
         }
 
-        // Đổ dữ liệu chung của đơn hàng lên giao diện
-        bindOrderDetails(currentOrder);
-
-        // Tải danh sách chi tiết các món hàng trong đơn
-        loadOrderProducts(currentOrder.getId());
+        displayOrder(currentOrder);
     }
 
-    // Ánh xạ các view trên layout
+    private void loadOrderById(int orderId) {
+        String email = SharedPrefManager.getInstance(this).getEmail();
+        repository.getUserOrders(email, new FirestoreRepository.OrdersCallback() {
+            @Override
+            public void onResult(List<Order> orders) {
+                for (Order order : orders) {
+                    if (order.getId() == orderId) {
+                        currentOrder = order;
+                        displayOrder(order);
+                        return;
+                    }
+                }
+                Toast.makeText(OrderDetailActivity.this, "Không tìm thấy thông tin đơn hàng.", Toast.LENGTH_SHORT)
+                        .show();
+                finish();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(OrderDetailActivity.this, "Không thể tải đơn hàng từ Firebase.", Toast.LENGTH_SHORT)
+                        .show();
+                finish();
+            }
+        });
+    }
+
+    private void displayOrder(Order order) {
+        bindOrderDetails(order);
+        loadOrderProducts(order.getId());
+    }
+
     private void initViews() {
         tvOrderDetailCode = findViewById(R.id.tvOrderDetailCode);
         tvOrderDetailStatus = findViewById(R.id.tvOrderDetailStatus);
@@ -105,7 +113,6 @@ public class OrderDetailActivity extends AppCompatActivity {
         pbLoadingProducts = findViewById(R.id.pbLoadingProducts);
     }
 
-    // Hiển thị thông tin chung đơn hàng
     private void bindOrderDetails(Order order) {
         tvOrderDetailCode.setText(String.format(Locale.getDefault(), "#DH%05d", order.getId()));
         tvOrderDetailStatus.setText(order.getStatus());
@@ -126,7 +133,6 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvTotalAmountDetail.setText(order.getFormattedTotal());
     }
 
-    // Tải danh sách chi tiết sản phẩm từ Firebase, fallback sang SQLite nếu ngoại tuyến
     private void loadOrderProducts(int orderId) {
         pbLoadingProducts.setVisibility(View.VISIBLE);
         llOrderDetailProducts.removeAllViews();
@@ -136,37 +142,31 @@ public class OrderDetailActivity extends AppCompatActivity {
             public void onResult(List<OrderItem> items) {
                 pbLoadingProducts.setVisibility(View.GONE);
                 if (items != null && !items.isEmpty()) {
-                    databaseHelper.saveRemoteOrder(currentOrder, items);
                     renderProductItems(items);
                 } else {
-                    loadProductsFromLocal(orderId);
+                    showEmptyProducts();
                 }
             }
 
             @Override
             public void onError(Exception e) {
                 pbLoadingProducts.setVisibility(View.GONE);
-                loadProductsFromLocal(orderId);
+                Toast.makeText(OrderDetailActivity.this, "Không thể tải chi tiết đơn hàng từ Firebase.",
+                        Toast.LENGTH_SHORT).show();
+                showEmptyProducts();
             }
         });
     }
 
-    // Đọc chi tiết sản phẩm từ kho SQLite nội bộ
-    private void loadProductsFromLocal(int orderId) {
-        List<OrderItem> localItems = databaseHelper.getOrderItems(orderId);
-        if (localItems != null && !localItems.isEmpty()) {
-            renderProductItems(localItems);
-        } else {
-            TextView tvEmpty = new TextView(this);
-            tvEmpty.setText("Không có chi tiết sản phẩm.");
-            tvEmpty.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
-            tvEmpty.setTextSize(13f);
-            tvEmpty.setPadding(0, 16, 0, 16);
-            llOrderDetailProducts.addView(tvEmpty);
-        }
+    private void showEmptyProducts() {
+        TextView tvEmpty = new TextView(this);
+        tvEmpty.setText("Không có chi tiết sản phẩm.");
+        tvEmpty.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+        tvEmpty.setTextSize(13f);
+        tvEmpty.setPadding(0, 16, 0, 16);
+        llOrderDetailProducts.addView(tvEmpty);
     }
 
-    // Vẽ từng dòng sản phẩm vào layout từ dữ liệu đơn hàng thật
     private void renderProductItems(List<OrderItem> items) {
         llOrderDetailProducts.removeAllViews();
         float density = getResources().getDisplayMetrics().density;
@@ -181,13 +181,11 @@ public class OrderDetailActivity extends AppCompatActivity {
             OrderItem item = items.get(i);
             totalQty += item.getQuantity();
 
-            // Khung chứa 1 sản phẩm
             LinearLayout itemRow = new LinearLayout(this);
             itemRow.setOrientation(LinearLayout.HORIZONTAL);
             itemRow.setGravity(Gravity.CENTER_VERTICAL);
             itemRow.setPadding(0, paddingVertical, 0, paddingVertical);
 
-            // Khung biểu tượng sản phẩm tròn nhẹ
             TextView tvIcon = new TextView(this);
             tvIcon.setText(item.getProductIcon());
             tvIcon.setTextSize(20f);
@@ -197,11 +195,10 @@ public class OrderDetailActivity extends AppCompatActivity {
             tvIcon.setLayoutParams(iconParams);
             itemRow.addView(tvIcon);
 
-            // Cột thông tin tên, đơn giá và số lượng
             LinearLayout infoCol = new LinearLayout(this);
             infoCol.setOrientation(LinearLayout.VERTICAL);
-            LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(
-                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,
+                    1f);
             infoParams.setMarginStart(marginStart);
             infoParams.setMarginEnd(marginEnd);
             infoCol.setLayoutParams(infoParams);
@@ -224,7 +221,6 @@ public class OrderDetailActivity extends AppCompatActivity {
 
             itemRow.addView(infoCol);
 
-            // Cột hiển thị thành tiền bên phải
             TextView tvSubtotal = new TextView(this);
             tvSubtotal.setText(item.getFormattedSubtotal());
             tvSubtotal.setTextColor(ContextCompat.getColor(this, R.color.primary));
@@ -234,11 +230,10 @@ public class OrderDetailActivity extends AppCompatActivity {
 
             llOrderDetailProducts.addView(itemRow);
 
-            // Đường kẻ giữa các món nếu chưa phải món cuối
             if (i < items.size() - 1) {
                 View divider = new View(this);
-                LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, (int) (1 * density));
+                LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        (int) (1 * density));
                 divParams.setMargins(0, (int) (4 * density), 0, (int) (4 * density));
                 divider.setLayoutParams(divParams);
                 divider.setBackgroundColor(ContextCompat.getColor(this, R.color.card_stroke));
@@ -246,7 +241,6 @@ public class OrderDetailActivity extends AppCompatActivity {
             }
         }
 
-        // Cập nhật nhãn tổng số món tiền hàng
         tvSubtotalLabel.setText("Tiền hàng (" + totalQty + " món)");
     }
 }

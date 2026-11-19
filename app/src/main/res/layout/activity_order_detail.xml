@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện màn hình Chi tiết đơn hàng phong cách phẳng tối giản Material Design 3 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,9 +7,7 @@
     android:background="@color/page_background"
     android:orientation="vertical"
     tools:context=".OrderDetailActivity">
-
-    <!-- Thanh tiêu đề phía trên cùng nền trắng tối giản với nút quay lại tròn -->
-    <LinearLayout
+<LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -19,9 +16,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="14dp">
-
-        <!-- Nút quay lại tròn tối giản -->
-        <com.google.android.material.card.MaterialCardView
+<com.google.android.material.card.MaterialCardView
             android:id="@+id/btnBack"
             android:layout_width="38dp"
             android:layout_height="38dp"
@@ -32,7 +27,6 @@
             app:cardElevation="0dp"
             app:strokeColor="@color/card_stroke"
             app:strokeWidth="1dp">
-
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
@@ -41,9 +35,7 @@
                 android:src="@drawable/ic_arrow_back"
                 app:tint="@color/text_primary" />
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- Tiêu đề màn hình căn giữa -->
-        <TextView
+<TextView
             android:id="@+id/tvHeaderTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -53,19 +45,14 @@
             android:textColor="@color/text_primary"
             android:textSize="17sp"
             android:textStyle="bold" />
-
-        <!-- Ô khoảng trống cân đối với nút quay lại -->
-        <View
+<View
             android:layout_width="38dp"
             android:layout_height="38dp" />
     </LinearLayout>
-
-    <!-- Khung cuộn nội dung chi tiết đơn hàng -->
-    <ScrollView
+<ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -73,23 +60,18 @@
             android:paddingHorizontal="16dp"
             android:paddingTop="14dp"
             android:paddingBottom="24dp">
-
-            <!-- Thẻ 1: Thông tin mã đơn và trạng thái -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card_white"
                 android:elevation="2dp"
                 android:orientation="vertical"
                 android:padding="16dp">
-
-                <!-- Mã đơn và huy hiệu trạng thái -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
                     <TextView
                         android:id="@+id/tvOrderDetailCode"
                         android:layout_width="0dp"
@@ -99,7 +81,6 @@
                         android:textSize="16sp"
                         android:textStyle="bold"
                         tools:text="#DH00001" />
-
                     <TextView
                         android:id="@+id/tvOrderDetailStatus"
                         android:layout_width="wrap_content"
@@ -115,22 +96,18 @@
                         app:drawableTint="@color/success_dark"
                         tools:text="Đặt hàng thành công" />
                 </LinearLayout>
-
-                <!-- Thời gian đặt đơn kèm icon vector lịch -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="Thời gian"
                         android:src="@drawable/ic_calendar"
                         app:tint="@color/text_secondary" />
-
                     <TextView
                         android:id="@+id/tvOrderDetailDate"
                         android:layout_width="wrap_content"
@@ -141,9 +118,7 @@
                         tools:text="12/11/2026 10:00" />
                 </LinearLayout>
             </LinearLayout>
-
-            <!-- Thẻ 2: Danh sách chi tiết từng sản phẩm trong đơn -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -151,7 +126,6 @@
                 android:elevation="2dp"
                 android:orientation="vertical"
                 android:padding="16dp">
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -159,15 +133,12 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Dòng xem trước mẫu hiển thị trực quan trên trình thiết kế (ẩn khi chạy thật) -->
-                <LinearLayout
+<LinearLayout
                     android:id="@+id/layoutSampleProductPreview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -176,24 +147,19 @@
                     android:paddingVertical="6dp"
                     android:visibility="gone"
                     tools:visibility="visible">
-
-                    <!-- Khung biểu tượng sản phẩm tròn nhẹ -->
-                    <TextView
+<TextView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:background="@drawable/bg_counter_btn"
                         android:gravity="center"
                         android:text="👕"
                         android:textSize="20sp" />
-
-                    <!-- Cột thông tin tên, đơn giá và số lượng -->
-                    <LinearLayout
+<LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="12dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
-
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -203,7 +169,6 @@
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
-
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -212,9 +177,7 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
-
-                    <!-- Thành tiền -->
-                    <TextView
+<TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="378.000 ₫"
@@ -222,25 +185,19 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
-
-                <!-- Vòng quay tải chi tiết món -->
-                <ProgressBar
+<ProgressBar
                     android:id="@+id/pbLoadingProducts"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:visibility="gone" />
-
-                <!-- Khung chứa động từng dòng sản phẩm -->
-                <LinearLayout
+<LinearLayout
                     android:id="@+id/llOrderDetailProducts"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
             </LinearLayout>
-
-            <!-- Thẻ 3: Thông tin người nhận và địa chỉ giao hàng -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -248,7 +205,6 @@
                 android:elevation="2dp"
                 android:orientation="vertical"
                 android:padding="16dp">
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -256,27 +212,22 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Người nhận và SĐT -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
                         android:contentDescription="Người nhận"
                         android:src="@drawable/ic_person"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:id="@+id/tvReceiverNamePhone"
                         android:layout_width="0dp"
@@ -288,15 +239,12 @@
                         android:textStyle="bold"
                         tools:text="Nguyễn Văn An (0912345678)" />
                 </LinearLayout>
-
-                <!-- Địa chỉ giao hàng -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:gravity="top"
                     android:orientation="horizontal">
-
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
@@ -304,7 +252,6 @@
                         android:contentDescription="Địa chỉ"
                         android:src="@drawable/ic_location"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:id="@+id/tvReceiverAddressDetail"
                         android:layout_width="0dp"
@@ -316,9 +263,7 @@
                         android:textSize="13sp"
                         tools:text="123 Đường ABC, Phường X, Quận Y, TP.HCM" />
                 </LinearLayout>
-
-                <!-- Ghi chú đơn hàng (nếu có) -->
-                <TextView
+<TextView
                     android:id="@+id/tvOrderNote"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -330,9 +275,7 @@
                     tools:text="Ghi chú: Giao hàng vào giờ hành chính"
                     tools:visibility="visible" />
             </LinearLayout>
-
-            <!-- Thẻ 4: Phương thức thanh toán và tổng kết thanh toán -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -340,7 +283,6 @@
                 android:elevation="2dp"
                 android:orientation="vertical"
                 android:padding="16dp">
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -348,27 +290,22 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Phương thức thanh toán -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
                         android:contentDescription="Thanh toán"
                         android:src="@drawable/ic_payment"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:id="@+id/tvPaymentMethodDetail"
                         android:layout_width="0dp"
@@ -379,19 +316,15 @@
                         android:textSize="13sp"
                         tools:text="Tiền mặt khi nhận hàng (COD)" />
                 </LinearLayout>
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Dòng tiền hàng -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-
                     <TextView
                         android:id="@+id/tvSubtotalLabel"
                         android:layout_width="0dp"
@@ -400,7 +333,6 @@
                         android:text="Tiền hàng"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
-
                     <TextView
                         android:id="@+id/tvSubtotalAmount"
                         android:layout_width="wrap_content"
@@ -409,14 +341,11 @@
                         android:textSize="13sp"
                         tools:text="358.000 ₫" />
                 </LinearLayout>
-
-                <!-- Dòng phí vận chuyển -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:orientation="horizontal">
-
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -424,7 +353,6 @@
                         android:text="Phí vận chuyển"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -433,20 +361,16 @@
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Dòng tổng thanh toán -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -455,7 +379,6 @@
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
-
                     <TextView
                         android:id="@+id/tvTotalAmountDetail"
                         android:layout_width="wrap_content"
@@ -466,8 +389,6 @@
                         tools:text="358.000 ₫" />
                 </LinearLayout>
             </LinearLayout>
-
         </LinearLayout>
     </ScrollView>
-
 </LinearLayout>

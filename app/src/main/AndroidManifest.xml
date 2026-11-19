@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Khai báo cấu hình ứng dụng và danh sách các màn hình (Activity) của hệ thống -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,9 +10,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Ecommerce">
-
-        <!-- Màn hình Đăng nhập: được đặt làm màn hình khởi chạy đầu tiên khi mở app (MAIN / LAUNCHER) -->
-        <activity
+<activity
             android:name=".LoginActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
@@ -23,9 +19,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Các màn hình chức năng bên trong ứng dụng -->
-        <activity
+<activity
             android:name=".RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
@@ -52,5 +46,4 @@
             android:name=".OrderDetailActivity"
             android:exported="false" />
     </application>
-
 </manifest>

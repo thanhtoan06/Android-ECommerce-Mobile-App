@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện một dòng thông tin trong phần tóm tắt thanh toán -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,9 +7,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingVertical="8dp">
-
-    <!-- Biểu tượng vector minh họa sản phẩm màu tím chàm #4F46E5 -->
-    <ImageView
+<ImageView
         android:id="@+id/ivSummaryIcon"
         android:layout_width="44dp"
         android:layout_height="44dp"
@@ -19,17 +16,13 @@
         android:padding="10dp"
         android:src="@drawable/ic_orders"
         app:tint="@color/primary" />
-
-    <!-- Cụm hiển thị tên và số lượng sản phẩm -->
-    <LinearLayout
+<LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_weight="1"
         android:orientation="vertical">
-
-        <!-- Tên sản phẩm -->
-        <TextView
+<TextView
             android:id="@+id/tvSummaryName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -39,9 +32,7 @@
             android:textSize="14sp"
             android:textStyle="bold"
             tools:text="Tên sản phẩm" />
-
-        <!-- Số lượng mua của sản phẩm -->
-        <TextView
+<TextView
             android:id="@+id/tvSummaryQuantity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -53,9 +44,7 @@
             android:textSize="11sp"
             tools:text="Số lượng: x1" />
     </LinearLayout>
-
-    <!-- Thành tiền của dòng sản phẩm này -->
-    <TextView
+<TextView
         android:id="@+id/tvSummarySubtotal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -64,5 +53,4 @@
         android:textSize="14sp"
         android:textStyle="bold"
         tools:text="189.000 ₫" />
-
 </LinearLayout>

@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện màn hình đăng nhập tài khoản -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,17 +7,13 @@
     android:background="@color/page_background"
     android:fillViewport="true"
     tools:context=".LoginActivity">
-
-    <!-- Khung bố cục chính căn giữa màn hình -->
-    <LinearLayout
+<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="20dp">
-
-        <!-- Khung chứa logo ứng dụng bo tròn liền mạch -->
-        <com.google.android.material.card.MaterialCardView
+<com.google.android.material.card.MaterialCardView
             android:layout_width="84dp"
             android:layout_height="84dp"
             android:layout_marginTop="12dp"
@@ -26,9 +21,7 @@
             app:cardCornerRadius="42dp"
             app:cardElevation="3dp"
             app:strokeWidth="0dp">
-
-            <!-- Biểu tượng túi mua sắm phóng to cân đối trong vòng tròn -->
-            <ImageView
+<ImageView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="Logo ứng dụng"
@@ -37,9 +30,7 @@
                 android:scaleY="1.35"
                 android:src="@drawable/ic_launcher_foreground" />
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- Tiêu đề chính -->
-        <TextView
+<TextView
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -48,9 +39,7 @@
             android:textColor="@color/text_primary"
             android:textSize="24sp"
             android:textStyle="bold" />
-
-        <!-- Dòng mô tả phụ -->
-        <TextView
+<TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
@@ -58,27 +47,21 @@
             android:text="Đăng nhập để tiếp tục mua sắm"
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
-
-        <!-- Khung biểu mẫu nhập liệu đăng nhập -->
-        <LinearLayout
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card_white"
             android:elevation="3dp"
             android:orientation="vertical"
             android:padding="22dp">
-
-            <!-- Nhãn tài khoản hoặc email -->
-            <TextView
+<TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TÀI KHOẢN HOẶC EMAIL"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-
-            <!-- Ô nhập email hoặc tên đăng nhập -->
-            <EditText
+<EditText
                 android:id="@+id/edtEmail"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -95,25 +78,19 @@
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="14sp" />
-
-            <!-- Nhãn mật khẩu -->
-            <TextView
+<TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="MẬT KHẨU"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-
-            <!-- Khung chứa ô nhập mật khẩu và nút ẩn/hiện -->
-            <RelativeLayout
+<RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:layout_marginBottom="8dp">
-
-                <!-- Ô nhập mật khẩu -->
-                <EditText
+<EditText
                     android:id="@+id/edtPassword"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -129,9 +106,7 @@
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_tertiary"
                     android:textSize="14sp" />
-
-                <!-- Nút bấm ẩn/hiện mật khẩu -->
-                <ImageView
+<ImageView
                     android:id="@+id/btnTogglePassword"
                     android:layout_width="44dp"
                     android:layout_height="48dp"
@@ -145,15 +120,12 @@
                     android:src="@drawable/ic_visibility_off"
                     app:tint="@color/text_secondary" />
             </RelativeLayout>
-
-            <!-- Nút quên mật khẩu căn lề phải -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="18dp"
                 android:gravity="end"
                 android:orientation="horizontal">
-
                 <TextView
                     android:id="@+id/tvForgotPassword"
                     android:layout_width="wrap_content"
@@ -168,14 +140,10 @@
                     android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
-
-            <!-- Khung chứa nút Đăng nhập và vòng xoay tải -->
-            <FrameLayout
+<FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="48dp">
-
-                <!-- Nút bấm xác nhận đăng nhập -->
-                <Button
+<Button
                     android:id="@+id/btnLogin"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -185,9 +153,7 @@
                     android:textSize="14sp"
                     android:textStyle="bold"
                     app:backgroundTint="@null" />
-
-                <!-- Vòng xoay tải hiển thị khi đang xử lý -->
-                <ProgressBar
+<ProgressBar
                     android:id="@+id/progressBarLogin"
                     android:layout_width="26dp"
                     android:layout_height="26dp"
@@ -196,21 +162,17 @@
                     android:indeterminateTint="@color/white"
                     android:visibility="gone" />
             </FrameLayout>
-
-            <!-- Đường kẻ ngang ngăn cách 2 nút -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginVertical="16dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
-
                 <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
                     android:background="@color/card_stroke" />
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -219,16 +181,13 @@
                     android:textColor="@color/text_tertiary"
                     android:textSize="11sp"
                     android:textStyle="bold" />
-
                 <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
                     android:background="@color/card_stroke" />
             </LinearLayout>
-
-            <!-- Nút bấm chuyển sang trang tạo tài khoản mới -->
-            <Button
+<Button
                 android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -239,6 +198,5 @@
                 android:textStyle="bold"
                 app:backgroundTint="@null" />
         </LinearLayout>
-
     </LinearLayout>
 </ScrollView>

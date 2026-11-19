@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Trạng thái ô tích đã chọn: nền trắng viền màu chủ đạo #4F46E5 bo góc 6dp kèm dấu tích màu tím chàm -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">

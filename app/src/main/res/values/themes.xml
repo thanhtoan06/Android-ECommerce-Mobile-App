@@ -1,4 +1,3 @@
-<!-- Khai báo giao diện và các thuộc tính chủ đề mặc định của ứng dụng. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.Ecommerce" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
@@ -10,6 +9,5 @@
         <item name="android:navigationBarColor">@color/surface</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
-
     <style name="Theme.Ecommerce" parent="Base.Theme.Ecommerce" />
 </resources>

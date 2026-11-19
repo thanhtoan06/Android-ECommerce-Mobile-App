@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện màn hình lịch sử đơn hàng của người dùng -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -9,9 +8,7 @@
     android:background="@color/page_background"
     android:orientation="vertical"
     tools:context=".OrderHistoryActivity">
-
-    <!-- Thanh tiêu đề phía trên cùng nền màu chủ đạo (#4F46E5) -->
-    <LinearLayout
+<LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -20,16 +17,12 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp">
-
-        <!-- Nút quay lại màn hình trước (ẩn đi nhưng giữ lại ID để tương thích mã Java) -->
-        <TextView
+<TextView
             android:id="@+id/tvBack"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone" />
-
-        <!-- Tiêu đề màn hình căn trái chữ trắng nổi bật (18sp, in đậm) giống màn hình Giỏ hàng -->
-        <TextView
+<TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -40,9 +33,7 @@
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
-
-        <!-- Nhãn đếm tổng số đơn hàng nổi bật bên phải -->
-        <TextView
+<TextView
             android:id="@+id/tvOrderCountBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -55,15 +46,11 @@
             android:textStyle="bold"
             tools:text="3 đơn" />
     </LinearLayout>
-
-    <!-- Khung nội dung chính (hiển thị trạng thái trống hoặc danh sách đơn hàng) -->
-    <FrameLayout
+<FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
-
-        <!-- Khối thông báo khi chưa có đơn hàng nào -->
-        <LinearLayout
+<LinearLayout
             android:id="@+id/layoutEmptyOrders"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -71,14 +58,11 @@
             android:orientation="vertical"
             android:padding="24dp"
             android:visibility="gone">
-
-            <!-- Biểu tượng hộp đơn hàng trống dạng vector chuẩn -->
-            <FrameLayout
+<FrameLayout
                 android:layout_width="88dp"
                 android:layout_height="88dp"
                 android:background="@drawable/bg_avatar_circle"
                 android:padding="16dp">
-
                 <ImageView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -86,9 +70,7 @@
                     android:src="@drawable/ic_orders"
                     app:tint="@color/primary" />
             </FrameLayout>
-
-            <!-- Dòng thông báo chính khi chưa có đơn -->
-            <TextView
+<TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -96,9 +78,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
-            <!-- Dòng mô tả chi tiết -->
-            <TextView
+<TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
@@ -106,9 +86,7 @@
                 android:text="Bạn chưa thực hiện đơn đặt hàng nào trong hệ thống."
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
-
-            <!-- Nút chuyển về trang danh sách sản phẩm -->
-            <Button
+<Button
                 android:id="@+id/btnShopNow"
                 android:layout_width="wrap_content"
                 android:layout_height="46dp"
@@ -121,9 +99,7 @@
                 android:textStyle="bold"
                 app:backgroundTint="@null" />
         </LinearLayout>
-
-        <!-- Danh sách các đơn hàng đã đặt -->
-        <ListView
+<ListView
             android:id="@+id/lvOrders"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -134,12 +110,8 @@
             android:paddingTop="8dp"
             android:paddingBottom="16dp"
             tools:listitem="@layout/item_order" />
-
     </FrameLayout>
-
-    <!-- Thanh menu điều hướng phía dưới cùng 4 mục -->
-    <include
+<include
         android:id="@+id/bottomMenu"
         layout="@layout/include_bottom_menu" />
-
 </LinearLayout>

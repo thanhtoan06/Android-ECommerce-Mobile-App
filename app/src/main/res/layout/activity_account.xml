@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện màn hình quản lý thông tin tài khoản cá nhân phẳng tối giản -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -9,25 +8,19 @@
     android:background="@color/page_background"
     android:orientation="vertical"
     tools:context=".AccountActivity">
-
-    <!-- Phần đầu trang (Header & Khung hồ sơ) đồng bộ màu chủ đạo #4F46E5 -->
-    <LinearLayout
+<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/primary"
         android:elevation="4dp"
         android:orientation="vertical">
-
-        <!-- Thanh tiêu đề căn giữa cân đối trên nền tím chàm -->
-        <LinearLayout
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:gravity="center"
             android:orientation="horizontal"
             android:paddingHorizontal="16dp">
-
-            <!-- Tiêu đề màn hình màu trắng căn giữa -->
-            <TextView
+<TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tài khoản cá nhân"
@@ -35,9 +28,7 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
         </LinearLayout>
-
-        <!-- Khung hồ sơ người dùng (Avatar tròn vector, Tên, Email) -->
-        <LinearLayout
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
@@ -45,34 +36,26 @@
             android:paddingHorizontal="16dp"
             android:paddingTop="4dp"
             android:paddingBottom="20dp">
-
-            <!-- Khung ảnh đại diện tròn nổi bật trên nền tím -->
-            <FrameLayout
+<FrameLayout
                 android:layout_width="74dp"
                 android:layout_height="74dp"
                 android:background="@drawable/bg_avatar_circle"
                 android:elevation="2dp"
                 android:padding="15dp">
-
-                <!-- Biểu tượng avatar vector người dùng chuẩn màu chủ đạo -->
-                <ImageView
+<ImageView
                     android:id="@+id/ivAvatar"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="Ảnh đại diện"
                     android:src="@drawable/ic_person"
                     app:tint="@color/primary" />
-
-                <!-- Thẻ TextView ẩn giữ tương thích với ID cũ trong Java -->
-                <TextView
+<TextView
                     android:id="@+id/tvAvatar"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
                     android:visibility="gone" />
             </FrameLayout>
-
-            <!-- Tên người dùng hiển thị chữ trắng nổi bật -->
-            <TextView
+<TextView
                 android:id="@+id/tvAccountName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -83,9 +66,7 @@
                 android:textColor="@color/white"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
-            <!-- Email tài khoản màu trắng mờ thanh lịch -->
-            <TextView
+<TextView
                 android:id="@+id/tvAccountEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -97,14 +78,11 @@
                 android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
-
-    <!-- Phần nội dung cuộn chính -->
-    <ScrollView
+<ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -112,9 +90,7 @@
             android:paddingHorizontal="14dp"
             android:paddingTop="14dp"
             android:paddingBottom="16dp">
-
-            <!-- Tiêu đề nhóm thông tin cá nhân -->
-            <TextView
+<TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="2dp"
@@ -123,9 +99,7 @@
                 android:textColor="@color/primary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-
-            <!-- Thẻ chứa các dòng thông tin cá nhân trực tiếp (bấm để sửa) -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card_white"
@@ -133,9 +107,7 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="4dp">
-
-                <!-- Dòng tên tài khoản (bấm để sửa trực tiếp) -->
-                <LinearLayout
+<LinearLayout
                     android:id="@+id/layoutUsernameRow"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
@@ -144,15 +116,12 @@
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
-                    <!-- Icon vector người dùng -->
-                    <ImageView
+<ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="Tên tài khoản"
                         android:src="@drawable/ic_person"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -160,9 +129,7 @@
                         android:text="Tên tài khoản"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
-
-                    <!-- Giá trị tên tài khoản -->
-                    <TextView
+<TextView
                         android:id="@+id/tvDetailUsername"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -175,9 +142,7 @@
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
-
-                    <!-- Biểu tượng mũi tên vector chỉ dẫn bấm để sửa -->
-                    <ImageView
+<ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
                         android:layout_marginStart="8dp"
@@ -185,28 +150,21 @@
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/gray_400" />
                 </LinearLayout>
-
-                <!-- Đường kẻ phân cách -->
-                <View
+<View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Dòng email liên kết (chỉ hiển thị cố định, KHÔNG có mũi tên) -->
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
-                    <!-- Icon vector email -->
-                    <ImageView
+<ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="Email liên kết"
                         android:src="@drawable/ic_email"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -214,9 +172,7 @@
                         android:text="Email liên kết"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
-
-                    <!-- Giá trị email liên kết -->
-                    <TextView
+<TextView
                         android:id="@+id/tvDetailEmail"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -230,15 +186,11 @@
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
-
-                <!-- Đường kẻ phân cách -->
-                <View
+<View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Dòng số điện thoại (bấm để sửa trực tiếp) -->
-                <LinearLayout
+<LinearLayout
                     android:id="@+id/layoutPhoneRow"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
@@ -247,15 +199,12 @@
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
-                    <!-- Icon vector điện thoại -->
-                    <ImageView
+<ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="Số điện thoại"
                         android:src="@drawable/ic_phone"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -263,9 +212,7 @@
                         android:text="Số điện thoại"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
-
-                    <!-- Giá trị số điện thoại -->
-                    <TextView
+<TextView
                         android:id="@+id/tvDetailPhone"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -278,9 +225,7 @@
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
-
-                    <!-- Biểu tượng mũi tên vector chỉ dẫn bấm để sửa -->
-                    <ImageView
+<ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
                         android:layout_marginStart="8dp"
@@ -288,15 +233,11 @@
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/gray_400" />
                 </LinearLayout>
-
-                <!-- Đường kẻ phân cách -->
-                <View
+<View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/card_stroke" />
-
-                <!-- Dòng địa chỉ nhận hàng (bấm để sửa trực tiếp) -->
-                <LinearLayout
+<LinearLayout
                     android:id="@+id/layoutAddressRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -307,15 +248,12 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingVertical="8dp">
-
-                    <!-- Icon vector vị trí -->
-                    <ImageView
+<ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="Địa chỉ nhận hàng"
                         android:src="@drawable/ic_location"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -323,9 +261,7 @@
                         android:text="Địa chỉ nhận hàng"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
-
-                    <!-- Giá trị địa chỉ nhận hàng -->
-                    <TextView
+<TextView
                         android:id="@+id/tvDetailAddress"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -338,9 +274,7 @@
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
-
-                    <!-- Biểu tượng mũi tên vector chỉ dẫn bấm để sửa -->
-                    <ImageView
+<ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
                         android:layout_marginStart="8dp"
@@ -349,9 +283,7 @@
                         app:tint="@color/gray_400" />
                 </LinearLayout>
             </LinearLayout>
-
-            <!-- Tiêu đề nhóm bảo mật -->
-            <TextView
+<TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="2dp"
@@ -361,9 +293,7 @@
                 android:textColor="@color/primary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-
-            <!-- Thẻ chứa chức năng đổi mật khẩu -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card_white"
@@ -371,9 +301,7 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="4dp">
-
-                <!-- Nút đổi mật khẩu -->
-                <LinearLayout
+<LinearLayout
                     android:id="@+id/btnChangePassword"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
@@ -382,15 +310,12 @@
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
-                    <!-- Icon vector ổ khóa -->
-                    <ImageView
+<ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="Đổi mật khẩu"
                         android:src="@drawable/ic_lock"
                         app:tint="@color/primary" />
-
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -399,9 +324,7 @@
                         android:text="Đổi mật khẩu"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
-
-                    <!-- Mũi tên vector chuyển tiếp -->
-                    <ImageView
+<ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
                         android:contentDescription="Mở đổi mật khẩu"
@@ -409,9 +332,7 @@
                         app:tint="@color/gray_400" />
                 </LinearLayout>
             </LinearLayout>
-
-            <!-- Nút đăng xuất tài khoản phẳng bo góc mềm mại nền đỏ nhạt chữ đỏ đậm -->
-            <com.google.android.material.button.MaterialButton
+<com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
@@ -433,13 +354,9 @@
                 app:iconTint="@color/danger_dark"
                 app:strokeColor="#FECACA"
                 app:strokeWidth="1dp" />
-
         </LinearLayout>
     </ScrollView>
-
-    <!-- Thanh menu điều hướng dưới cùng -->
-    <include
+<include
         android:id="@+id/bottomMenu"
         layout="@layout/include_bottom_menu" />
-
 </LinearLayout>

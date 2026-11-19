@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện thẻ một sản phẩm trong danh sách giỏ hàng phẳng bo góc hiện đại -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -13,9 +12,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:padding="12dp">
-
-    <!-- Ô tích chọn sản phẩm kích thước cố định 22dp x 22dp, dùng buttonTint=@null để không bị đè mất dấu tích trắng -->
-    <CheckBox
+<CheckBox
         android:id="@+id/cbCartItem"
         android:layout_width="22dp"
         android:layout_height="22dp"
@@ -26,16 +23,12 @@
         android:checked="true"
         android:text=""
         tools:text="" />
-
-    <!-- Khung biểu tượng/ảnh sản phẩm bo góc bên trái -->
-    <FrameLayout
+<FrameLayout
         android:id="@+id/flIconContainer"
         android:layout_width="76dp"
         android:layout_height="76dp"
         android:background="@drawable/bg_chip_blue">
-
-        <!-- Biểu tượng minh họa sản phẩm -->
-        <TextView
+<TextView
             android:id="@+id/tvCartIcon"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -43,24 +36,18 @@
             android:textSize="36sp"
             tools:text="📱" />
     </FrameLayout>
-
-    <!-- Khối thông tin tên sản phẩm, giá bán, nút tăng giảm số lượng và nút xóa bên phải -->
-    <LinearLayout
+<LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_weight="1"
         android:orientation="vertical">
-
-        <!-- Hàng hiển thị danh mục và nút xóa món -->
-        <LinearLayout
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
-
-            <!-- Nhãn danh mục sản phẩm -->
-            <TextView
+<TextView
                 android:id="@+id/tvCartCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -71,15 +58,11 @@
                 android:textSize="10sp"
                 android:textStyle="bold"
                 tools:text="Công nghệ" />
-
-            <!-- Khoảng trống đẩy nút xóa về góc phải -->
-            <View
+<View
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
-
-            <!-- Nút xóa sản phẩm này khỏi giỏ bằng icon vector -->
-            <ImageView
+<ImageView
                 android:id="@+id/btnDeleteCartItem"
                 android:layout_width="28dp"
                 android:layout_height="28dp"
@@ -91,9 +74,7 @@
                 android:src="@drawable/ic_delete"
                 app:tint="@color/danger" />
         </LinearLayout>
-
-        <!-- Tên sản phẩm hiển thị tối đa 2 dòng -->
-        <TextView
+<TextView
             android:id="@+id/tvCartName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -104,9 +85,7 @@
             android:textSize="14sp"
             android:textStyle="bold"
             tools:text="iPhone 15 Pro Max 256GB Chính Hãng" />
-
-        <!-- Đơn giá và tồn kho sản phẩm -->
-        <TextView
+<TextView
             android:id="@+id/tvCartUnitPrice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -114,17 +93,13 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             tools:text="Đơn giá: 29.990.000 ₫ (Kho: 45)" />
-
-        <!-- Hàng thành tiền và cụm tăng giảm số lượng (- 1 +) -->
-        <LinearLayout
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
-
-            <!-- Thành tiền (đơn giá x số lượng) nổi bật màu đỏ -->
-            <TextView
+<TextView
                 android:id="@+id/tvCartSubtotal"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -133,17 +108,13 @@
                 android:textSize="15sp"
                 android:textStyle="bold"
                 tools:text="29.990.000 ₫" />
-
-            <!-- Cụm nút giảm (−), số lượng, tăng (+) -->
-            <LinearLayout
+<LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_counter_btn"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
-
-                <!-- Nút giảm số lượng đi 1 -->
-                <TextView
+<TextView
                     android:id="@+id/btnMinus"
                     android:layout_width="28dp"
                     android:layout_height="28dp"
@@ -155,9 +126,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
-
-                <!-- Hiển thị số lượng hiện tại -->
-                <TextView
+<TextView
                     android:id="@+id/tvQuantity"
                     android:layout_width="32dp"
                     android:layout_height="wrap_content"
@@ -166,9 +135,7 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     tools:text="1" />
-
-                <!-- Nút tăng số lượng thêm 1 -->
-                <TextView
+<TextView
                     android:id="@+id/btnPlus"
                     android:layout_width="28dp"
                     android:layout_height="28dp"
@@ -182,7 +149,5 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
-
     </LinearLayout>
-
 </LinearLayout>

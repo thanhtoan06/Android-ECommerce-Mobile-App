@@ -1,8 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cấu hình các quy tắc sao lưu dữ liệu của ứng dụng. -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
 </full-backup-content>

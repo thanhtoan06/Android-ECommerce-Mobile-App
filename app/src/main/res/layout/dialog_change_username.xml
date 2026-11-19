@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện hộp thoại thay đổi tên người dùng đồng bộ vector icon -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,18 +6,14 @@
     android:background="@drawable/bg_card_white"
     android:orientation="vertical"
     android:padding="20dp">
-
-    <!-- Tiêu đề hộp thoại -->
-    <TextView
+<TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Đổi tên đăng nhập"
         android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:textStyle="bold" />
-
-    <!-- Dòng mô tả hướng dẫn -->
-    <TextView
+<TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
@@ -26,18 +21,14 @@
         android:text="Cập nhật tên tài khoản / tên đăng nhập hiển thị của bạn."
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
-
-    <!-- Nhãn ô nhập tên đăng nhập -->
-    <TextView
+<TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="TÊN ĐĂNG NHẬP MỚI"
         android:textColor="@color/text_secondary"
         android:textSize="11sp"
         android:textStyle="bold" />
-
-    <!-- Ô nhập tên đăng nhập mới kèm icon vector người dùng phía trước -->
-    <EditText
+<EditText
         android:id="@+id/edtNewUsername"
         android:layout_width="match_parent"
         android:layout_height="48dp"
@@ -54,16 +45,12 @@
         android:textColor="@color/text_primary"
         android:textColorHint="@color/text_tertiary"
         android:textSize="14sp" />
-
-    <!-- Cụm nút thao tác (Hủy và Lưu) -->
-    <LinearLayout
+<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="end"
         android:orientation="horizontal">
-
-        <!-- Nút hủy bỏ và đóng hộp thoại -->
-        <Button
+<Button
             android:id="@+id/btnCancelUsername"
             android:layout_width="wrap_content"
             android:layout_height="42dp"
@@ -75,9 +62,7 @@
             android:textSize="13sp"
             android:textStyle="bold"
             app:backgroundTint="@null" />
-
-        <!-- Nút lưu tên đăng nhập mới lên Firestore -->
-        <Button
+<Button
             android:id="@+id/btnSaveUsername"
             android:layout_width="wrap_content"
             android:layout_height="42dp"
@@ -89,5 +74,4 @@
             android:textStyle="bold"
             app:backgroundTint="@null" />
     </LinearLayout>
-
 </LinearLayout>
