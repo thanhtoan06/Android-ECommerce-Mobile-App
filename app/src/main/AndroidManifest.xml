@@ -50,6 +50,9 @@
             android:name=".PointsActivity"
             android:exported="false" />
         <activity
+            android:name=".VoucherActivity"
+            android:exported="false" />
+        <activity
             android:name=".OrderHistoryActivity"
             android:exported="false" />
         <activity

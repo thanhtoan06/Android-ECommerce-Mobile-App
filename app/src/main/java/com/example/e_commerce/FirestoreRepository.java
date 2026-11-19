@@ -289,7 +289,7 @@ public class FirestoreRepository {
     }
 
     public void createOrder(String email, String name, String phone, String address, String note, String payment,
-            List<CartItem> cartItems, OrderCallback callback) {
+            List<CartItem> cartItems, String productVoucherId, String shippingVoucherId, OrderCallback callback) {
         if (cartItems == null || cartItems.isEmpty()) {
             callback.onResult(-1);
             return;
@@ -298,76 +298,189 @@ public class FirestoreRepository {
         String normalized = normalizeEmail(email);
         long numericId = System.currentTimeMillis() % Integer.MAX_VALUE;
         String date = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-
-        long total = 0;
-        for (CartItem item : cartItems) {
-            total += item.getSubtotal();
-        }
-
-        Map<String, Object> order = new HashMap<>();
-        order.put("id", numericId);
-        order.put("userEmail", normalized);
-        order.put("receiverName", name.trim());
-        order.put("receiverPhone", phone.trim());
-        order.put("receiverAddress", address.trim());
-        order.put("note", note == null ? "" : note.trim());
-        order.put("paymentMethod", payment);
-        order.put("totalAmount", total);
-        order.put("orderDate", date);
-        order.put("status", "Đặt hàng thành công");
-
-        String orderId = String.valueOf(numericId);
+        DocumentReference orderRef = firestore.collection("orders").document(String.valueOf(numericId));
         DocumentReference notificationRef = firestore.collection("notifications")
                 .document("order_" + numericId + "_placed");
-        WriteBatch batch = firestore.batch();
-        batch.set(firestore.collection("orders").document(orderId), order);
-        for (int i = 0; i < cartItems.size(); i++) {
-            CartItem item = cartItems.get(i);
-            Product p = item.getProduct();
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("id", i + 1);
-            data.put("orderId", numericId);
-            data.put("productId", p == null ? 0 : p.getId());
-            data.put("productName", p == null ? "Sản phẩm" : p.getName());
-            data.put("productIcon", p == null ? "📦" : p.getIcon());
-            data.put("price", p == null ? 0 : p.getPrice());
-            data.put("quantity", item.getQuantity());
-            data.put("subtotal", item.getSubtotal());
-
-            batch.set(firestore.collection("orders").document(orderId).collection("items")
-                    .document(String.valueOf(i + 1)), data);
+        DocumentReference productVoucherRef = isBlank(productVoucherId)
+                ? null
+                : VoucherRepository.userVoucherDocument(firestore, normalized, productVoucherId);
+        DocumentReference shippingVoucherRef = isBlank(shippingVoucherId)
+                ? null
+                : VoucherRepository.userVoucherDocument(firestore, normalized, shippingVoucherId);
+        Map<Integer, Integer> orderedQuantities = new HashMap<>();
+        Map<Integer, DocumentReference> productRefs = new HashMap<>();
+        Map<Integer, DocumentReference> cartRefs = new HashMap<>();
+        for (CartItem item : cartItems) {
+            Product product = item.getProduct();
+            if (product == null || item.getQuantity() <= 0) {
+                callback.onError(new IllegalStateException("Giỏ hàng có sản phẩm không hợp lệ."));
+                return;
+            }
+            int productId = product.getId();
+            try {
+                orderedQuantities.merge(productId, item.getQuantity(), Math::addExact);
+            } catch (ArithmeticException error) {
+                callback.onError(new IllegalStateException("Số lượng sản phẩm không hợp lệ.", error));
+                return;
+            }
+            productRefs.put(productId, firestore.collection("products").document(String.valueOf(productId)));
+            cartRefs.put(productId, firestore.collection("carts").document(normalized + "_" + productId));
         }
 
-        Map<String, Object> notification = new HashMap<>();
-        notification.put("userEmail", normalized);
-        notification.put("type", "order_placed");
-        notification.put("title", "Đặt hàng thành công");
-        notification.put("message", "Đơn hàng #DH"
-                + String.format(Locale.getDefault(), "%05d", numericId) + " đã được tiếp nhận.");
-        notification.put("orderId", numericId);
-        notification.put("createdAt", FieldValue.serverTimestamp());
-        notification.put("isRead", false);
-        batch.set(notificationRef, notification);
-
-        batch.commit().addOnSuccessListener(x -> {
-            AtomicInteger pendingDecrements = new AtomicInteger(cartItems.size());
-            for (CartItem item : cartItems) {
-                Product p = item.getProduct();
-                if (p == null) {
-                    if (pendingDecrements.decrementAndGet() == 0) {
-                        removeOrderedCartItems(normalized, cartItems, ok -> callback.onResult(ok ? numericId : -1));
-                    }
-                    continue;
-                }
-                decreaseStock(p.getId(), item.getQuantity(), ok -> {
-                    if (pendingDecrements.decrementAndGet() == 0) {
-                        removeOrderedCartItems(normalized, cartItems,
-                                done -> callback.onResult(done ? numericId : -1));
-                    }
-                });
+        firestore.runTransaction(transaction -> {
+            DocumentSnapshot existingOrder = transaction.get(orderRef);
+            DocumentSnapshot productVoucherSnapshot = productVoucherRef == null
+                    ? null
+                    : transaction.get(productVoucherRef);
+            DocumentSnapshot shippingVoucherSnapshot = shippingVoucherRef == null
+                    ? null
+                    : transaction.get(shippingVoucherRef);
+            Map<Integer, DocumentSnapshot> productSnapshots = new HashMap<>();
+            Map<Integer, DocumentSnapshot> cartSnapshots = new HashMap<>();
+            for (Integer productId : orderedQuantities.keySet()) {
+                productSnapshots.put(productId, transaction.get(productRefs.get(productId)));
+                cartSnapshots.put(productId, transaction.get(cartRefs.get(productId)));
             }
-        }).addOnFailureListener(callback::onError);
+            if (existingOrder.exists()) {
+                throw new IllegalStateException("Mã đơn hàng bị trùng. Vui lòng đặt hàng lại.");
+            }
+            Map<Integer, Long> remainingStock = new HashMap<>();
+            for (Map.Entry<Integer, Integer> entry : orderedQuantities.entrySet()) {
+                int productId = entry.getKey();
+                int quantity = entry.getValue();
+                DocumentSnapshot productSnapshot = productSnapshots.get(productId);
+                DocumentSnapshot cartSnapshot = cartSnapshots.get(productId);
+                Long currentStock = productSnapshot.getLong("stock");
+                Long cartQuantity = cartSnapshot.getLong("quantity");
+                if (!productSnapshot.exists() || currentStock == null || currentStock < quantity) {
+                    throw new IllegalStateException("Sản phẩm đã hết hàng hoặc không đủ số lượng.");
+                }
+                if (!cartSnapshot.exists() || cartQuantity == null || cartQuantity != quantity) {
+                    throw new IllegalStateException("Giỏ hàng đã thay đổi. Vui lòng kiểm tra lại đơn hàng.");
+                }
+                remainingStock.put(productId, currentStock - quantity);
+            }
+            if (productVoucherSnapshot != null) {
+                validateOwnedVoucher(productVoucherSnapshot, "product");
+            }
+            if (shippingVoucherSnapshot != null) {
+                validateOwnedVoucher(shippingVoucherSnapshot, "shipping");
+            }
+
+            Voucher productVoucher = productVoucherSnapshot == null
+                    ? null
+                    : Voucher.fromDocument(productVoucherSnapshot);
+            Voucher shippingVoucher = shippingVoucherSnapshot == null
+                    ? null
+                    : Voucher.fromDocument(shippingVoucherSnapshot);
+            VoucherCalculator.ProductDiscount productDiscount =
+                    VoucherCalculator.calculateProductDiscount(cartItems, productVoucher);
+            if (productVoucher != null && !productDiscount.isApplicable()) {
+                throw new IllegalStateException("Voucher giảm giá sản phẩm không còn đủ điều kiện.");
+            }
+            long shippingDiscount = VoucherCalculator.calculateShippingDiscount(
+                    cartItems, shippingVoucher, VoucherCalculator.BASE_SHIPPING_FEE);
+            if (shippingVoucher != null && shippingDiscount <= 0) {
+                throw new IllegalStateException("Voucher vận chuyển không còn đủ điều kiện.");
+            }
+
+            long itemsSubtotal = 0;
+            for (CartItem item : cartItems) {
+                itemsSubtotal = Math.addExact(itemsSubtotal, item.getSubtotal());
+            }
+            long discountedItemsSubtotal = Math.max(0, itemsSubtotal - productDiscount.getTotalDiscount());
+            long discountedShipping = Math.max(0, VoucherCalculator.BASE_SHIPPING_FEE - shippingDiscount);
+            long total = Math.addExact(discountedItemsSubtotal, discountedShipping);
+
+            Map<String, Object> order = new HashMap<>();
+            order.put("id", numericId);
+            order.put("userEmail", normalized);
+            order.put("receiverName", name.trim());
+            order.put("receiverPhone", phone.trim());
+            order.put("receiverAddress", address.trim());
+            order.put("note", note == null ? "" : note.trim());
+            order.put("paymentMethod", payment);
+            order.put("itemsSubtotal", itemsSubtotal);
+            order.put("productDiscount", productDiscount.getTotalDiscount());
+            order.put("shippingFee", VoucherCalculator.BASE_SHIPPING_FEE);
+            order.put("shippingDiscount", shippingDiscount);
+            order.put("productVoucherId", productVoucher == null ? "" : productVoucher.getId());
+            order.put("productVoucherCode", productVoucher == null ? "" : productVoucher.getCode());
+            order.put("shippingVoucherId", shippingVoucher == null ? "" : shippingVoucher.getId());
+            order.put("shippingVoucherCode", shippingVoucher == null ? "" : shippingVoucher.getCode());
+            order.put("totalAmount", total);
+            order.put("orderDate", date);
+            order.put("status", "Đặt hàng thành công");
+            transaction.set(orderRef, order);
+
+            for (int index = 0; index < cartItems.size(); index++) {
+                CartItem item = cartItems.get(index);
+                Product product = item.getProduct();
+                long originalSubtotal = item.getSubtotal();
+                long lineDiscount = product == null
+                        ? 0
+                        : productDiscount.getDiscountForProduct(product.getId());
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", index + 1);
+                data.put("orderId", numericId);
+                data.put("productId", product == null ? 0 : product.getId());
+                data.put("productName", product == null ? "Sản phẩm" : product.getName());
+                data.put("productIcon", product == null ? "📦" : product.getIcon());
+                data.put("price", product == null ? 0 : product.getPrice());
+                data.put("quantity", item.getQuantity());
+                data.put("originalSubtotal", originalSubtotal);
+                data.put("discountAmount", lineDiscount);
+                data.put("subtotal", Math.max(0, originalSubtotal - lineDiscount));
+                transaction.set(orderRef.collection("items").document(String.valueOf(index + 1)), data);
+            }
+
+            Map<String, Object> notification = new HashMap<>();
+            notification.put("userEmail", normalized);
+            notification.put("type", "order_placed");
+            notification.put("title", "Đặt hàng thành công");
+            notification.put("message", "Đơn hàng #DH"
+                    + String.format(Locale.getDefault(), "%05d", numericId) + " đã được tiếp nhận.");
+            notification.put("orderId", numericId);
+            notification.put("createdAt", FieldValue.serverTimestamp());
+            notification.put("isRead", false);
+            transaction.set(notificationRef, notification);
+            for (Integer productId : orderedQuantities.keySet()) {
+                transaction.update(productRefs.get(productId), "stock", remainingStock.get(productId));
+                transaction.delete(cartRefs.get(productId));
+            }
+
+            if (productVoucherRef != null) {
+                transaction.update(productVoucherRef,
+                        "state", "used",
+                        "usedAt", FieldValue.serverTimestamp(),
+                        "orderId", numericId,
+                        "discountAmount", productDiscount.getTotalDiscount());
+            }
+            if (shippingVoucherRef != null) {
+                transaction.update(shippingVoucherRef,
+                        "state", "used",
+                        "usedAt", FieldValue.serverTimestamp(),
+                        "orderId", numericId,
+                        "discountAmount", shippingDiscount);
+            }
+            return numericId;
+        }).addOnSuccessListener(callback::onResult)
+                .addOnFailureListener(callback::onError);
+    }
+
+    private void validateOwnedVoucher(DocumentSnapshot voucher, String expectedType) {
+        Timestamp expiresAt = voucher.getTimestamp("expiresAt");
+        if (!"saved".equals(voucher.getString("state"))
+                || !expectedType.equals(voucher.getString("type"))
+                || expiresAt == null
+                || !expiresAt.toDate().after(new Date())) {
+            throw new IllegalStateException("Voucher đã hết hạn hoặc không còn khả dụng.");
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     public void syncOrder(long orderId, String email, String name, String phone, String address, String note,

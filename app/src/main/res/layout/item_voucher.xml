@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:background="@drawable/bg_card_white"
+    android:elevation="2dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="10dp"
+    tools:context=".VoucherActivity">
+
+    <LinearLayout
+        android:layout_width="86dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_voucher_badge_sawtooth"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/tvVoucherType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="VOUCHER"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            tools:text="SẢN PHẨM" />
+
+        <TextView
+            android:id="@+id/tvVoucherCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textColor="#E0E7FF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            tools:text="TECH20" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvVoucherName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="#111827"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="Giảm 20% toàn shop" />
+
+        <TextView
+            android:id="@+id/tvVoucherDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#4B5563"
+            android:textSize="11sp"
+            tools:text="Giảm 20% trên sản phẩm đủ điều kiện" />
+
+        <TextView
+            android:id="@+id/tvVoucherConditions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#6B7280"
+            android:textSize="11sp"
+            tools:text="Đơn tối thiểu 0đ · Tối đa 2.000.000đ" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvVoucherExpiry"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#4F46E5"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                tools:text="Lưu để xem hạn sử dụng" />
+
+            <TextView
+                android:id="@+id/btnVoucherDetails"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="2dp"
+                android:text="Điều kiện"
+                android:textColor="#4F46E5"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnVoucherAction"
+        android:layout_width="wrap_content"
+        android:layout_height="34dp"
+        android:layout_marginStart="8dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:minWidth="0dp"
+        android:paddingHorizontal="10dp"
+        android:text="Lưu"
+        android:textAllCaps="false"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        app:backgroundTint="#4F46E5"
+        app:cornerRadius="8dp"
+        app:elevation="0dp"
+        tools:text="Dùng ngay" />
+</LinearLayout>

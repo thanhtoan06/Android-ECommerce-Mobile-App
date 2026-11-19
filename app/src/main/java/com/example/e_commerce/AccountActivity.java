@@ -37,7 +37,11 @@ public class AccountActivity extends AppCompatActivity {
         });
         findViewById(R.id.layoutPointsShortcut).setOnClickListener(v ->
                 startActivity(new Intent(this, PointsActivity.class)));
-        findViewById(R.id.layoutVoucherShortcut).setOnClickListener(v -> showUpcomingFeature());
+        findViewById(R.id.layoutVoucherShortcut).setOnClickListener(v -> {
+            if (AuthGate.requireLogin(this)) {
+                startActivity(new Intent(this, VoucherActivity.class));
+            }
+        });
         findViewById(R.id.layoutReviewsShortcut).setOnClickListener(v -> showUpcomingFeature());
 
         setupBottomMenu();

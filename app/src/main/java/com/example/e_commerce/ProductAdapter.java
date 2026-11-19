@@ -11,13 +11,20 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.text.NumberFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
 public class ProductAdapter extends ArrayAdapter<Product> {
 
     private final LayoutInflater inflater;
+    private final List<Voucher> savedVouchers;
 
-    public ProductAdapter(@NonNull Context context, @NonNull Product[] products) {
+    public ProductAdapter(@NonNull Context context, @NonNull Product[] products, @NonNull List<Voucher> savedVouchers) {
         super(context, 0, products);
         this.inflater = LayoutInflater.from(context);
+        this.savedVouchers = savedVouchers;
     }
 
     @NonNull
@@ -32,6 +39,10 @@ public class ProductAdapter extends ArrayAdapter<Product> {
             holder.tvCategory = convertView.findViewById(R.id.tvCategory);
             holder.tvName = convertView.findViewById(R.id.tvName);
             holder.tvPrice = convertView.findViewById(R.id.tvPrice);
+            holder.tvOriginalPrice = convertView.findViewById(R.id.tvOriginalPrice);
+            holder.layoutProductVoucherTag = convertView.findViewById(R.id.layoutProductVoucherTag);
+            holder.tvProductVoucherTag = convertView.findViewById(R.id.tvProductVoucherTag);
+            holder.tvProductFreeShipping = convertView.findViewById(R.id.tvProductFreeShipping);
             holder.tvStock = convertView.findViewById(R.id.tvStock);
             convertView.setTag(holder);
         } else {
@@ -47,8 +58,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
                 holder.tvCategory.setText(product.getCategory());
             if (holder.tvName != null)
                 holder.tvName.setText(product.getName());
-            if (holder.tvPrice != null)
-                holder.tvPrice.setText(product.getFormattedPrice());
+            bindVoucherPrice(holder, product);
             if (holder.tvStock != null) {
                 int stock = product.getStock();
                 if (stock <= 0) {
@@ -67,11 +77,68 @@ public class ProductAdapter extends ArrayAdapter<Product> {
         return convertView;
     }
 
+    private void bindVoucherPrice(ViewHolder holder, Product product) {
+        Voucher bestProductVoucher = null;
+        long bestDiscount = 0;
+        boolean hasFreeShippingVoucher = false;
+        CartItem singleItem = new CartItem(product.getId(), product, 1);
+        for (Voucher voucher : savedVouchers) {
+            if (!voucher.isSaved() || voucher.isExpired(new Date())) {
+                continue;
+            }
+            if (voucher.isProductVoucher()) {
+                VoucherCalculator.ProductDiscount discount =
+                        VoucherCalculator.calculateProductDiscount(java.util.Collections.singletonList(singleItem),
+                                voucher);
+                if (discount.getTotalDiscount() > bestDiscount) {
+                    bestDiscount = discount.getTotalDiscount();
+                    bestProductVoucher = voucher;
+                }
+            } else if (voucher.isShippingVoucher()
+                    && VoucherCalculator.calculateShippingDiscount(
+                            java.util.Collections.singletonList(singleItem),
+                            voucher,
+                            VoucherCalculator.BASE_SHIPPING_FEE) >= VoucherCalculator.BASE_SHIPPING_FEE) {
+                hasFreeShippingVoucher = true;
+            }
+        }
+
+        if (bestProductVoucher != null) {
+            holder.tvOriginalPrice.setText(product.getFormattedPrice());
+            holder.tvOriginalPrice.setPaintFlags(
+                    holder.tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            holder.tvOriginalPrice.setVisibility(View.VISIBLE);
+            holder.tvPrice.setText(formatMoney(product.getPrice() - bestDiscount));
+            holder.tvProductVoucherTag.setText(voucherDiscountLabel(bestProductVoucher));
+            holder.layoutProductVoucherTag.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvOriginalPrice.setVisibility(View.GONE);
+            holder.tvPrice.setText(product.getFormattedPrice());
+            holder.layoutProductVoucherTag.setVisibility(View.GONE);
+        }
+        holder.tvProductFreeShipping.setVisibility(hasFreeShippingVoucher ? View.VISIBLE : View.GONE);
+    }
+
+    private String voucherDiscountLabel(Voucher voucher) {
+        if ("percentage_per_item".equals(voucher.getDiscountType())) {
+            return "Voucher -" + voucher.getValue() + "%";
+        }
+        return "Voucher -" + formatMoney(voucher.getValue());
+    }
+
+    private String formatMoney(long amount) {
+        return NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(amount) + " ₫";
+    }
+
     private static class ViewHolder {
         TextView tvIcon;
         TextView tvCategory;
         TextView tvName;
         TextView tvPrice;
+        TextView tvOriginalPrice;
+        View layoutProductVoucherTag;
+        TextView tvProductVoucherTag;
+        TextView tvProductFreeShipping;
         TextView tvStock;
     }
 }

@@ -41,6 +41,8 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     private CartAdapter adapter;
     private FirestoreRepository repository;
     private String currentUserEmail;
+    private String selectedProductVoucherId;
+    private String selectedShippingVoucherId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +52,8 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
 
         repository = FirestoreRepository.getInstance();
         currentUserEmail = SharedPrefManager.getInstance(this).getEmail();
+        selectedProductVoucherId = getIntent().getStringExtra(VoucherActivity.EXTRA_PRODUCT_VOUCHER_ID);
+        selectedShippingVoucherId = getIntent().getStringExtra(VoucherActivity.EXTRA_SHIPPING_VOUCHER_ID);
 
         lvCartItems = findViewById(R.id.lvCartItems);
         layoutEmptyCart = findViewById(R.id.layoutEmptyCart);
@@ -159,6 +163,8 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
 
             Intent intent = new Intent(this, CheckoutActivity.class);
             intent.putIntegerArrayListExtra("SELECTED_PRODUCT_IDS", selectedProductIds);
+            intent.putExtra(VoucherActivity.EXTRA_PRODUCT_VOUCHER_ID, selectedProductVoucherId);
+            intent.putExtra(VoucherActivity.EXTRA_SHIPPING_VOUCHER_ID, selectedShippingVoucherId);
             startActivity(intent);
         });
 

@@ -29,6 +29,10 @@ public class ProductDetailActivity extends AppCompatActivity {
         TextView tvStock = findViewById(R.id.tvStock);
         TextView tvName = findViewById(R.id.tvName);
         TextView tvPrice = findViewById(R.id.tvPrice);
+        TextView tvOriginalPrice = findViewById(R.id.tvOriginalPrice);
+        TextView tvVoucherOffer = findViewById(R.id.tvVoucherOffer);
+        View layoutVoucherOffer = findViewById(R.id.layoutVoucherOffer);
+        TextView tvFreeShipping = findViewById(R.id.tvFreeShipping);
         TextView tvDescription = findViewById(R.id.tvDescription);
         TextView tvQuantity = findViewById(R.id.tvQuantity);
         View btnDecrease = findViewById(R.id.btnDecrease);
@@ -63,6 +67,11 @@ public class ProductDetailActivity extends AppCompatActivity {
                 tvCategory.setText(product.getCategory());
                 tvName.setText(product.getName());
                 tvPrice.setText(product.getFormattedPrice());
+                tvOriginalPrice.setVisibility(View.GONE);
+                layoutVoucherOffer.setVisibility(View.GONE);
+                tvFreeShipping.setVisibility(View.GONE);
+                loadVoucherOffers(product, tvPrice, tvOriginalPrice,
+                        layoutVoucherOffer, tvVoucherOffer, tvFreeShipping);
                 tvDescription.setText(product.getDescription());
 
                 int stock = product.getStock();
@@ -210,5 +219,64 @@ public class ProductDetailActivity extends AppCompatActivity {
             FirestoreRepository.getInstance().getCartCount(userEmail,
                     count -> tvHeaderCartCount.setText(String.valueOf(count)));
         }
+    }
+
+    private void loadVoucherOffers(Product product, TextView price, TextView originalPrice,
+            View voucherOfferLayout, TextView voucherOffer, TextView freeShipping) {
+        SharedPrefManager preferences = SharedPrefManager.getInstance(this);
+        if (!preferences.isLoggedIn()) {
+            return;
+        }
+
+        VoucherRepository.getInstance().loadWallet(preferences.getEmail(), new VoucherRepository.WalletCallback() {
+            @Override
+            public void onResult(VoucherRepository.VoucherWallet wallet) {
+                CartItem item = new CartItem(product.getId(), product, 1);
+                Voucher bestProductVoucher = null;
+                long bestDiscount = 0;
+                boolean hasFreeShipping = false;
+                for (Voucher voucher : wallet.getSaved()) {
+                    if (voucher.isExpired(new java.util.Date())) {
+                        continue;
+                    }
+                    if (voucher.isProductVoucher()) {
+                        VoucherCalculator.ProductDiscount discount =
+                                VoucherCalculator.calculateProductDiscount(
+                                        java.util.Collections.singletonList(item), voucher);
+                        if (discount.getTotalDiscount() > bestDiscount) {
+                            bestDiscount = discount.getTotalDiscount();
+                            bestProductVoucher = voucher;
+                        }
+                    } else if (voucher.isShippingVoucher()
+                            && VoucherCalculator.calculateShippingDiscount(
+                                    java.util.Collections.singletonList(item),
+                                    voucher,
+                                    VoucherCalculator.BASE_SHIPPING_FEE) >= VoucherCalculator.BASE_SHIPPING_FEE) {
+                        hasFreeShipping = true;
+                    }
+                }
+
+                if (bestProductVoucher != null) {
+                    originalPrice.setText(product.getFormattedPrice());
+                    originalPrice.setPaintFlags(
+                            originalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+                    originalPrice.setVisibility(View.VISIBLE);
+                    price.setText(formatMoney(product.getPrice() - bestDiscount));
+                    voucherOffer.setText("Ưu đãi " + bestProductVoucher.getCode()
+                            + " · -" + formatMoney(bestDiscount));
+                    voucherOfferLayout.setVisibility(View.VISIBLE);
+                }
+                freeShipping.setVisibility(hasFreeShipping ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                Toast.makeText(ProductDetailActivity.this, "Không thể tải ưu đãi đã lưu.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private String formatMoney(long amount) {
+        return java.text.NumberFormat.getInstance(java.util.Locale.forLanguageTag("vi-VN")).format(amount) + " ₫";
     }
 }

@@ -49,6 +49,7 @@ public class ProductListActivity extends AppCompatActivity {
 
     private Product[] allProducts = new Product[0];
     private Product[] filteredProducts = new Product[0];
+    private List<Voucher> savedVouchers = new ArrayList<>();
     private String selectedCategory = "Tất cả";
     private int currentSortMode = SORT_DEFAULT;
 
@@ -105,6 +106,7 @@ public class ProductListActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         updateUserHeader();
+        loadSavedVouchers();
     }
 
     @Override
@@ -128,6 +130,31 @@ public class ProductListActivity extends AppCompatActivity {
 
         tvUserGreeting.setText("Xin chào, " + (!username.isEmpty() ? username : "Quý khách"));
         tvUserEmail.setText(!userEmail.isEmpty() ? userEmail : "Chưa có email");
+    }
+
+    private void loadSavedVouchers() {
+        SharedPrefManager preferences = SharedPrefManager.getInstance(this);
+        if (!preferences.isLoggedIn()) {
+            savedVouchers = new ArrayList<>();
+            if (allProducts.length > 0) {
+                applyFilterAndSort();
+            }
+            return;
+        }
+        VoucherRepository.getInstance().loadWallet(preferences.getEmail(), new VoucherRepository.WalletCallback() {
+            @Override
+            public void onResult(VoucherRepository.VoucherWallet wallet) {
+                savedVouchers = wallet.getSaved();
+                if (allProducts.length > 0) {
+                    applyFilterAndSort();
+                }
+            }
+
+            @Override
+            public void onError(Exception error) {
+                Toast.makeText(ProductListActivity.this, "Không thể tải ưu đãi đã lưu.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupSearch() {
@@ -292,7 +319,7 @@ public class ProductListActivity extends AppCompatActivity {
 
         filteredProducts = matched.toArray(new Product[0]);
 
-        gridView.setAdapter(new ProductAdapter(this, filteredProducts));
+        gridView.setAdapter(new ProductAdapter(this, filteredProducts, savedVouchers));
 
         if (filteredProducts.length == 0) {
             layoutEmpty.setVisibility(View.VISIBLE);
