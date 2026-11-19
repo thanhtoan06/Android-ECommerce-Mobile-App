@@ -313,12 +313,6 @@ public class ProductListActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.menuOrders).setOnClickListener(v -> {
-            if (AuthGate.requireLogin(this)) {
-                startActivity(new Intent(this, OrderHistoryActivity.class));
-            }
-        });
-
         findViewById(R.id.menuAccount).setOnClickListener(v -> {
             if (AuthGate.requireLogin(this)) {
                 startActivity(new Intent(this, AccountActivity.class));

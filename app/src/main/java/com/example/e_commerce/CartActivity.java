@@ -291,20 +291,16 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     private void setupBottomMenu() {
         View menuHome = findViewById(R.id.menuHome);
         View menuCart = findViewById(R.id.menuCart);
-        View menuOrders = findViewById(R.id.menuOrders);
         View menuAccount = findViewById(R.id.menuAccount);
 
         ImageView ivMenuHome = findViewById(R.id.ivMenuHome);
         ImageView ivMenuCart = findViewById(R.id.ivMenuCart);
-        ImageView ivMenuOrders = findViewById(R.id.ivMenuOrders);
         ImageView ivMenuAccount = findViewById(R.id.ivMenuAccount);
 
         if (ivMenuHome != null)
             ivMenuHome.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
         if (ivMenuCart != null)
             ivMenuCart.setImageTintList(ContextCompat.getColorStateList(this, R.color.primary));
-        if (ivMenuOrders != null)
-            ivMenuOrders.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
         if (ivMenuAccount != null)
             ivMenuAccount.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
 
@@ -328,10 +324,6 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         });
 
         menuCart.setOnClickListener(v -> Toast.makeText(this, "Bạn đang ở trang Giỏ hàng", Toast.LENGTH_SHORT).show());
-
-        if (menuOrders != null) {
-            menuOrders.setOnClickListener(v -> startActivity(new Intent(this, OrderHistoryActivity.class)));
-        }
 
         menuAccount.setOnClickListener(v -> {
             startActivity(new Intent(this, AccountActivity.class));

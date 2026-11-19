@@ -155,7 +155,6 @@ public class NotificationActivity extends AppCompatActivity {
             finish();
         });
         findViewById(R.id.menuCart).setOnClickListener(v -> navigateTo(CartActivity.class));
-        findViewById(R.id.menuOrders).setOnClickListener(v -> navigateTo(OrderHistoryActivity.class));
         findViewById(R.id.menuAccount).setOnClickListener(v -> navigateTo(AccountActivity.class));
         findViewById(R.id.menuNotifications).setOnClickListener(
                 v -> Toast.makeText(this, "Bạn đang ở trang Thông báo", Toast.LENGTH_SHORT).show());
@@ -164,14 +163,12 @@ public class NotificationActivity extends AppCompatActivity {
         int activeColor = ContextCompat.getColor(this, R.color.primary);
         ((ImageView) findViewById(R.id.ivMenuHome)).setColorFilter(inactiveColor);
         ((ImageView) findViewById(R.id.ivMenuCart)).setColorFilter(inactiveColor);
-        ((ImageView) findViewById(R.id.ivMenuOrders)).setColorFilter(inactiveColor);
         ((ImageView) findViewById(R.id.ivMenuAccount)).setColorFilter(inactiveColor);
         ((ImageView) findViewById(R.id.ivMenuNotifications)).setColorFilter(activeColor);
 
         TextView[] inactiveLabels = {
                 findViewById(R.id.tvMenuHome),
                 findViewById(R.id.tvMenuCart),
-                findViewById(R.id.tvMenuOrders),
                 findViewById(R.id.tvMenuAccount)
         };
         for (TextView label : inactiveLabels) {

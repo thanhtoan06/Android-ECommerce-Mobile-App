@@ -77,27 +77,23 @@ public class OrderHistoryActivity extends AppCompatActivity {
     private void setupBottomMenu() {
         View menuHome = findViewById(R.id.menuHome);
         View menuCart = findViewById(R.id.menuCart);
-        View menuOrders = findViewById(R.id.menuOrders);
         View menuAccount = findViewById(R.id.menuAccount);
 
         ImageView ivMenuHome = findViewById(R.id.ivMenuHome);
         ImageView ivMenuCart = findViewById(R.id.ivMenuCart);
-        ImageView ivMenuOrders = findViewById(R.id.ivMenuOrders);
         ImageView ivMenuAccount = findViewById(R.id.ivMenuAccount);
 
         if (ivMenuHome != null)
             ivMenuHome.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
         if (ivMenuCart != null)
             ivMenuCart.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
-        if (ivMenuOrders != null)
-            ivMenuOrders.setImageTintList(ContextCompat.getColorStateList(this, R.color.primary));
         if (ivMenuAccount != null)
-            ivMenuAccount.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
+            ivMenuAccount.setImageTintList(ContextCompat.getColorStateList(this, R.color.primary));
 
-        TextView tvMenuOrders = findViewById(R.id.tvMenuOrders);
-        if (tvMenuOrders != null) {
-            tvMenuOrders.setTextColor(ContextCompat.getColor(this, R.color.primary));
-            tvMenuOrders.setTypeface(null, Typeface.BOLD);
+        TextView tvMenuAccount = findViewById(R.id.tvMenuAccount);
+        if (tvMenuAccount != null) {
+            tvMenuAccount.setTextColor(ContextCompat.getColor(this, R.color.primary));
+            tvMenuAccount.setTypeface(null, Typeface.BOLD);
         }
 
         TextView tvMenuHome = findViewById(R.id.tvMenuHome);
@@ -120,11 +116,6 @@ public class OrderHistoryActivity extends AppCompatActivity {
                 startActivity(new Intent(this, CartActivity.class));
                 finish();
             });
-        }
-
-        if (menuOrders != null) {
-            menuOrders.setOnClickListener(
-                    v -> Toast.makeText(this, "Bạn đang ở trang Lịch sử đơn hàng", Toast.LENGTH_SHORT).show());
         }
 
         if (menuAccount != null) {
