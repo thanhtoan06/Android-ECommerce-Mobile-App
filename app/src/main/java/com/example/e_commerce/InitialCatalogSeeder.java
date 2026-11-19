@@ -30,7 +30,10 @@ public final class InitialCatalogSeeder {
         firestore.collection("products").get().addOnSuccessListener(products ->
                 firestore.collection("categories").get().addOnSuccessListener(categories ->
                         firestore.collection("vouchers").get().addOnSuccessListener(vouchers ->
-                                writeCatalogAndVouchers(firestore, products, categories, vouchers, completion)
+                                firestore.collection("reviews").get().addOnSuccessListener(reviews ->
+                                        writeCatalogAndVouchers(
+                                                firestore, products, categories, vouchers, reviews, completion))
+                                        .addOnFailureListener(completion::setException)
                         ).addOnFailureListener(completion::setException)
                 ).addOnFailureListener(completion::setException)
         ).addOnFailureListener(completion::setException);
@@ -38,7 +41,7 @@ public final class InitialCatalogSeeder {
     }
 
     private static void writeCatalogAndVouchers(FirebaseFirestore firestore, QuerySnapshot oldProducts,
-            QuerySnapshot oldCategories, QuerySnapshot oldVouchers,
+            QuerySnapshot oldCategories, QuerySnapshot oldVouchers, QuerySnapshot oldReviews,
             TaskCompletionSource<Boolean> completion) {
         List<Product> products = catalogProducts();
         List<Map<String, Object>> categories = catalogCategories();
@@ -59,7 +62,8 @@ public final class InitialCatalogSeeder {
 
         int missingCount = 0;
         for (Product product : products) {
-            if (!existingProductIds.contains(String.valueOf(product.getId()))) {
+            String productId = String.valueOf(product.getId());
+            if (!existingProductIds.contains(productId)) {
                 missingCount++;
             }
         }
@@ -70,6 +74,15 @@ public final class InitialCatalogSeeder {
         }
         for (Map<String, Object> voucher : vouchers) {
             if (!existingVoucherIds.contains(voucher.get("id"))) {
+                missingCount++;
+            }
+        }
+
+        boolean seedInitialReviews = oldReviews.isEmpty() && hasEmptyInitialMetrics(oldProducts);
+        List<SeedReview> initialReviews = seedInitialReviews ? initialReviews() : new ArrayList<>();
+        missingCount += initialReviews.size();
+        for (String productId : initialMetricProductIds()) {
+            if (seedInitialReviews && existingProductIds.contains(productId)) {
                 missingCount++;
             }
         }
@@ -93,7 +106,10 @@ public final class InitialCatalogSeeder {
         for (Product product : products) {
             String productId = String.valueOf(product.getId());
             if (!existingProductIds.contains(productId)) {
-                batch.set(firestore.collection("products").document(productId), productData(product));
+                batch.set(firestore.collection("products").document(productId),
+                        productData(product, seedInitialReviews));
+            } else if (seedInitialReviews && initialMetricProductIds().contains(productId)) {
+                batch.update(firestore.collection("products").document(productId), initialMetricData(productId));
             }
         }
         for (Map<String, Object> category : categories) {
@@ -107,6 +123,9 @@ public final class InitialCatalogSeeder {
             if (!existingVoucherIds.contains(voucherId)) {
                 batch.set(firestore.collection("vouchers").document(voucherId), voucher);
             }
+        }
+        for (SeedReview review : initialReviews) {
+            batch.set(firestore.collection("reviews").document(review.id), review.data);
         }
 
         boolean addedCatalogData = missingCount > 0;
@@ -279,7 +298,7 @@ public final class InitialCatalogSeeder {
         return data;
     }
 
-    private static Map<String, Object> productData(Product product) {
+    private static Map<String, Object> productData(Product product, boolean includeInitialReviews) {
         Map<String, Object> data = new HashMap<>();
         data.put("id", product.getId());
         data.put("name", product.getName());
@@ -293,7 +312,97 @@ public final class InitialCatalogSeeder {
         data.put("ratingSum", product.getAverageRating() * product.getReviewCount());
         data.put("reviewCount", product.getReviewCount());
         data.put("specifications", product.getSpecifications());
+        if (includeInitialReviews && initialMetricProductIds().contains(String.valueOf(product.getId()))) {
+            data.putAll(initialMetricData(String.valueOf(product.getId())));
+        }
         return data;
+    }
+
+    private static boolean hasEmptyInitialMetrics(QuerySnapshot products) {
+        Set<String> productIds = initialMetricProductIds();
+        for (DocumentSnapshot document : products) {
+            if (!productIds.contains(document.getId())) {
+                continue;
+            }
+            if (number(document.get("soldCount")) != 0
+                    || number(document.get("averageRating")) != 0
+                    || number(document.get("reviewCount")) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static Set<String> initialMetricProductIds() {
+        return new HashSet<>(Arrays.asList("1", "4", "7"));
+    }
+
+    private static Map<String, Object> initialMetricData(String productId) {
+        Map<String, Object> data = new HashMap<>();
+        if ("1".equals(productId)) {
+            data.put("soldCount", 17);
+            data.put("averageRating", 4.5);
+            data.put("ratingSum", 9.0);
+            data.put("reviewCount", 2);
+        } else if ("4".equals(productId)) {
+            data.put("soldCount", 9);
+            data.put("averageRating", 5.0);
+            data.put("ratingSum", 5.0);
+            data.put("reviewCount", 1);
+        } else if ("7".equals(productId)) {
+            data.put("soldCount", 13);
+            data.put("averageRating", 4.0);
+            data.put("ratingSum", 4.0);
+            data.put("reviewCount", 1);
+        }
+        return data;
+    }
+
+    private static List<SeedReview> initialReviews() {
+        List<SeedReview> reviews = new ArrayList<>();
+        reviews.add(seedReview(90001, 1, "Samsung Galaxy A16 5G 128GB", "📱", 5,
+                "Máy chạy mượt, pin dùng ổn định."));
+        reviews.add(seedReview(90002, 1, "Samsung Galaxy A16 5G 128GB", "📱", 4,
+                "Sản phẩm đúng mô tả, sử dụng tốt."));
+        reviews.add(seedReview(90003, 4, "ASUS Vivobook 15 X1504VA Core i5 16GB 512GB", "💻", 5,
+                "Máy đáp ứng tốt nhu cầu học tập và làm việc."));
+        reviews.add(seedReview(90004, 7, "Samsung Galaxy Buds FE", "🎧", 4,
+                "Âm thanh rõ, kết nối ổn định."));
+        return reviews;
+    }
+
+    private static SeedReview seedReview(int orderId, int productId, String productName, String productIcon,
+            int rating, String comment) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("orderId", orderId);
+        data.put("orderItemId", orderId);
+        data.put("productId", productId);
+        data.put("productName", productName);
+        data.put("productIcon", productIcon);
+        data.put("reviewerId", "initial-customer-" + orderId);
+        data.put("reviewerName", "");
+        data.put("anonymous", true);
+        data.put("rating", rating);
+        data.put("comment", comment);
+        data.put("likesCount", 0L);
+        data.put("viewsCount", 0L);
+        data.put("createdAt", Timestamp.now());
+        data.put("updatedAt", Timestamp.now());
+        return new SeedReview(ReviewRules.documentId(orderId, productId), data);
+    }
+
+    private static double number(Object value) {
+        return value instanceof Number ? ((Number) value).doubleValue() : 0;
+    }
+
+    private static final class SeedReview {
+        private final String id;
+        private final Map<String, Object> data;
+
+        private SeedReview(String id, Map<String, Object> data) {
+            this.id = id;
+            this.data = data;
+        }
     }
 
     private static Date daysFromNow(int days) {

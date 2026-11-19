@@ -71,6 +71,12 @@ public class FirestoreRepository {
         void onError(Exception e);
     }
 
+    public interface OrderStatusCallback {
+        void onResult(String status);
+
+        void onError(Exception e);
+    }
+
     public interface NotificationsCallback {
         void onResult(List<AppNotification> notifications);
 
@@ -768,6 +774,116 @@ public class FirestoreRepository {
                     }
                     callback.onResult(result);
                 }).addOnFailureListener(callback::onError);
+    }
+
+    public void advanceOrderStatusForDemo(long orderId, String email, OrderStatusCallback callback) {
+        String normalizedEmail = normalizeEmail(email);
+        DocumentReference orderRef = firestore.collection("orders").document(String.valueOf(orderId));
+        getOrderItems(orderId, new OrderItemsCallback() {
+            @Override
+            public void onResult(List<OrderItem> items) {
+                if (items == null || items.isEmpty()) {
+                    callback.onError(new IllegalStateException("Đơn hàng chưa có sản phẩm để cập nhật."));
+                    return;
+                }
+
+                Map<Integer, Long> quantities = new HashMap<>();
+                Map<Integer, DocumentReference> productRefs = new HashMap<>();
+                for (OrderItem item : items) {
+                    if (item.getProductId() <= 0 || item.getQuantity() <= 0) {
+                        callback.onError(new IllegalStateException("Sản phẩm trong đơn hàng không hợp lệ."));
+                        return;
+                    }
+                    try {
+                        quantities.merge(item.getProductId(), (long) item.getQuantity(), Math::addExact);
+                    } catch (ArithmeticException error) {
+                        callback.onError(new IllegalStateException("Số lượng sản phẩm không hợp lệ.", error));
+                        return;
+                    }
+                    productRefs.put(item.getProductId(),
+                            firestore.collection("products").document(String.valueOf(item.getProductId())));
+                }
+
+                firestore.runTransaction(transaction -> {
+                    DocumentSnapshot order = transaction.get(orderRef);
+                    if (!order.exists() || !normalizedEmail.equals(order.getString("userEmail"))) {
+                        throw new IllegalStateException("Không tìm thấy đơn hàng thuộc tài khoản này.");
+                    }
+                    String currentStatus = order.getString("status");
+                    String nextStatus = ReviewRules.nextDemoStatus(currentStatus);
+                    if (nextStatus == null) {
+                        return currentStatus == null ? "" : currentStatus;
+                    }
+
+                    Map<Integer, DocumentSnapshot> productSnapshots = new HashMap<>();
+                    for (Integer productId : quantities.keySet()) {
+                        productSnapshots.put(productId, transaction.get(productRefs.get(productId)));
+                    }
+                    Map<Integer, DocumentReference> soldOrderRefs = new HashMap<>();
+                    Map<Integer, DocumentSnapshot> soldOrderMarkers = new HashMap<>();
+                    if (ReviewRules.isDelivered(nextStatus)) {
+                        for (Integer productId : quantities.keySet()) {
+                            DocumentReference soldOrderRef = productRefs.get(productId)
+                                    .collection("soldOrders").document(String.valueOf(orderId));
+                            soldOrderRefs.put(productId, soldOrderRef);
+                            soldOrderMarkers.put(productId, transaction.get(soldOrderRef));
+                        }
+                    }
+                    for (Map.Entry<Integer, Long> entry : quantities.entrySet()) {
+                        DocumentSnapshot product = productSnapshots.get(entry.getKey());
+                        if (!product.exists()) {
+                            throw new IllegalStateException("Không tìm thấy sản phẩm trong đơn hàng.");
+                        }
+                    }
+
+                    Map<String, Object> orderUpdate = new HashMap<>();
+                    orderUpdate.put("status", nextStatus);
+                    orderUpdate.put("updatedAt", FieldValue.serverTimestamp());
+                    if (ReviewRules.isDelivered(nextStatus)) {
+                        orderUpdate.put("deliveredAt", FieldValue.serverTimestamp());
+                        for (Map.Entry<Integer, Long> entry : quantities.entrySet()) {
+                            int productId = entry.getKey();
+                            if (soldOrderMarkers.get(productId).exists()) {
+                                continue;
+                            }
+                            DocumentSnapshot product = productSnapshots.get(entry.getKey());
+                            long soldCount = Math.max(0, longValue(product, "soldCount"));
+                            long updatedSoldCount = Math.addExact(soldCount, entry.getValue());
+                            transaction.update(productRefs.get(productId), "soldCount", updatedSoldCount);
+                            Map<String, Object> soldOrder = new HashMap<>();
+                            soldOrder.put("orderId", orderId);
+                            soldOrder.put("quantity", entry.getValue());
+                            soldOrder.put("createdAt", FieldValue.serverTimestamp());
+                            transaction.set(soldOrderRefs.get(productId), soldOrder);
+                        }
+                    }
+                    transaction.update(orderRef, orderUpdate);
+
+                    String notificationId = "order_" + orderId + "_status_"
+                            + Integer.toHexString(nextStatus.hashCode());
+                    DocumentReference notificationRef = firestore.collection("notifications").document(notificationId);
+                    Map<String, Object> notification = new HashMap<>();
+                    notification.put("userEmail", normalizedEmail);
+                    notification.put("type", "order_status");
+                    notification.put("title", "Cập nhật đơn hàng");
+                    notification.put("message", "Đơn hàng #DH"
+                            + String.format(Locale.getDefault(), "%05d", orderId)
+                            + " chuyển sang trạng thái: " + nextStatus + ".");
+                    notification.put("orderId", orderId);
+                    notification.put("status", nextStatus);
+                    notification.put("createdAt", FieldValue.serverTimestamp());
+                    notification.put("isRead", false);
+                    transaction.set(notificationRef, notification);
+                    return nextStatus;
+                }).addOnSuccessListener(callback::onResult)
+                        .addOnFailureListener(callback::onError);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                callback.onError(error);
+            }
+        });
     }
 
     public void registerUser(String fullName, String email, String phone, BooleanCallback callback) {

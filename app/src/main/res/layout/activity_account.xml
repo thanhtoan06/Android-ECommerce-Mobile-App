@@ -139,6 +139,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvOrderWaitingLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Xem tất cả"
@@ -170,9 +171,13 @@
                     android:paddingTop="2dp">
 
                     <LinearLayout
+                        android:id="@+id/layoutOrderWaiting"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical">
 
@@ -191,12 +196,25 @@
                             android:text="Chờ xác nhận"
                             android:textColor="#374151"
                             android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvOrderWaitingCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 đơn"
+                            android:textColor="#4F46E5"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/layoutOrderShipping"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical">
 
@@ -208,6 +226,7 @@
                             app:tint="#4F46E5" />
 
                         <TextView
+                            android:id="@+id/tvOrderShippingLabel"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
@@ -215,12 +234,25 @@
                             android:text="Đang giao"
                             android:textColor="#374151"
                             android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvOrderShippingCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 đơn"
+                            android:textColor="#4F46E5"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/layoutOrderDelivered"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical">
 
@@ -232,6 +264,7 @@
                             app:tint="#4F46E5" />
 
                         <TextView
+                            android:id="@+id/tvOrderDeliveredLabel"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
@@ -239,12 +272,25 @@
                             android:text="Đã giao"
                             android:textColor="#374151"
                             android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvOrderDeliveredCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 đơn"
+                            android:textColor="#4F46E5"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/layoutOrderReturned"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical">
 
@@ -256,6 +302,7 @@
                             app:tint="#4F46E5" />
 
                         <TextView
+                            android:id="@+id/tvOrderReturnedLabel"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
@@ -263,6 +310,15 @@
                             android:text="Hoàn trả"
                             android:textColor="#374151"
                             android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvOrderReturnedCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 đơn"
+                            android:textColor="#4F46E5"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>

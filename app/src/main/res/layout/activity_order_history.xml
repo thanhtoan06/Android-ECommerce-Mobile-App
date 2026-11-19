@@ -5,24 +5,35 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/page_background"
+    android:background="#F5F6FA"
     android:orientation="vertical"
     tools:context=".OrderHistoryActivity">
-<LinearLayout
+
+    <!-- TopBar tím #4F46E5 đồng bộ -->
+    <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="@color/primary"
+        android:layout_height="54dp"
+        android:background="#4F46E5"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp">
-<TextView
+        android:paddingHorizontal="14dp">
+
+        <ImageView
             android:id="@+id/tvBack"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="gone" />
-<TextView
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="7dp"
+            android:src="@drawable/ic_arrow_back"
+            android:visibility="gone"
+            app:tint="#FFFFFF"
+            tools:visibility="visible" />
+
+        <TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -30,76 +41,148 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Lịch sử đơn mua"
-            android:textColor="@color/white"
+            android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:textStyle="bold" />
-<TextView
+
+        <TextView
             android:id="@+id/tvOrderCountBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_tab_active_white"
-            android:paddingHorizontal="12dp"
+            android:paddingHorizontal="11dp"
             android:paddingVertical="4dp"
             android:text="0 đơn"
-            android:textColor="@color/primary"
+            android:textColor="#4F46E5"
             android:textSize="12sp"
             android:textStyle="bold"
             tools:text="3 đơn" />
     </LinearLayout>
-<FrameLayout
+
+    <!-- Cụm lọc trạng thái đơn gọn gàng -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:elevation="1dp"
+        android:orientation="vertical">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:fillViewport="false"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:id="@+id/filterOrdersAll"
+                    style="@style/OrderFilterChip"
+                    android:layout_marginEnd="6dp"
+                    android:text="Tất cả" />
+
+                <TextView
+                    android:id="@+id/filterOrdersWaiting"
+                    style="@style/OrderFilterChip"
+                    android:layout_marginEnd="6dp"
+                    android:text="Chờ xác nhận" />
+
+                <TextView
+                    android:id="@+id/filterOrdersShipping"
+                    style="@style/OrderFilterChip"
+                    android:layout_marginEnd="6dp"
+                    android:text="Đang giao" />
+
+                <TextView
+                    android:id="@+id/filterOrdersDelivered"
+                    style="@style/OrderFilterChip"
+                    android:layout_marginEnd="6dp"
+                    android:text="Đã giao" />
+
+                <TextView
+                    android:id="@+id/filterOrdersReturned"
+                    style="@style/OrderFilterChip"
+                    android:text="Hoàn trả" />
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
-<LinearLayout
+
+        <!-- Trạng thái chưa có đơn hàng -->
+        <LinearLayout
             android:id="@+id/layoutEmptyOrders"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="24dp"
+            android:padding="28dp"
             android:visibility="gone">
-<FrameLayout
-                android:layout_width="88dp"
-                android:layout_height="88dp"
+
+            <FrameLayout
+                android:layout_width="84dp"
+                android:layout_height="84dp"
                 android:background="@drawable/bg_avatar_circle"
-                android:padding="16dp">
+                android:padding="18dp">
+
                 <ImageView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="Hộp trống"
                     android:src="@drawable/ic_orders"
-                    app:tint="@color/primary" />
+                    app:tint="#4F46E5" />
             </FrameLayout>
-<TextView
+
+            <TextView
+                android:id="@+id/tvEmptyOrdersTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Chưa có đơn hàng nào"
-                android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textColor="#111827"
+                android:textSize="17sp"
                 android:textStyle="bold" />
-<TextView
+
+            <TextView
+                android:id="@+id/tvEmptyOrdersMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center"
+                android:lineSpacingExtra="2dp"
                 android:text="Bạn chưa thực hiện đơn đặt hàng nào trong hệ thống."
-                android:textColor="@color/text_secondary"
+                android:textColor="#6B7280"
                 android:textSize="13sp" />
-<Button
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnShopNow"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="wrap_content"
-                android:layout_height="46dp"
+                android:layout_height="42dp"
                 android:layout_marginTop="20dp"
-                android:background="@drawable/bg_primary_button"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:paddingHorizontal="24dp"
-                android:text="MUA SẮM NGAY"
-                android:textColor="@color/white"
+                android:text="Mua sắm ngay"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                app:backgroundTint="@null" />
+                app:backgroundTint="#4F46E5"
+                app:cornerRadius="10dp" />
         </LinearLayout>
-<ListView
+
+        <ListView
             android:id="@+id/lvOrders"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -111,7 +194,8 @@
             android:paddingBottom="16dp"
             tools:listitem="@layout/item_order" />
     </FrameLayout>
-<include
+
+    <include
         android:id="@+id/bottomMenu"
         layout="@layout/include_bottom_menu" />
 </LinearLayout>

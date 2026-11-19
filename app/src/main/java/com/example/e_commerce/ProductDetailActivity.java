@@ -2,19 +2,38 @@
 package com.example.e_commerce;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class ProductDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_PRODUCT_ID = "extra_product_id";
+    public static final String EXTRA_REVIEW_ID = "extra_review_id";
     private TextView tvHeaderCartCount;
+    private LinearLayout layoutProductReviewItems;
+    private LinearLayout layoutProductReviews;
+    private TextView tvProductReviewListTitle;
+    private TextView tvProductReviewListEmpty;
+    private TextView tvProductReviewSummary;
+    private android.widget.ScrollView scrollProductDetail;
+    private int productReviewCount;
     private int quantity = 1;
 
     @Override
@@ -28,6 +47,12 @@ public class ProductDetailActivity extends AppCompatActivity {
         TextView tvCategory = findViewById(R.id.tvCategory);
         TextView tvStock = findViewById(R.id.tvStock);
         TextView tvName = findViewById(R.id.tvName);
+        tvProductReviewSummary = findViewById(R.id.tvProductReviewSummary);
+        tvProductReviewListTitle = findViewById(R.id.tvProductReviewListTitle);
+        tvProductReviewListEmpty = findViewById(R.id.tvProductReviewListEmpty);
+        layoutProductReviewItems = findViewById(R.id.layoutProductReviewItems);
+        layoutProductReviews = findViewById(R.id.layoutProductReviews);
+        scrollProductDetail = findViewById(R.id.scrollProductDetail);
         TextView tvPrice = findViewById(R.id.tvPrice);
         TextView tvOriginalPrice = findViewById(R.id.tvOriginalPrice);
         TextView tvVoucherOffer = findViewById(R.id.tvVoucherOffer);
@@ -66,6 +91,10 @@ public class ProductDetailActivity extends AppCompatActivity {
                 tvIcon.setText(product.getIcon());
                 tvCategory.setText(product.getCategory());
                 tvName.setText(product.getName());
+                productReviewCount = product.getReviewCount();
+                updateProductReviewSummary(product.getAverageRating(), product.getReviewCount(),
+                        product.getSoldCount());
+                loadProductReviews(product.getId());
                 tvPrice.setText(product.getFormattedPrice());
                 tvOriginalPrice.setVisibility(View.GONE);
                 layoutVoucherOffer.setVisibility(View.GONE);
@@ -285,5 +314,217 @@ public class ProductDetailActivity extends AppCompatActivity {
 
     private String formatMoney(long amount) {
         return java.text.NumberFormat.getInstance(java.util.Locale.forLanguageTag("vi-VN")).format(amount) + " ₫";
+    }
+
+    private void updateProductReviewSummary(double averageRating, int reviewCount, int soldCount) {
+        tvProductReviewSummary.setText(String.format(Locale.forLanguageTag("vi-VN"),
+                "★ %.1f (%d đánh giá) · Đã bán %d", averageRating, reviewCount, soldCount));
+    }
+
+    private void loadProductReviews(int productId) {
+        layoutProductReviewItems.removeAllViews();
+        tvProductReviewListEmpty.setVisibility(View.GONE);
+        ReviewRepository.getInstance().getProductReviews(productId, new ReviewRepository.ReviewsCallback() {
+            @Override
+            public void onResult(List<Review> reviews) {
+                String requestedReviewId = getIntent().getStringExtra(EXTRA_REVIEW_ID);
+                boolean targetIncluded = requestedReviewId == null;
+                for (Review review : reviews) {
+                    if (requestedReviewId != null && requestedReviewId.equals(review.getId())) {
+                        targetIncluded = true;
+                        break;
+                    }
+                }
+                if (!targetIncluded) {
+                    ReviewRepository.getInstance().getReviewById(requestedReviewId,
+                            new ReviewRepository.ReviewCallback() {
+                                @Override
+                                public void onResult(Review requestedReview) {
+                                    if (requestedReview != null && requestedReview.getProductId() == productId) {
+                                        reviews.add(0, requestedReview);
+                                    } else {
+                                        Toast.makeText(ProductDetailActivity.this,
+                                                "Không tìm thấy bài đánh giá cần mở.", Toast.LENGTH_SHORT).show();
+                                    }
+                                    renderProductReviews(reviews);
+                                }
+
+                                @Override
+                                public void onError(Exception error) {
+                                    tvProductReviewListEmpty.setText("Không thể tải bài đánh giá được chọn.");
+                                    tvProductReviewListEmpty.setVisibility(View.VISIBLE);
+                                }
+                            });
+                    return;
+                }
+                renderProductReviews(reviews);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                tvProductReviewListEmpty.setText("Không thể tải đánh giá. Vui lòng thử lại.");
+                tvProductReviewListEmpty.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void renderProductReviews(List<Review> reviews) {
+        tvProductReviewListTitle.setText("Đánh giá của người mua (" + productReviewCount + ")");
+        tvProductReviewListEmpty.setVisibility(reviews.isEmpty() ? View.VISIBLE : View.GONE);
+        for (Review review : reviews) {
+            layoutProductReviewItems.addView(createProductReviewCard(review));
+            if (SharedPrefManager.getInstance(ProductDetailActivity.this).isLoggedIn()) {
+                ReviewRepository.getInstance().recordView(review.getId(),
+                        SharedPrefManager.getInstance(ProductDetailActivity.this).getEmail(),
+                        new ReviewRepository.InteractionCallback() {
+                            @Override
+                            public void onResult(boolean changed) {
+                                if (changed) {
+                                    View card = layoutProductReviewItems.findViewWithTag(review.getId());
+                                    if (card != null) {
+                                        TextView totals = (TextView) card.findViewWithTag("review_totals");
+                                        if (totals != null) {
+                                            totals.setText(interactionSummary(
+                                                    review.getLikesCount(), review.getViewsCount() + 1));
+                                        }
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onError(Exception error) {
+                                Toast.makeText(ProductDetailActivity.this,
+                                        "Không thể ghi nhận lượt xem đánh giá.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            }
+        }
+        scrollToRequestedReview(reviews);
+    }
+
+    private View createProductReviewCard(Review review) {
+        LinearLayout card = new LinearLayout(this);
+        card.setTag(review.getId());
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(10), dp(12), dp(10), dp(12));
+        card.setBackgroundResource(R.drawable.bg_chip_blue);
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardParams.topMargin = dp(8);
+        card.setLayoutParams(cardParams);
+
+        TextView author = createReviewText(review.getDisplayName(), R.color.text_primary, 13, true);
+        card.addView(author);
+        TextView rating = createReviewText(reviewStars(review.getRating()) + "  ·  "
+                + formatReviewDate(review.getCreatedAt()), R.color.text_secondary, 11, false);
+        rating.setPadding(0, dp(4), 0, dp(6));
+        card.addView(rating);
+        TextView comment = createReviewText(review.getComment(), R.color.text_primary, 13, false);
+        comment.setMaxLines(8);
+        comment.setEllipsize(TextUtils.TruncateAt.END);
+        card.addView(comment);
+
+        LinearLayout interactions = new LinearLayout(this);
+        interactions.setGravity(Gravity.CENTER_VERTICAL);
+        interactions.setOrientation(LinearLayout.HORIZONTAL);
+        interactions.setPadding(0, dp(6), 0, 0);
+        TextView totals = createReviewText(interactionSummary(
+                review.getLikesCount(), review.getViewsCount()), R.color.text_secondary, 11, false);
+        totals.setTag("review_totals");
+        LinearLayout.LayoutParams totalsParams = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        totals.setLayoutParams(totalsParams);
+        interactions.addView(totals);
+
+        Button like = new Button(this);
+        like.setText("Thích");
+        like.setTransformationMethod(null);
+        like.setTextSize(11);
+        like.setPadding(dp(8), 0, dp(8), 0);
+        like.setMinHeight(0);
+        like.setMinimumHeight(0);
+        interactions.addView(like);
+        like.setOnClickListener(v -> {
+            if (!AuthGate.requireLogin(this)) {
+                return;
+            }
+            String email = SharedPrefManager.getInstance(this).getEmail();
+            like.setEnabled(false);
+            ReviewRepository.getInstance().recordLike(review.getId(), email,
+                    new ReviewRepository.InteractionCallback() {
+                        @Override
+                        public void onResult(boolean changed) {
+                            like.setEnabled(true);
+                            if (changed) {
+                                like.setText("Đã thích");
+                                totals.setText(interactionSummary(
+                                        review.getLikesCount() + 1, review.getViewsCount()));
+                            } else {
+                                Toast.makeText(ProductDetailActivity.this,
+                                        "Bạn đã thích bài này hoặc không thể tự thích đánh giá của mình.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception error) {
+                            like.setEnabled(true);
+                            Toast.makeText(ProductDetailActivity.this,
+                                    "Không thể ghi nhận lượt thích.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        });
+        card.addView(interactions);
+        return card;
+    }
+
+    private TextView createReviewText(String text, int colorResource, float size, boolean bold) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(ContextCompat.getColor(this, colorResource));
+        view.setTextSize(size);
+        if (bold) {
+            view.setTypeface(null, Typeface.BOLD);
+        }
+        return view;
+    }
+
+    private String interactionSummary(long likes, long views) {
+        return "♥ " + likes + " lượt thích  ·  " + views + " lượt xem";
+    }
+
+    private String reviewStars(int rating) {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 5; i++) {
+            text.append(i < rating ? "★" : "☆");
+        }
+        return text.toString();
+    }
+
+    private String formatReviewDate(Date date) {
+        return date == null ? "" : new SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")).format(date);
+    }
+
+    private void scrollToRequestedReview(List<Review> reviews) {
+        String requestedReviewId = getIntent().getStringExtra(EXTRA_REVIEW_ID);
+        if (requestedReviewId == null) {
+            return;
+        }
+        for (Review review : reviews) {
+            if (requestedReviewId.equals(review.getId())) {
+                View target = layoutProductReviewItems.findViewWithTag(review.getId());
+                if (target != null) {
+                    target.setBackgroundResource(R.drawable.bg_chip_green);
+                    scrollProductDetail.post(() -> scrollProductDetail.smoothScrollTo(
+                            0, layoutProductReviews.getTop() + target.getTop()));
+                }
+                return;
+            }
+        }
+        Toast.makeText(this, "Không tìm thấy bài đánh giá cần mở.", Toast.LENGTH_SHORT).show();
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }

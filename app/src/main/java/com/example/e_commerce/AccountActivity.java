@@ -11,12 +11,18 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import java.util.List;
+
 public class AccountActivity extends AppCompatActivity {
 
     private SharedPrefManager prefManager;
     private FirestoreRepository repository;
     private TextView tvAccountName;
     private TextView tvAccountEmail;
+    private TextView tvWaitingCount;
+    private TextView tvShippingCount;
+    private TextView tvDeliveredCount;
+    private TextView tvReturnedCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,22 +33,35 @@ public class AccountActivity extends AppCompatActivity {
         repository = FirestoreRepository.getInstance();
         tvAccountName = findViewById(R.id.tvAccountName);
         tvAccountEmail = findViewById(R.id.tvAccountEmail);
+        tvWaitingCount = findViewById(R.id.tvOrderWaitingCount);
+        tvShippingCount = findViewById(R.id.tvOrderShippingCount);
+        tvDeliveredCount = findViewById(R.id.tvOrderDeliveredCount);
+        tvReturnedCount = findViewById(R.id.tvOrderReturnedCount);
 
         findViewById(R.id.btnSettings).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
         findViewById(R.id.layoutOrderShortcut).setOnClickListener(v -> {
+            openOrders(ReviewRules.FILTER_ALL);
+        });
+        findViewById(R.id.layoutOrderWaiting).setOnClickListener(v -> openOrders(ReviewRules.FILTER_WAITING));
+        findViewById(R.id.layoutOrderShipping).setOnClickListener(v -> openOrders(ReviewRules.FILTER_SHIPPING));
+        findViewById(R.id.layoutOrderDelivered).setOnClickListener(v -> openOrders(ReviewRules.FILTER_DELIVERED));
+        findViewById(R.id.layoutOrderReturned).setOnClickListener(v -> openOrders(ReviewRules.FILTER_RETURNED));
+        findViewById(R.id.layoutPointsShortcut).setOnClickListener(v -> {
             if (AuthGate.requireLogin(this)) {
-                startActivity(new Intent(this, OrderHistoryActivity.class));
+                startActivity(new Intent(this, PointsActivity.class));
             }
         });
-        findViewById(R.id.layoutPointsShortcut).setOnClickListener(v ->
-                startActivity(new Intent(this, PointsActivity.class)));
         findViewById(R.id.layoutVoucherShortcut).setOnClickListener(v -> {
             if (AuthGate.requireLogin(this)) {
                 startActivity(new Intent(this, VoucherActivity.class));
             }
         });
-        findViewById(R.id.layoutReviewsShortcut).setOnClickListener(v -> showUpcomingFeature());
+        findViewById(R.id.layoutReviewsShortcut).setOnClickListener(v -> {
+            if (AuthGate.requireLogin(this)) {
+                startActivity(new Intent(this, ReviewActivity.class));
+            }
+        });
 
         setupBottomMenu();
     }
@@ -58,6 +77,11 @@ public class AccountActivity extends AppCompatActivity {
         String username = prefManager.getUsername();
         tvAccountName.setText(!username.isEmpty() ? username : (!email.isEmpty() ? email : "Người dùng"));
         tvAccountEmail.setText(!email.isEmpty() ? email : "Chưa cập nhật email");
+        if (prefManager.isLoggedIn()) {
+            loadOrderStatusCounts(email);
+        } else {
+            updateOrderStatusCounts(java.util.Collections.emptyList());
+        }
 
         repository.getUserByEmail(email, new FirestoreRepository.UserCallback() {
             @Override
@@ -78,8 +102,44 @@ public class AccountActivity extends AppCompatActivity {
         });
     }
 
-    private void showUpcomingFeature() {
-        Toast.makeText(this, "Tính năng sẽ được triển khai ở giai đoạn tiếp theo.", Toast.LENGTH_SHORT).show();
+    private void loadOrderStatusCounts(String email) {
+        repository.getUserOrders(email, new FirestoreRepository.OrdersCallback() {
+            @Override
+            public void onResult(List<Order> orders) {
+                updateOrderStatusCounts(orders);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                Toast.makeText(AccountActivity.this, "Không thể tải trạng thái đơn hàng.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateOrderStatusCounts(List<Order> orders) {
+        tvWaitingCount.setText(orderCount(orders, ReviewRules.FILTER_WAITING));
+        tvShippingCount.setText(orderCount(orders, ReviewRules.FILTER_SHIPPING));
+        tvDeliveredCount.setText(orderCount(orders, ReviewRules.FILTER_DELIVERED));
+        tvReturnedCount.setText(orderCount(orders, ReviewRules.FILTER_RETURNED));
+    }
+
+    private String orderCount(List<Order> orders, String filter) {
+        int count = 0;
+        for (Order order : orders) {
+            if (ReviewRules.matchesStatusFilter(order.getStatus(), filter)) {
+                count++;
+            }
+        }
+        return count + " đơn";
+    }
+
+    private void openOrders(String statusFilter) {
+        if (!AuthGate.requireLogin(this)) {
+            return;
+        }
+        Intent intent = new Intent(this, OrderHistoryActivity.class);
+        intent.putExtra(OrderHistoryActivity.EXTRA_STATUS_FILTER, statusFilter);
+        startActivity(intent);
     }
 
     private void setupBottomMenu() {

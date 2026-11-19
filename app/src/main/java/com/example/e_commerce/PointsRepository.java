@@ -470,6 +470,42 @@ public final class PointsRepository {
         return newBalance;
     }
 
+    boolean grantPointsInTransaction(com.google.firebase.firestore.Transaction transaction, String email, long amount,
+            String source, String referenceId) throws com.google.firebase.firestore.FirebaseFirestoreException {
+        if (amount <= 0 || isBlank(source) || isBlank(referenceId)) {
+            throw new IllegalArgumentException("Thông tin nhận Xu không hợp lệ.");
+        }
+
+        String normalizedEmail = normalizeEmail(email);
+        Date now = new Date();
+        Date expiresAt = PointsRules.expirationDate(now, TimeZone.getDefault());
+        String operationId = operationDocumentId("grant", referenceId);
+        DocumentReference userRef = userDocument(normalizedEmail);
+        DocumentReference transactionRef = transactionsCollection(normalizedEmail).document(operationId);
+        DocumentReference lotRef = lotsCollection(normalizedEmail).document("grant_" + operationId);
+        DocumentSnapshot user = transaction.get(userRef);
+        DocumentSnapshot existing = transaction.get(transactionRef);
+        long balance = nonNegativeLong(user, "pointsBalance");
+
+        if (existing.exists()) {
+            boolean sameGrant = "earn".equals(existing.getString("type"))
+                    && valueOrZero(existing.getLong("amount")) == amount
+                    && source.equals(existing.getString("source"));
+            if (!sameGrant) {
+                throw new IllegalStateException("Mã giao dịch đã được dùng cho khoản Xu khác.");
+            }
+            return false;
+        }
+
+        long newBalance = Math.addExact(balance, amount);
+        updateUserPoints(transaction, userRef, newBalance);
+        transaction.set(lotRef, lotData(amount, now, expiresAt, source, referenceId));
+        transaction.set(transactionRef, transactionData(
+                "earn", amount, amount, 0, newBalance, 0, "Thưởng đánh giá sản phẩm.",
+                source, referenceId, expiresAt));
+        return true;
+    }
+
     private void performRefund(String email, String spendReferenceId, long amount, String refundReferenceId,
             ActionCallback callback) {
         Date now = new Date();

@@ -1,6 +1,7 @@
 
 package com.example.e_commerce;
 
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -11,6 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -32,6 +34,7 @@ public class OrderDetailActivity extends AppCompatActivity {
     private TextView tvTotalAmountDetail;
     private LinearLayout llOrderDetailProducts;
     private ProgressBar pbLoadingProducts;
+    private com.google.android.material.button.MaterialButton btnAdvanceOrderDemo;
 
     private FirestoreRepository repository;
     private Order currentOrder;
@@ -44,6 +47,8 @@ public class OrderDetailActivity extends AppCompatActivity {
         repository = FirestoreRepository.getInstance();
 
         initViews();
+        btnAdvanceOrderDemo.setVisibility(isDebugBuild() ? View.VISIBLE : View.GONE);
+        btnAdvanceOrderDemo.setOnClickListener(v -> advanceOrderStatusForDemo());
 
         View samplePreview = findViewById(R.id.layoutSampleProductPreview);
         if (samplePreview != null) {
@@ -111,11 +116,13 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvTotalAmountDetail = findViewById(R.id.tvTotalAmountDetail);
         llOrderDetailProducts = findViewById(R.id.llOrderDetailProducts);
         pbLoadingProducts = findViewById(R.id.pbLoadingProducts);
+        btnAdvanceOrderDemo = findViewById(R.id.btnAdvanceOrderDemo);
     }
 
     private void bindOrderDetails(Order order) {
         tvOrderDetailCode.setText(String.format(Locale.getDefault(), "#DH%05d", order.getId()));
         tvOrderDetailStatus.setText(order.getStatus());
+        updateDemoStatusButton(order);
         tvOrderDetailDate.setText(order.getOrderDate());
 
         tvReceiverNamePhone.setText(order.getReceiverName() + " (" + order.getReceiverPhone() + ")");
@@ -230,6 +237,30 @@ public class OrderDetailActivity extends AppCompatActivity {
 
             llOrderDetailProducts.addView(itemRow);
 
+            if (ReviewRules.isDelivered(currentOrder.getStatus())) {
+                LinearLayout reviewActionRow = new LinearLayout(this);
+                reviewActionRow.setOrientation(LinearLayout.HORIZONTAL);
+                reviewActionRow.setGravity(Gravity.END);
+                Button reviewButton = new Button(this);
+                reviewButton.setText("Viết / sửa đánh giá");
+                reviewButton.setTransformationMethod(null);
+                reviewButton.setTextSize(12f);
+                reviewButton.setOnClickListener(v -> {
+                    if (!AuthGate.requireLogin(this)) {
+                        return;
+                    }
+                    Intent intent = new Intent(this, ReviewActivity.class);
+                    intent.putExtra(ReviewActivity.EXTRA_ORDER_ID, currentOrder.getId());
+                    intent.putExtra(ReviewActivity.EXTRA_ORDER_ITEM_ID, item.getId());
+                    intent.putExtra(ReviewActivity.EXTRA_PRODUCT_ID, item.getProductId());
+                    startActivity(intent);
+                });
+                LinearLayout.LayoutParams reviewParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                reviewActionRow.addView(reviewButton, reviewParams);
+                llOrderDetailProducts.addView(reviewActionRow);
+            }
+
             if (i < items.size() - 1) {
                 View divider = new View(this);
                 LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -242,5 +273,43 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
 
         tvSubtotalLabel.setText("Tiền hàng (" + totalQty + " món)");
+    }
+
+    private void updateDemoStatusButton(Order order) {
+        String nextStatus = ReviewRules.nextDemoStatus(order.getStatus());
+        btnAdvanceOrderDemo.setText(nextStatus == null
+                ? "Đơn đã giao"
+                : "Demo: Chuyển sang " + nextStatus);
+        btnAdvanceOrderDemo.setEnabled(nextStatus != null);
+    }
+
+    private void advanceOrderStatusForDemo() {
+        if (!isDebugBuild() || currentOrder == null) {
+            return;
+        }
+        btnAdvanceOrderDemo.setEnabled(false);
+        String email = SharedPrefManager.getInstance(this).getEmail();
+        repository.advanceOrderStatusForDemo(currentOrder.getId(), email,
+                new FirestoreRepository.OrderStatusCallback() {
+                    @Override
+                    public void onResult(String status) {
+                        currentOrder.setStatus(status);
+                        displayOrder(currentOrder);
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        btnAdvanceOrderDemo.setEnabled(true);
+                        Toast.makeText(OrderDetailActivity.this,
+                                error.getMessage() == null
+                                        ? "Không thể cập nhật trạng thái đơn hàng."
+                                        : error.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private boolean isDebugBuild() {
+        return (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
     }
 }
