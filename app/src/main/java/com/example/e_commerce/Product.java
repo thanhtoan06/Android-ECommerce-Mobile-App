@@ -1,4 +1,4 @@
-// Đối tượng lưu trữ thông tin một sản phẩm (mã, tên, danh mục, giá bán, mô tả và biểu tượng)
+// Đối tượng lưu trữ thông tin một sản phẩm (mã, tên, danh mục, giá bán, mô tả, biểu tượng và tồn kho thực tế)
 package com.example.e_commerce;
 
 import java.text.NumberFormat;
@@ -13,15 +13,22 @@ public class Product {
     private final long price;
     private final String description;
     private final String icon;
+    private final int stock; // Số lượng tồn kho thực tế lưu trong cơ sở dữ liệu
 
-    // Hàm khởi tạo thông tin một sản phẩm
-    public Product(int id, String name, String category, long price, String description, String icon) {
+    // Hàm khởi tạo đầy đủ có số lượng tồn kho thực tế
+    public Product(int id, String name, String category, long price, String description, String icon, int stock) {
         this.id = id;
         this.name = name;
         this.category = category;
         this.price = price;
         this.description = description;
         this.icon = icon;
+        this.stock = stock;
+    }
+
+    // Hàm khởi tạo tương thích (nếu không truyền stock thì mặc định 0)
+    public Product(int id, String name, String category, long price, String description, String icon) {
+        this(id, name, category, price, description, icon, 0);
     }
 
     // Lấy mã sản phẩm
@@ -59,8 +66,13 @@ public class Product {
         return icon;
     }
 
-    // Lấy số lượng hàng còn trong kho
+    // Lấy số lượng hàng còn trong kho thực tế (đọc trực tiếp từ CSDL, không tính giả định)
     public int getStock() {
-        return Math.max(12, (id * 19 + 31) % 95 + 8);
+        return stock;
+    }
+
+    // Kiểm tra sản phẩm còn hàng hay đã hết
+    public boolean isInStock() {
+        return stock > 0;
     }
 }

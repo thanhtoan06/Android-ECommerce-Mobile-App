@@ -15,9 +15,9 @@ import java.util.Locale;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-    // Tên file cơ sở dữ liệu lưu trên máy và số phiên bản của cấu trúc bảng
+    // Tên file cơ sở dữ liệu lưu trên máy và số phiên bản của cấu trúc bảng (nâng lên 8 để có cột stock)
     private static final String DATABASE_NAME = "ecommerce.db";
-    private static final int DATABASE_VERSION = 7;
+    private static final int DATABASE_VERSION = 8;
 
     // Tên bảng và tên các cột của bảng Người dùng (users)
     public static final String TABLE_USERS = "users";
@@ -37,6 +37,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_PROD_PRICE = "price";
     public static final String COLUMN_PROD_DESCRIPTION = "description";
     public static final String COLUMN_PROD_ICON = "icon";
+    public static final String COLUMN_PROD_STOCK = "stock"; // Cột số lượng tồn kho thực tế
 
     // Tên bảng và tên các cột của bảng Giỏ hàng (cart)
     public static final String TABLE_CART = "cart";
@@ -120,10 +121,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 5) {
             ensureUserColumns(db);
         }
+        if (oldVersion < 8) {
+            ensureProductStockColumn(db);
+        }
         createProductsTable(db);
         createCartTable(db);
         createOrdersTable(db);
         checkAndSeedProductsIfEmpty(db);
+        ensureDefaultStockValues(db);
     }
 
     // Chạy mỗi lần mở database: kiểm tra chắc chắn các bảng và cột đều tồn tại đầy đủ
@@ -131,10 +136,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
         ensureUserColumns(db);
+        ensureProductStockColumn(db);
         createProductsTable(db);
         createCartTable(db);
         createOrdersTable(db);
         checkAndSeedProductsIfEmpty(db);
+        ensureDefaultStockValues(db);
     }
 
     // Bổ sung cột số điện thoại và địa chỉ vào bảng users nếu máy đang dùng phiên bản cũ
@@ -147,7 +154,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } catch (Exception ignored) {}
     }
 
-    // Tạo bảng products (lưu danh sách sản phẩm bán trong cửa hàng)
+    // Bổ sung cột stock vào bảng products nếu thiết bị đang dùng phiên bản CSDL cũ
+    private void ensureProductStockColumn(SQLiteDatabase db) {
+        try {
+            db.execSQL("ALTER TABLE " + TABLE_PRODUCTS + " ADD COLUMN " + COLUMN_PROD_STOCK + " INTEGER NOT NULL DEFAULT 0");
+        } catch (Exception ignored) {}
+    }
+
+    // Đảm bảo các sản phẩm mẫu có sẵn trong bảng products có giá trị tồn kho thật (nếu đang là 0)
+    private void ensureDefaultStockValues(SQLiteDatabase db) {
+        int[] defaultStocks = {45, 28, 63, 17, 52, 34, 80, 23, 71, 12, 55, 39};
+        for (int i = 0; i < defaultStocks.length; i++) {
+            int prodId = i + 1;
+            int stock = defaultStocks[i];
+            db.execSQL("UPDATE " + TABLE_PRODUCTS + " SET " + COLUMN_PROD_STOCK + " = ? WHERE "
+                    + COLUMN_PROD_ID + " = ? AND (" + COLUMN_PROD_STOCK + " IS NULL OR " + COLUMN_PROD_STOCK + " <= 0)",
+                    new Object[]{stock, prodId});
+        }
+    }
+
+    // Tạo bảng products (lưu danh sách sản phẩm bán trong cửa hàng) kèm cột tồn kho thực tế
     private void createProductsTable(SQLiteDatabase db) {
         String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_PRODUCTS + " ("
                 + COLUMN_PROD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -155,7 +181,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_PROD_CATEGORY + " TEXT NOT NULL, "
                 + COLUMN_PROD_PRICE + " INTEGER NOT NULL, "
                 + COLUMN_PROD_DESCRIPTION + " TEXT NOT NULL, "
-                + COLUMN_PROD_ICON + " TEXT NOT NULL"
+                + COLUMN_PROD_ICON + " TEXT NOT NULL, "
+                + COLUMN_PROD_STOCK + " INTEGER NOT NULL DEFAULT 0"
                 + ")";
         db.execSQL(sql);
     }
@@ -216,34 +243,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Nạp sẵn danh sách 12 sản phẩm mẫu vào bảng products để cửa hàng có dữ liệu ban đầu
+    // Nạp sẵn danh sách 12 sản phẩm mẫu có giá trị tồn kho thực tế vào bảng products
     private void seedProductsData(SQLiteDatabase db) {
-        // Khai báo mảng 12 sản phẩm mặc định (mã, tên, danh mục, giá, mô tả, biểu tượng)
+        // Khai báo mảng 12 sản phẩm mặc định có số lượng tồn kho ngẫu nhiên thật
         Product[] defaultProducts = {
                 new Product(1, "Áo thun cotton basic", "Thời trang", 189000,
-                        "Áo thun cotton 100% mềm mịn, thấm hút mồ hôi tốt, form regular dễ phối đồ. Phù hợp mặc hằng ngày, đi làm hoặc đi chơi.", "👕"),
+                        "Áo thun cotton 100% mềm mịn, thấm hút mồ hôi tốt, form regular dễ phối đồ. Phù hợp mặc hằng ngày, đi làm hoặc đi chơi.", "👕", 45),
                 new Product(2, "Giày sneaker trắng thể thao", "Giày dép", 890000,
-                        "Giày sneaker trắng thiết kế tối giản, đế cao su êm ái và chống trượt. Dễ phối với quần jean, quần short hay váy.", "👟"),
+                        "Giày sneaker trắng thiết kế tối giản, đế cao su êm ái và chống trượt. Dễ phối với quần jean, quần short hay váy.", "👟", 28),
                 new Product(3, "Balo laptop chống nước cao cấp", "Phụ kiện", 459000,
-                        "Balo vải Oxford chống nước, ngăn đệm chống sốc cho laptop đến 15.6 inch, nhiều ngăn phụ tiện lợi, quai đeo êm vai.", "🎒"),
+                        "Balo vải Oxford chống nước, ngăn đệm chống sốc cho laptop đến 15.6 inch, nhiều ngăn phụ tiện lợi, quai đeo êm vai.", "🎒", 63),
                 new Product(4, "Đồng hồ thông minh Smartwatch Pro", "Công nghệ", 1790000,
-                        "Đồng hồ thông minh theo dõi nhịp tim, giấc ngủ và số bước chân. Màn hình AMOLED sáng rõ, pin dùng liên tục khoảng 7-10 ngày.", "⌚"),
+                        "Đồng hồ thông minh theo dõi nhịp tim, giấc ngủ và số bước chân. Màn hình AMOLED sáng rõ, pin dùng liên tục khoảng 7-10 ngày.", "⌚", 17),
                 new Product(5, "Tai nghe không dây Bluetooth TWS", "Công nghệ", 690000,
-                        "Tai nghe không dây kết nối Bluetooth 5.3, chống ồn chủ động ANC, âm bass sống động. Hộp sạc cho tổng thời gian nghe đến 28 giờ.", "🎧"),
+                        "Tai nghe không dây kết nối Bluetooth 5.3, chống ồn chủ động ANC, âm bass sống động. Hộp sạc cho tổng thời gian nghe đến 28 giờ.", "🎧", 52),
                 new Product(6, "Kính mát phân cực UV400", "Phụ kiện", 320000,
-                        "Tròng kính Polarized phân cực giảm chói, chống 100% tia UV400. Gọng hợp kim siêu nhẹ bền bỉ khi lái xe hoặc đi biển.", "🕶️"),
+                        "Tròng kính Polarized phân cực giảm chói, chống 100% tia UV400. Gọng hợp kim siêu nhẹ bền bỉ khi lái xe hoặc đi biển.", "🕶️", 34),
                 new Product(7, "Bình giữ nhiệt inox 304 600ml", "Gia dụng", 245000,
-                        "Bình inox 304 cao cấp dung tích 600ml, giữ nóng 12 giờ và giữ lạnh 24 giờ. Nắp khóa kín, không rò rỉ khi bỏ vào balo.", "🥤"),
+                        "Bình inox 304 cao cấp dung tích 600ml, giữ nóng 12 giờ và giữ lạnh 24 giờ. Nắp khóa kín, không rò rỉ khi bỏ vào balo.", "🥤", 80),
                 new Product(8, "Sạc dự phòng 20000mAh PD 22.5W", "Công nghệ", 490000,
-                        "Pin dự phòng dung lượng 20000mAh, hỗ trợ sạc nhanh PD 22.5W, màn hình LED hiển thị % pin. Thiết kế nhỏ gọn, an toàn cháy nổ.", "🔋"),
+                        "Pin dự phòng dung lượng 20000mAh, hỗ trợ sạc nhanh PD 22.5W, màn hình LED hiển thị % pin. Thiết kế nhỏ gọn, an toàn cháy nổ.", "🔋", 23),
                 new Product(9, "Mũ lưỡi trai phong cách Unisex", "Thời trang", 129000,
-                        "Mũ lưỡi trai vải kaki thoáng mát, khóa kim loại điều chỉnh phía sau. Che nắng thời trang khi ra ngoài.", "🧢"),
+                        "Mũ lưỡi trai vải kaki thoáng mát, khóa kim loại điều chỉnh phía sau. Che nắng thời trang khi ra ngoài.", "🧢", 71),
                 new Product(10, "Bàn phím cơ không dây RGB", "Công nghệ", 1250000,
-                        "Bàn phím cơ layout 87 phím, switch gõ cực êm, đèn nền LED RGB nhiều chế độ. Hỗ trợ Bluetooth, Wireless 2.4G và Type-C.", "⌨️"),
+                        "Bàn phím cơ layout 87 phím, switch gõ cực êm, đèn nền LED RGB nhiều chế độ. Hỗ trợ Bluetooth, Wireless 2.4G và Type-C.", "⌨️", 12),
                 new Product(11, "Chuột quang không dây Silent", "Công nghệ", 299000,
-                        "Chuột bấm siêu êm chống ồn (Silent), cảm biến quang học 4000 DPI độ trễ cực thấp, pin tiết kiệm dùng tới 12 tháng liên tục.", "🖱️"),
+                        "Chuột bấm siêu êm chống ồn (Silent), cảm biến quang học 4000 DPI độ trễ cực thấp, pin tiết kiệm dùng tới 12 tháng liên tục.", "🖱️", 55),
                 new Product(12, "Áo khoác Hoodie nỉ dày dặn", "Thời trang", 359000,
-                        "Áo Hoodie chất nỉ lót bông mềm mại giữ ấm hoàn hảo, form dáng oversize trẻ trung, năng động, phong cách đường phố cá tính.", "🧥")
+                        "Áo Hoodie chất nỉ lót bông mềm mại giữ ấm hoàn hảo, form dáng oversize trẻ trung, năng động, phong cách đường phố cá tính.", "🧥", 39)
         };
 
         // Duyệt qua từng sản phẩm và chèn vào bảng products (nếu trùng ID thì bỏ qua)
@@ -255,8 +282,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             values.put(COLUMN_PROD_PRICE, product.getPrice());
             values.put(COLUMN_PROD_DESCRIPTION, product.getDescription());
             values.put(COLUMN_PROD_ICON, product.getIcon());
+            values.put(COLUMN_PROD_STOCK, product.getStock());
             db.insertWithOnConflict(TABLE_PRODUCTS, null, values, SQLiteDatabase.CONFLICT_IGNORE);
         }
+    }
+
+    // Chuyển một hàng dữ liệu từ Cursor thành đối tượng Product (đọc cả cột stock)
+    private Product cursorToProduct(Cursor cursor) {
+        int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_PROD_ID));
+        String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_NAME));
+        String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_CATEGORY));
+        long price = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_PROD_PRICE));
+        String description = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_DESCRIPTION));
+        String icon = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_ICON));
+        int stockIndex = cursor.getColumnIndex(COLUMN_PROD_STOCK);
+        int stock = (stockIndex != -1 && !cursor.isNull(stockIndex)) ? cursor.getInt(stockIndex) : 0;
+        return new Product(id, name, category, price, description, icon, stock);
     }
 
     // Đọc toàn bộ danh sách sản phẩm từ bản sao SQLite, sắp xếp theo ID tăng dần
@@ -268,17 +309,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cursor = db.query(TABLE_PRODUCTS, null, null, null, null, null, COLUMN_PROD_ID + " ASC");
             if (cursor != null && cursor.moveToFirst()) {
                 do {
-                    int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_PROD_ID));
-                    String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_NAME));
-                    String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_CATEGORY));
-                    long price = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_PROD_PRICE));
-                    String description = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_DESCRIPTION));
-                    String icon = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_ICON));
-                    list.add(new Product(id, name, category, price, description, icon));
+                    list.add(cursorToProduct(cursor));
                 } while (cursor.moveToNext());
             }
         } finally {
-            // Đóng con trỏ dữ liệu sau khi đọc xong để tránh rò rỉ bộ nhớ
             if (cursor != null) cursor.close();
         }
         return list;
@@ -292,12 +326,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cursor = db.query(TABLE_PRODUCTS, null, COLUMN_PROD_ID + " = ?",
                     new String[]{String.valueOf(id)}, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
-                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_NAME));
-                String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_CATEGORY));
-                long price = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_PROD_PRICE));
-                String description = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_DESCRIPTION));
-                String icon = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROD_ICON));
-                return new Product(id, name, category, price, description, icon);
+                return cursorToProduct(cursor);
             }
         } finally {
             if (cursor != null) cursor.close();
@@ -305,7 +334,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return null;
     }
 
-    // Lưu hoặc cập nhật bản sao sản phẩm nhận từ Firebase xuống bảng products của SQLite
+    // Lưu hoặc cập nhật bản sao sản phẩm nhận từ Firebase xuống bảng products của SQLite (kèm stock)
     public void saveProduct(Product product) {
         if (product == null) return;
         ContentValues values = new ContentValues();
@@ -315,7 +344,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_PROD_PRICE, product.getPrice());
         values.put(COLUMN_PROD_DESCRIPTION, product.getDescription());
         values.put(COLUMN_PROD_ICON, product.getIcon());
+        values.put(COLUMN_PROD_STOCK, product.getStock());
         getWritableDatabase().insertWithOnConflict(TABLE_PRODUCTS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    // Trừ số lượng tồn kho trong SQLite sau khi đặt hàng thành công (không để âm dưới 0)
+    public void decreaseStock(int productId, int quantity) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("UPDATE " + TABLE_PRODUCTS + " SET " + COLUMN_PROD_STOCK
+                + " = MAX(0, " + COLUMN_PROD_STOCK + " - ?) WHERE " + COLUMN_PROD_ID + " = ?",
+                new Object[]{quantity, productId});
     }
 
     // Lưu bản sao món hàng vào bảng cart SQLite (cộng dồn số lượng nếu đã có sẵn)
@@ -353,7 +391,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Lấy toàn bộ bản sao món hàng trong giỏ của 1 người dùng (nối bảng cart và bảng products)
+    // Lấy toàn bộ bản sao món hàng trong giỏ của 1 người dùng (nối bảng cart và bảng products, lấy đủ stock)
     public List<CartItem> getCartItems(String userEmail) {
         if (userEmail == null || userEmail.trim().isEmpty()) userEmail = "guest@cart.local";
         userEmail = userEmail.trim().toLowerCase();
@@ -361,10 +399,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         List<CartItem> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
-        // Câu lệnh SQL nối bảng cart với bảng products theo mã sản phẩm để lấy đủ thông tin
+        // Câu lệnh SQL nối bảng cart với bảng products theo mã sản phẩm để lấy đủ thông tin bao gồm cả tồn kho
         String query = "SELECT c." + COLUMN_CART_ID + ", c." + COLUMN_CART_QUANTITY + ", "
                 + "p." + COLUMN_PROD_ID + ", p." + COLUMN_PROD_NAME + ", p." + COLUMN_PROD_CATEGORY + ", "
-                + "p." + COLUMN_PROD_PRICE + ", p." + COLUMN_PROD_DESCRIPTION + ", p." + COLUMN_PROD_ICON
+                + "p." + COLUMN_PROD_PRICE + ", p." + COLUMN_PROD_DESCRIPTION + ", p." + COLUMN_PROD_ICON + ", "
+                + "COALESCE(p." + COLUMN_PROD_STOCK + ", 0)"
                 + " FROM " + TABLE_CART + " c "
                 + " INNER JOIN " + TABLE_PRODUCTS + " p ON c." + COLUMN_CART_PRODUCT_ID + " = p." + COLUMN_PROD_ID
                 + " WHERE LOWER(c." + COLUMN_CART_USER_EMAIL + ") = ?"
@@ -383,7 +422,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     long price = cursor.getLong(5);
                     String description = cursor.getString(6);
                     String icon = cursor.getString(7);
-                    Product product = new Product(prodId, name, category, price, description, icon);
+                    int stock = cursor.getInt(8);
+                    Product product = new Product(prodId, name, category, price, description, icon, stock);
                     list.add(new CartItem(cartId, product, quantity));
                 } while (cursor.moveToNext());
             }
@@ -468,7 +508,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Tạo đơn hàng cục bộ trong SQLite (lưu orders -> lưu order_items -> xóa cart trong cùng 1 Transaction)
+    // Tạo đơn hàng cục bộ trong SQLite: lưu orders -> lưu order_items -> trừ tồn kho -> xóa cart trong 1 Transaction
     public long createOrder(String userEmail, String receiverName, String receiverPhone,
                             String receiverAddress, String note, String paymentMethod,
                             List<CartItem> cartItems) {
@@ -485,7 +525,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String status = "Đặt hàng thành công";
 
         SQLiteDatabase db = this.getWritableDatabase();
-        // Mở Transaction để đảm bảo lưu trọn vẹn cả đơn hàng lẫn chi tiết từng món
         db.beginTransaction();
         long orderId = -1;
         try {
@@ -503,7 +542,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             orderId = db.insert(TABLE_ORDERS, null, orderValues);
             if (orderId == -1) return -1;
 
-            // Bước 2: Duyệt từng món trong giỏ để lưu vào bảng chi tiết order_items
+            // Bước 2: Duyệt từng món trong giỏ để lưu vào bảng chi tiết order_items và trừ tồn kho
             for (CartItem item : cartItems) {
                 Product p = item.getProduct();
                 ContentValues itemValues = new ContentValues();
@@ -515,6 +554,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 itemValues.put(COLUMN_OI_QUANTITY, item.getQuantity());
                 itemValues.put(COLUMN_OI_SUBTOTAL, item.getSubtotal());
                 if (db.insert(TABLE_ORDER_ITEMS, null, itemValues) == -1) return -1;
+
+                // Tự động trừ số lượng tồn kho tương ứng trong SQLite
+                if (p != null) {
+                    db.execSQL("UPDATE " + TABLE_PRODUCTS + " SET " + COLUMN_PROD_STOCK
+                                    + " = MAX(0, " + COLUMN_PROD_STOCK + " - ?) WHERE " + COLUMN_PROD_ID + " = ?",
+                            new Object[]{item.getQuantity(), p.getId()});
+                }
             }
 
             // Bước 3: Xóa sạch giỏ hàng của người dùng sau khi đặt đơn thành công
@@ -522,12 +568,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.setTransactionSuccessful();
             return orderId;
         } finally {
-            // Kết thúc Transaction (ghi dữ liệu nếu thành công, hoàn tác nếu có lỗi)
             db.endTransaction();
         }
     }
 
-    // Lưu bản sao đơn hàng đã được Firebase tạo thành công vào SQLite (giữ nguyên mã đơn từ Firebase)
+    // Lưu bản sao đơn hàng đã được Firebase tạo thành công vào SQLite (và trừ tồn kho trong SQLite)
     public boolean saveRemoteOrder(Order order, List<OrderItem> items) {
         if (order == null || items == null || items.isEmpty()) return false;
         SQLiteDatabase db = getWritableDatabase();
@@ -562,6 +607,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 itemValues.put(COLUMN_OI_SUBTOTAL, item.getSubtotal());
                 if (db.insertWithOnConflict(TABLE_ORDER_ITEMS, null, itemValues,
                         SQLiteDatabase.CONFLICT_REPLACE) == -1) return false;
+
+                // Tự động trừ tồn kho sản phẩm trong SQLite khi nhận đơn hàng mới
+                db.execSQL("UPDATE " + TABLE_PRODUCTS + " SET " + COLUMN_PROD_STOCK
+                                + " = MAX(0, " + COLUMN_PROD_STOCK + " - ?) WHERE " + COLUMN_PROD_ID + " = ?",
+                        new Object[]{item.getQuantity(), item.getProductId()});
             }
 
             // Bước 3: Dọn sạch bản sao giỏ hàng của người dùng trong SQLite và xác nhận Transaction

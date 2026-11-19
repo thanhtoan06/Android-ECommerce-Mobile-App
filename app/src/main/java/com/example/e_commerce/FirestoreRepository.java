@@ -62,7 +62,7 @@ public class FirestoreRepository {
         });
     }
 
-    // Tải toàn bộ danh sách sản phẩm chính thức từ Firebase theo thứ tự ID tăng dần
+    // Tải toàn bộ danh sách sản phẩm chính thức từ Firebase theo thứ tự ID tăng dần (kèm stock thực tế)
     public void getAllProducts(ProductsCallback callback) {
         firestore.collection("products")
                 .orderBy("id", Query.Direction.ASCENDING)
@@ -75,8 +75,20 @@ public class FirestoreRepository {
                     }
                     // Chuyển từng Document tải về thành đối tượng Product đưa vào danh sách
                     List<Product> products = new ArrayList<>();
+                    int[] defaultStocks = {45, 28, 63, 17, 52, 34, 80, 23, 71, 12, 55, 39};
+
                     for (DocumentSnapshot d : snapshot.getDocuments()) {
-                        products.add(toProduct(d));
+                        Product p = toProduct(d);
+                        // Nếu tài liệu trên Firebase chưa có thuộc tính stock, cập nhật giá trị tồn kho thật lên Firebase
+                        if (d.getLong("stock") == null) {
+                            int fallbackStock = (p.getId() >= 1 && p.getId() <= defaultStocks.length)
+                                    ? defaultStocks[p.getId() - 1] : 30;
+                            Map<String, Object> update = new HashMap<>();
+                            update.put("stock", fallbackStock);
+                            firestore.collection("products").document(d.getId()).set(update, SetOptions.merge());
+                            p = new Product(p.getId(), p.getName(), p.getCategory(), p.getPrice(), p.getDescription(), p.getIcon(), fallbackStock);
+                        }
+                        products.add(p);
                     }
                     callback.onResult(products);
                 })
@@ -101,6 +113,31 @@ public class FirestoreRepository {
                 .get()
                 .addOnSuccessListener(d -> callback.onResult(d.exists() ? toProduct(d) : null))
                 .addOnFailureListener(callback::onError);
+    }
+
+    // Trừ số lượng tồn kho sản phẩm trên Firebase sau khi đặt hàng thành công
+    public void decreaseStock(int productId, int quantity, BooleanCallback callback) {
+        String docId = String.valueOf(productId);
+        firestore.collection("products").document(docId).get()
+                .addOnSuccessListener(snapshot -> {
+                    if (!snapshot.exists()) {
+                        if (callback != null) callback.onResult(false);
+                        return;
+                    }
+                    int currentStock = snapshot.getLong("stock") != null
+                            ? snapshot.getLong("stock").intValue() : 0;
+                    int newStock = Math.max(0, currentStock - quantity);
+                    Map<String, Object> update = new HashMap<>();
+                    update.put("stock", newStock);
+                    firestore.collection("products").document(docId)
+                            .update(update)
+                            .addOnCompleteListener(t -> {
+                                if (callback != null) callback.onResult(t.isSuccessful());
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onResult(false);
+                });
     }
 
     // ================= PHẦN 2: QUẢN LÝ GIỎ HÀNG TRÊN FIREBASE =================
@@ -176,7 +213,7 @@ public class FirestoreRepository {
                             continue;
                         }
 
-                        // Lấy thông tin tên, giá, icon của sản phẩm dựa theo productId
+                        // Lấy thông tin tên, giá, icon, stock của sản phẩm dựa theo productId
                         getProductById(productId.intValue(), new ProductCallback() {
                             @Override
                             public void onResult(Product product) {
@@ -257,7 +294,7 @@ public class FirestoreRepository {
 
     // ================= PHẦN 3: QUẢN LÝ ĐƠN HÀNG TRÊN FIREBASE =================
 
-    // Tạo đơn hàng chính thức trên Firebase: lưu thông tin đơn -> lưu chi tiết từng món -> xóa sạch giỏ hàng
+    // Tạo đơn hàng chính thức trên Firebase: lưu đơn -> lưu chi tiết món -> tự động trừ stock trên Firebase -> xóa giỏ hàng
     public void createOrder(String email, String name, String phone, String address, String note,
                             String payment, List<CartItem> cartItems, OrderCallback callback) {
         if (cartItems == null || cartItems.isEmpty()) {
@@ -315,9 +352,25 @@ public class FirestoreRepository {
                                 .document(String.valueOf(i + 1)), data);
                     }
 
-                    // Bước 3: Lưu xong chi tiết đơn thì xóa sạch giỏ hàng trên Firebase và trả về mã đơn numericId
+                    // Bước 3: Lưu xong chi tiết đơn -> trừ stock từng sản phẩm trên Firebase -> xóa sạch giỏ hàng
                     batch.commit()
-                            .addOnSuccessListener(x -> clearCart(normalized, ok -> callback.onResult(ok ? numericId : -1)))
+                            .addOnSuccessListener(x -> {
+                                AtomicInteger pendingDecrements = new AtomicInteger(cartItems.size());
+                                for (CartItem item : cartItems) {
+                                    Product p = item.getProduct();
+                                    if (p == null) {
+                                        if (pendingDecrements.decrementAndGet() == 0) {
+                                            clearCart(normalized, ok -> callback.onResult(ok ? numericId : -1));
+                                        }
+                                        continue;
+                                    }
+                                    decreaseStock(p.getId(), item.getQuantity(), ok -> {
+                                        if (pendingDecrements.decrementAndGet() == 0) {
+                                            clearCart(normalized, done -> callback.onResult(done ? numericId : -1));
+                                        }
+                                    });
+                                }
+                            })
                             .addOnFailureListener(callback::onError);
                 })
                 .addOnFailureListener(callback::onError);
@@ -503,15 +556,17 @@ public class FirestoreRepository {
 
     // ================= PHẦN 5: CÁC HÀM CHUYỂN ĐỔI DỮ LIỆU & SẢN PHẨM MẪU =================
 
-    // Chuyển dữ liệu thô từ DocumentSnapshot thành đối tượng Product
+    // Chuyển dữ liệu thô từ DocumentSnapshot thành đối tượng Product (đọc kèm thuộc tính stock)
     private Product toProduct(DocumentSnapshot d) {
+        int stock = (d.getLong("stock") != null) ? d.getLong("stock").intValue() : 0;
         return new Product(
                 value(d, "id"),
                 d.getString("name"),
                 d.getString("category"),
                 longValue(d, "price"),
                 d.getString("description"),
-                d.getString("icon")
+                d.getString("icon"),
+                stock
         );
     }
 
@@ -570,7 +625,7 @@ public class FirestoreRepository {
         return value == null ? 0 : value;
     }
 
-    // Đóng gói đối tượng Product thành dạng Map (cặp tên-giá trị) để lưu lên Firebase
+    // Đóng gói đối tượng Product thành dạng Map (cặp tên-giá trị) để lưu lên Firebase (kèm stock thực tế)
     private Map<String, Object> productData(Product p) {
         Map<String, Object> d = new HashMap<>();
         d.put("id", p.getId());
@@ -579,24 +634,25 @@ public class FirestoreRepository {
         d.put("price", p.getPrice());
         d.put("description", p.getDescription());
         d.put("icon", p.getIcon());
+        d.put("stock", p.getStock());
         return d;
     }
 
-    // Danh sách 12 sản phẩm mẫu mặc định dùng để đẩy lên Firebase khi kho còn trống
+    // Danh sách 12 sản phẩm mẫu mặc định với số lượng tồn kho ngẫu nhiên thật để đẩy lên Firebase
     private Product[] defaultProducts() {
         return new Product[]{
-                new Product(1, "Áo thun cotton basic", "Thời trang", 189000, "Áo thun cotton 100% mềm mịn, thấm hút mồ hôi tốt, form regular dễ phối đồ.", "👕"),
-                new Product(2, "Giày sneaker trắng thể thao", "Giày dép", 890000, "Giày sneaker trắng thiết kế tối giản, đế cao su êm ái và chống trượt.", "👟"),
-                new Product(3, "Balo laptop chống nước cao cấp", "Phụ kiện", 459000, "Balo vải Oxford chống nước, ngăn đệm chống sốc cho laptop đến 15.6 inch.", "🎒"),
-                new Product(4, "Đồng hồ thông minh Smartwatch Pro", "Công nghệ", 1790000, "Đồng hồ thông minh theo dõi nhịp tim, giấc ngủ và số bước chân.", "⌚"),
-                new Product(5, "Tai nghe không dây Bluetooth TWS", "Công nghệ", 690000, "Tai nghe không dây Bluetooth 5.3, chống ồn chủ động ANC.", "🎧"),
-                new Product(6, "Kính mát phân cực UV400", "Phụ kiện", 320000, "Tròng kính Polarized phân cực, chống 100% tia UV400.", "🕶️"),
-                new Product(7, "Bình giữ nhiệt inox 304 600ml", "Gia dụng", 245000, "Bình inox 304 cao cấp dung tích 600ml, giữ nóng 12 giờ.", "🥤"),
-                new Product(8, "Sạc dự phòng 20000mAh PD 22.5W", "Công nghệ", 490000, "Pin dự phòng dung lượng 20000mAh, hỗ trợ sạc nhanh PD 22.5W.", "🔋"),
-                new Product(9, "Mũ lưỡi trai phong cách Unisex", "Thời trang", 129000, "Mũ lưỡi trai vải kaki thoáng mát, khóa kim loại điều chỉnh.", "🧢"),
-                new Product(10, "Bàn phím cơ không dây RGB", "Công nghệ", 1250000, "Bàn phím cơ layout 87 phím, switch gõ êm, đèn nền RGB.", "⌨️"),
-                new Product(11, "Chuột quang không dây Silent", "Công nghệ", 299000, "Chuột bấm siêu êm, cảm biến quang học 4000 DPI.", "🖱️"),
-                new Product(12, "Áo khoác Hoodie nỉ dày dặn", "Thời trang", 359000, "Áo Hoodie chất nỉ lót bông mềm mại, form oversize trẻ trung.", "🧥")
+                new Product(1, "Áo thun cotton basic", "Thời trang", 189000, "Áo thun cotton 100% mềm mịn, thấm hút mồ hôi tốt, form regular dễ phối đồ.", "👕", 45),
+                new Product(2, "Giày sneaker trắng thể thao", "Giày dép", 890000, "Giày sneaker trắng thiết kế tối giản, đế cao su êm ái và chống trượt.", "👟", 28),
+                new Product(3, "Balo laptop chống nước cao cấp", "Phụ kiện", 459000, "Balo vải Oxford chống nước, ngăn đệm chống sốc cho laptop đến 15.6 inch.", "🎒", 63),
+                new Product(4, "Đồng hồ thông minh Smartwatch Pro", "Công nghệ", 1790000, "Đồng hồ thông minh theo dõi nhịp tim, giấc ngủ và số bước chân.", "⌚", 17),
+                new Product(5, "Tai nghe không dây Bluetooth TWS", "Công nghệ", 690000, "Tai nghe không dây Bluetooth 5.3, chống ồn chủ động ANC.", "🎧", 52),
+                new Product(6, "Kính mát phân cực UV400", "Phụ kiện", 320000, "Tròng kính Polarized phân cực, chống 100% tia UV400.", "🕶️", 34),
+                new Product(7, "Bình giữ nhiệt inox 304 600ml", "Gia dụng", 245000, "Bình inox 304 cao cấp dung tích 600ml, giữ nóng 12 giờ.", "🥤", 80),
+                new Product(8, "Sạc dự phòng 20000mAh PD 22.5W", "Công nghệ", 490000, "Pin dự phòng dung lượng 20000mAh, hỗ trợ sạc nhanh PD 22.5W.", "🔋", 23),
+                new Product(9, "Mũ lưỡi trai phong cách Unisex", "Thời trang", 129000, "Mũ lưỡi trai vải kaki thoáng mát, khóa kim loại điều chỉnh.", "🧢", 71),
+                new Product(10, "Bàn phím cơ không dây RGB", "Công nghệ", 1250000, "Bàn phím cơ layout 87 phím, switch gõ êm, đèn nền RGB.", "⌨️", 12),
+                new Product(11, "Chuột quang không dây Silent", "Công nghệ", 299000, "Chuột bấm siêu êm, cảm biến quang học 4000 DPI.", "🖱️", 55),
+                new Product(12, "Áo khoác Hoodie nỉ dày dặn", "Thời trang", 359000, "Áo Hoodie chất nỉ lót bông mềm mại, form oversize trẻ trung.", "🧥", 39)
         };
     }
 }

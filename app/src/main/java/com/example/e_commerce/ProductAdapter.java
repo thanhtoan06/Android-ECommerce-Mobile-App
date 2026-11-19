@@ -51,7 +51,17 @@ public class ProductAdapter extends ArrayAdapter<Product> {
             if (holder.tvName != null) holder.tvName.setText(product.getName());
             if (holder.tvPrice != null) holder.tvPrice.setText(product.getFormattedPrice());
             if (holder.tvStock != null) {
-                holder.tvStock.setText("Còn " + product.getStock() + " sp");
+                int stock = product.getStock();
+                if (stock <= 0) {
+                    holder.tvStock.setText("Hết hàng");
+                    holder.tvStock.setTextColor(0xFFEF4444);
+                } else if (stock <= 5) {
+                    holder.tvStock.setText("Còn " + stock + " sp");
+                    holder.tvStock.setTextColor(0xFFF97316);
+                } else {
+                    holder.tvStock.setText("Còn " + stock + " sp");
+                    holder.tvStock.setTextColor(0xFF64748B);
+                }
             }
         }
 

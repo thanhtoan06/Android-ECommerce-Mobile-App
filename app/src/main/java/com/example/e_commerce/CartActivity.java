@@ -112,12 +112,36 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                     .show();
         });
 
-        // Bấm nút "Thanh toán": kiểm tra giỏ có hàng rồi chuyển sang màn hình Đặt hàng (CheckoutActivity)
+        // Bấm nút "Thanh toán": kiểm tra giỏ có hàng và kiểm tra tồn kho trước khi chuyển sang Đặt hàng
         btnCheckout.setOnClickListener(v -> {
             if (cartItemList.isEmpty()) {
                 Toast.makeText(this, "Giỏ hàng đang trống!", Toast.LENGTH_SHORT).show();
                 return;
             }
+
+            // Kiểm tra từng sản phẩm xem có món nào hết hàng hoặc vượt quá số lượng trong kho không
+            for (CartItem item : cartItemList) {
+                Product p = item.getProduct();
+                if (p != null) {
+                    if (p.getStock() <= 0) {
+                        new AlertDialog.Builder(this)
+                                .setTitle("Sản phẩm hết hàng")
+                                .setMessage("Sản phẩm \"" + p.getName() + "\" hiện đã hết hàng trong kho. Vui lòng xóa món này khỏi giỏ trước khi thanh toán!")
+                                .setPositiveButton("Đã hiểu", null)
+                                .show();
+                        return;
+                    }
+                    if (item.getQuantity() > p.getStock()) {
+                        new AlertDialog.Builder(this)
+                                .setTitle("Vượt quá số lượng tồn kho")
+                                .setMessage("Sản phẩm \"" + p.getName() + "\" chỉ còn " + p.getStock() + " sản phẩm trong kho. Vui lòng giảm số lượng đặt mua trước khi thanh toán!")
+                                .setPositiveButton("Đã hiểu", null)
+                                .show();
+                        return;
+                    }
+                }
+            }
+
             startActivity(new Intent(this, CheckoutActivity.class));
         });
 
