@@ -133,6 +133,11 @@ public class OrderHistoryActivity extends AppCompatActivity {
                 finish();
             });
         }
+
+        findViewById(R.id.menuNotifications).setOnClickListener(v -> {
+            startActivity(new Intent(this, NotificationActivity.class));
+            finish();
+        });
     }
 
     private void loadOrderData() {

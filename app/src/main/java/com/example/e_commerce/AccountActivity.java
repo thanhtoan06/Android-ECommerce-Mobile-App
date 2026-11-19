@@ -111,10 +111,15 @@ public class AccountActivity extends AppCompatActivity {
             new AlertDialog.Builder(this).setTitle("Đăng xuất")
                     .setMessage("Bạn có chắc chắn muốn đăng xuất tài khoản không?")
                     .setPositiveButton("Đăng xuất", (dialog, which) -> {
-                        FirebaseAuth.getInstance().signOut();
-                        prefManager.logout();
-                        Toast.makeText(this, "Đã đăng xuất thành công!", Toast.LENGTH_SHORT).show();
-                        AuthGate.returnToHome(this);
+                        PushNotificationManager.removeCurrentToken(this, prefManager.getEmail(), removed -> {
+                            FirebaseAuth.getInstance().signOut();
+                            prefManager.logout();
+                            String message = removed
+                                    ? "Đã đăng xuất thành công!"
+                                    : "Đã đăng xuất nhưng chưa gỡ được token thông báo đẩy.";
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                            AuthGate.returnToHome(this);
+                        });
                     }).setNegativeButton("Hủy", null).show();
         });
 
@@ -432,5 +437,10 @@ public class AccountActivity extends AppCompatActivity {
 
         menuAccount
                 .setOnClickListener(v -> Toast.makeText(this, "Bạn đang ở trang Tài khoản", Toast.LENGTH_SHORT).show());
+
+        findViewById(R.id.menuNotifications).setOnClickListener(v -> {
+            startActivity(new Intent(this, NotificationActivity.class));
+            finish();
+        });
     }
 }

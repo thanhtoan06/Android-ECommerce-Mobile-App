@@ -102,6 +102,37 @@
         android:layout_height="24dp"
         android:background="@color/divider" />
 <LinearLayout
+        android:id="@+id/menuNotifications"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="4dp">
+        <ImageView
+            android:id="@+id/ivMenuNotifications"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="Thông báo"
+            android:src="@drawable/ic_notifications"
+            app:tint="@color/text_secondary" />
+        <TextView
+            android:id="@+id/tvMenuNotifications"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:text="Thông báo"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp" />
+    </LinearLayout>
+<View
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="@color/divider" />
+<LinearLayout
         android:id="@+id/menuAccount"
         android:layout_width="0dp"
         android:layout_height="match_parent"
@@ -124,7 +155,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:text="Tài khoản"
+            android:text="Tôi"
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
     </LinearLayout>

@@ -57,6 +57,12 @@ public class ProductListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_list);
 
+        SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
+        if (prefManager.isLoggedIn()) {
+            PushNotificationManager.requestPermissionIfNeeded(this);
+            PushNotificationManager.registerCurrentToken(this, prefManager.getEmail());
+        }
+
         tvUserGreeting = findViewById(R.id.tvUserGreeting);
         tvUserEmail = findViewById(R.id.tvUserEmail);
         gridView = findViewById(R.id.listView);
@@ -91,6 +97,7 @@ public class ProductListActivity extends AppCompatActivity {
             }
         });
         setupNavigationMenu();
+        openOrderFromPushIfPresent();
         loadProductsFromFirebase(false);
     }
 
@@ -98,6 +105,13 @@ public class ProductListActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         updateUserHeader();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        openOrderFromPushIfPresent();
     }
 
     private void updateUserHeader() {
@@ -310,6 +324,38 @@ public class ProductListActivity extends AppCompatActivity {
                 startActivity(new Intent(this, AccountActivity.class));
             }
         });
+
+        findViewById(R.id.menuNotifications).setOnClickListener(v -> {
+            if (AuthGate.requireLogin(this)) {
+                startActivity(new Intent(this, NotificationActivity.class));
+            }
+        });
+    }
+
+    private void openOrderFromPushIfPresent() {
+        Intent launchIntent = getIntent();
+        String type = launchIntent.getStringExtra("type");
+        if (!"order_placed".equals(type) && !"order_status".equals(type)) {
+            return;
+        }
+
+        String orderIdValue = launchIntent.getStringExtra("orderId");
+        launchIntent.removeExtra("type");
+        launchIntent.removeExtra("orderId");
+        if (orderIdValue == null || !AuthGate.requireLogin(this)) {
+            return;
+        }
+
+        try {
+            int orderId = Integer.parseInt(orderIdValue);
+            if (orderId > 0) {
+                Intent orderIntent = new Intent(this, OrderDetailActivity.class);
+                orderIntent.putExtra("order_id", orderId);
+                startActivity(orderIntent);
+            }
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Thông báo chứa mã đơn hàng không hợp lệ.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private int dpToPx(int dp) {

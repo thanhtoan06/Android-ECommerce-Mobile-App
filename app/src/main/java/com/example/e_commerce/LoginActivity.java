@@ -129,6 +129,8 @@ public class LoginActivity extends AppCompatActivity {
 
                             prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(),
                                     user.getAddress());
+                            PushNotificationManager.requestPermissionIfNeeded(LoginActivity.this);
+                            PushNotificationManager.registerCurrentToken(LoginActivity.this, user.getEmail());
                             Toast.makeText(LoginActivity.this,
                                     "Đăng nhập thành công! Xin chào " + user.getFullName(), Toast.LENGTH_SHORT).show();
                             finish();

@@ -1,7 +1,12 @@
 
 package com.example.e_commerce;
 
+import android.util.Base64;
+
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
@@ -14,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -60,6 +67,12 @@ public class FirestoreRepository {
 
     public interface OrderItemsCallback {
         void onResult(List<OrderItem> items);
+
+        void onError(Exception e);
+    }
+
+    public interface NotificationsCallback {
+        void onResult(List<AppNotification> notifications);
 
         void onError(Exception e);
     }
@@ -341,45 +354,56 @@ public class FirestoreRepository {
         order.put("status", "Đặt hàng thành công");
 
         String orderId = String.valueOf(numericId);
-        firestore.collection("orders").document(orderId).set(order).addOnSuccessListener(v -> {
+        DocumentReference notificationRef = firestore.collection("notifications")
+                .document("order_" + numericId + "_placed");
+        WriteBatch batch = firestore.batch();
+        batch.set(firestore.collection("orders").document(orderId), order);
+        for (int i = 0; i < cartItems.size(); i++) {
+            CartItem item = cartItems.get(i);
+            Product p = item.getProduct();
 
-            WriteBatch batch = firestore.batch();
-            for (int i = 0; i < cartItems.size(); i++) {
-                CartItem item = cartItems.get(i);
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", i + 1);
+            data.put("orderId", numericId);
+            data.put("productId", p == null ? 0 : p.getId());
+            data.put("productName", p == null ? "Sản phẩm" : p.getName());
+            data.put("productIcon", p == null ? "📦" : p.getIcon());
+            data.put("price", p == null ? 0 : p.getPrice());
+            data.put("quantity", item.getQuantity());
+            data.put("subtotal", item.getSubtotal());
+
+            batch.set(firestore.collection("orders").document(orderId).collection("items")
+                    .document(String.valueOf(i + 1)), data);
+        }
+
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("userEmail", normalized);
+        notification.put("type", "order_placed");
+        notification.put("title", "Đặt hàng thành công");
+        notification.put("message", "Đơn hàng #DH"
+                + String.format(Locale.getDefault(), "%05d", numericId) + " đã được tiếp nhận.");
+        notification.put("orderId", numericId);
+        notification.put("createdAt", FieldValue.serverTimestamp());
+        notification.put("isRead", false);
+        batch.set(notificationRef, notification);
+
+        batch.commit().addOnSuccessListener(x -> {
+            AtomicInteger pendingDecrements = new AtomicInteger(cartItems.size());
+            for (CartItem item : cartItems) {
                 Product p = item.getProduct();
-
-                Map<String, Object> data = new HashMap<>();
-                data.put("id", i + 1);
-                data.put("orderId", numericId);
-                data.put("productId", p == null ? 0 : p.getId());
-                data.put("productName", p == null ? "Sản phẩm" : p.getName());
-                data.put("productIcon", p == null ? "📦" : p.getIcon());
-                data.put("price", p == null ? 0 : p.getPrice());
-                data.put("quantity", item.getQuantity());
-                data.put("subtotal", item.getSubtotal());
-
-                batch.set(firestore.collection("orders").document(orderId).collection("items")
-                        .document(String.valueOf(i + 1)), data);
-            }
-
-            batch.commit().addOnSuccessListener(x -> {
-                AtomicInteger pendingDecrements = new AtomicInteger(cartItems.size());
-                for (CartItem item : cartItems) {
-                    Product p = item.getProduct();
-                    if (p == null) {
-                        if (pendingDecrements.decrementAndGet() == 0) {
-                            removeOrderedCartItems(normalized, cartItems, ok -> callback.onResult(ok ? numericId : -1));
-                        }
-                        continue;
+                if (p == null) {
+                    if (pendingDecrements.decrementAndGet() == 0) {
+                        removeOrderedCartItems(normalized, cartItems, ok -> callback.onResult(ok ? numericId : -1));
                     }
-                    decreaseStock(p.getId(), item.getQuantity(), ok -> {
-                        if (pendingDecrements.decrementAndGet() == 0) {
-                            removeOrderedCartItems(normalized, cartItems,
-                                    done -> callback.onResult(done ? numericId : -1));
-                        }
-                    });
+                    continue;
                 }
-            }).addOnFailureListener(callback::onError);
+                decreaseStock(p.getId(), item.getQuantity(), ok -> {
+                    if (pendingDecrements.decrementAndGet() == 0) {
+                        removeOrderedCartItems(normalized, cartItems,
+                                done -> callback.onResult(done ? numericId : -1));
+                    }
+                });
+            }
         }).addOnFailureListener(callback::onError);
     }
 
@@ -438,6 +462,118 @@ public class FirestoreRepository {
                     result.sort((a, b) -> Integer.compare(b.getId(), a.getId()));
                     callback.onResult(result);
                 }).addOnFailureListener(callback::onError);
+    }
+
+    public void getUserNotifications(String email, NotificationsCallback callback) {
+        firestore.collection("notifications").whereEqualTo("userEmail", normalizeEmail(email)).get()
+                .addOnSuccessListener(snapshot -> {
+                    List<AppNotification> result = new ArrayList<>();
+                    for (DocumentSnapshot document : snapshot) {
+                        result.add(toNotification(document));
+                    }
+                    result.sort((first, second) -> Long.compare(
+                            notificationTime(second.getCreatedAt()), notificationTime(first.getCreatedAt())));
+                    callback.onResult(result);
+                }).addOnFailureListener(callback::onError);
+    }
+
+    public void markNotificationRead(String notificationId, BooleanCallback callback) {
+        firestore.collection("notifications").document(notificationId).update("isRead", true)
+                .addOnCompleteListener(task -> callback.onResult(task.isSuccessful()));
+    }
+
+    public void markAllNotificationsRead(String email, BooleanCallback callback) {
+        firestore.collection("notifications").whereEqualTo("userEmail", normalizeEmail(email)).get()
+                .addOnSuccessListener(snapshot -> {
+                    List<DocumentReference> unreadNotifications = new ArrayList<>();
+                    for (DocumentSnapshot document : snapshot) {
+                        if (!Boolean.TRUE.equals(document.getBoolean("isRead"))) {
+                            unreadNotifications.add(document.getReference());
+                        }
+                    }
+                    markNotificationReadBatch(unreadNotifications, 0, callback);
+                }).addOnFailureListener(e -> callback.onResult(false));
+    }
+
+    public void syncOrderStatusNotifications(String email, BooleanCallback callback) {
+        String normalized = normalizeEmail(email);
+        firestore.collection("orders").whereEqualTo("userEmail", normalized).get().addOnSuccessListener(snapshot -> {
+            List<Order> orders = new ArrayList<>();
+            for (DocumentSnapshot document : snapshot) {
+                orders.add(toOrder(document));
+            }
+            if (orders.isEmpty()) {
+                callback.onResult(true);
+                return;
+            }
+
+            AtomicInteger pending = new AtomicInteger(orders.size());
+            AtomicBoolean successful = new AtomicBoolean(true);
+            for (Order order : orders) {
+                String status = order.getStatus();
+                if (status == null || status.trim().isEmpty() || "Đặt hàng thành công".equals(status)) {
+                    completeStatusSync(pending, successful, true, callback);
+                    continue;
+                }
+
+                String notificationId = "order_" + order.getId() + "_status_"
+                        + Integer.toHexString(status.hashCode());
+                DocumentReference notificationRef = firestore.collection("notifications").document(notificationId);
+                Map<String, Object> notification = new HashMap<>();
+                notification.put("userEmail", normalized);
+                notification.put("type", "order_status");
+                notification.put("title", "Cập nhật đơn hàng");
+                notification.put("message", "Đơn hàng #DH"
+                        + String.format(Locale.getDefault(), "%05d", order.getId())
+                        + " chuyển sang trạng thái: " + status + ".");
+                notification.put("orderId", order.getId());
+                notification.put("status", status);
+                notification.put("createdAt", FieldValue.serverTimestamp());
+                notification.put("isRead", false);
+                firestore.runTransaction(transaction -> {
+                    if (!transaction.get(notificationRef).exists()) {
+                        transaction.set(notificationRef, notification);
+                    }
+                    return null;
+                }).addOnCompleteListener(task ->
+                        completeStatusSync(pending, successful, task.isSuccessful(), callback));
+            }
+        }).addOnFailureListener(e -> callback.onResult(false));
+    }
+
+    private void markNotificationReadBatch(List<DocumentReference> unreadNotifications, int startIndex,
+            BooleanCallback callback) {
+        if (startIndex >= unreadNotifications.size()) {
+            callback.onResult(true);
+            return;
+        }
+
+        WriteBatch batch = firestore.batch();
+        int endIndex = Math.min(startIndex + 450, unreadNotifications.size());
+        for (int i = startIndex; i < endIndex; i++) {
+            batch.update(unreadNotifications.get(i), "isRead", true);
+        }
+        batch.commit().addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                callback.onResult(false);
+                return;
+            }
+            markNotificationReadBatch(unreadNotifications, endIndex, callback);
+        });
+    }
+
+    private void completeStatusSync(AtomicInteger pending, AtomicBoolean successful, boolean itemSuccessful,
+            BooleanCallback callback) {
+        if (!itemSuccessful) {
+            successful.set(false);
+        }
+        if (pending.decrementAndGet() == 0) {
+            callback.onResult(successful.get());
+        }
+    }
+
+    private long notificationTime(Timestamp timestamp) {
+        return timestamp == null ? 0 : timestamp.toDate().getTime();
     }
 
     public void getOrderItems(long orderId, OrderItemsCallback callback) {
@@ -538,6 +674,38 @@ public class FirestoreRepository {
                 .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
     }
 
+    public void savePushToken(String email, String token, BooleanCallback callback) {
+        if (token == null || token.trim().isEmpty()) {
+            callback.onResult(false);
+            return;
+        }
+
+        String normalized = normalizeEmail(email);
+        Map<String, Object> data = new HashMap<>();
+        data.put("userEmail", normalized);
+        data.put("token", token);
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        firestore.collection("users").document(normalized).collection("fcmTokens")
+                .document(tokenDocumentId(token)).set(data, SetOptions.merge())
+                .addOnCompleteListener(task -> callback.onResult(task.isSuccessful()));
+    }
+
+    public void removePushToken(String email, String token, BooleanCallback callback) {
+        if (token == null || token.trim().isEmpty()) {
+            callback.onResult(false);
+            return;
+        }
+
+        firestore.collection("users").document(normalizeEmail(email)).collection("fcmTokens")
+                .document(tokenDocumentId(token)).delete()
+                .addOnCompleteListener(task -> callback.onResult(task.isSuccessful()));
+    }
+
+    private String tokenDocumentId(String token) {
+        return Base64.encodeToString(token.getBytes(StandardCharsets.UTF_8),
+                Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+    }
+
     private Product toProduct(DocumentSnapshot d) {
         int stock = (d.getLong("stock") != null) ? d.getLong("stock").intValue() : 0;
         return new Product(value(d, "id"), d.getString("name"), d.getString("category"), longValue(d, "price"),
@@ -559,6 +727,13 @@ public class FirestoreRepository {
     private User toUser(DocumentSnapshot d) {
         return new User(value(d, "id"), d.getString("fullName"), d.getString("email"), d.getString("avatar"),
                 d.getString("phone"), d.getString("address"));
+    }
+
+    private AppNotification toNotification(DocumentSnapshot document) {
+        Long orderId = document.getLong("orderId");
+        return new AppNotification(document.getId(), document.getString("type"), document.getString("title"),
+                document.getString("message"), orderId == null ? 0 : orderId.intValue(),
+                document.getTimestamp("createdAt"), Boolean.TRUE.equals(document.getBoolean("isRead")));
     }
 
     private int value(DocumentSnapshot d, String key) {
