@@ -38,7 +38,7 @@
         android:background="@drawable/bg_input"
         android:drawableStart="@drawable/ic_location"
         android:drawablePadding="10dp"
-        android:hint="Ví dụ: 123 Đường Nguyễn Trãi, Quận 1, TP. HCM"
+        android:hint="Nhập địa chỉ giao hàng của bạn"
         android:imeOptions="actionDone"
         android:inputType="textMultiLine|textCapSentences"
         android:paddingHorizontal="14dp"

@@ -20,6 +20,11 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -106,14 +111,10 @@ public class AccountActivity extends AppCompatActivity {
             new AlertDialog.Builder(this).setTitle("Đăng xuất")
                     .setMessage("Bạn có chắc chắn muốn đăng xuất tài khoản không?")
                     .setPositiveButton("Đăng xuất", (dialog, which) -> {
-
+                        FirebaseAuth.getInstance().signOut();
                         prefManager.logout();
                         Toast.makeText(this, "Đã đăng xuất thành công!", Toast.LENGTH_SHORT).show();
-
-                        Intent intent = new Intent(AccountActivity.this, LoginActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
+                        AuthGate.returnToHome(this);
                     }).setNegativeButton("Hủy", null).show();
         });
 
@@ -328,15 +329,25 @@ public class AccountActivity extends AppCompatActivity {
                 return;
             }
 
-            repository.checkPassword(currentEmail, currentPass, valid -> {
-                if (!valid) {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user == null || user.getEmail() == null || !user.getEmail().equalsIgnoreCase(currentEmail)) {
+                Toast.makeText(this, "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.", Toast.LENGTH_SHORT)
+                        .show();
+                return;
+            }
+
+            AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), currentPass);
+            user.reauthenticate(credential).addOnCompleteListener(this, authTask -> {
+                if (!authTask.isSuccessful()) {
                     Toast.makeText(this, "Mật khẩu hiện tại không chính xác!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                repository.updateUser(currentEmail, Collections.singletonMap("password", newPass), ok -> {
-                    if (!ok) {
-                        Toast.makeText(this, "Đổi mật khẩu thất bại!", Toast.LENGTH_SHORT).show();
+                user.updatePassword(newPass).addOnCompleteListener(this, updateTask -> {
+                    if (!updateTask.isSuccessful()) {
+                        String message = updateTask.getException() == null ? "Đổi mật khẩu thất bại."
+                                : updateTask.getException().getLocalizedMessage();
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
                         return;
                     }
 

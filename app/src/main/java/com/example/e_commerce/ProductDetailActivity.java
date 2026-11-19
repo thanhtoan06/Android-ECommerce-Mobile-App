@@ -41,7 +41,11 @@ public class ProductDetailActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        findViewById(R.id.btnHeaderCart).setOnClickListener(v -> startActivity(new Intent(this, CartActivity.class)));
+        findViewById(R.id.btnHeaderCart).setOnClickListener(v -> {
+            if (AuthGate.requireLogin(this)) {
+                startActivity(new Intent(this, CartActivity.class));
+            }
+        });
 
         int productId = getIntent().getIntExtra(EXTRA_PRODUCT_ID, -1);
         ProductRepository.findById(productId, new ProductRepository.ProductCallback() {
@@ -126,6 +130,9 @@ public class ProductDetailActivity extends AppCompatActivity {
                                 .show();
                         return;
                     }
+                    if (!AuthGate.requireLogin(ProductDetailActivity.this)) {
+                        return;
+                    }
 
                     String userEmail = SharedPrefManager.getInstance(ProductDetailActivity.this).getEmail();
                     btnAddToCart.setEnabled(false);
@@ -154,6 +161,9 @@ public class ProductDetailActivity extends AppCompatActivity {
                     if (stock <= 0) {
                         Toast.makeText(ProductDetailActivity.this, "Sản phẩm hiện đã hết hàng!", Toast.LENGTH_SHORT)
                                 .show();
+                        return;
+                    }
+                    if (!AuthGate.requireLogin(ProductDetailActivity.this)) {
                         return;
                     }
 
@@ -192,6 +202,10 @@ public class ProductDetailActivity extends AppCompatActivity {
 
     private void updateCartBadge() {
         if (tvHeaderCartCount != null) {
+            if (!SharedPrefManager.getInstance(this).isLoggedIn()) {
+                tvHeaderCartCount.setText("0");
+                return;
+            }
             String userEmail = SharedPrefManager.getInstance(this).getEmail();
             FirestoreRepository.getInstance().getCartCount(userEmail,
                     count -> tvHeaderCartCount.setText(String.valueOf(count)));

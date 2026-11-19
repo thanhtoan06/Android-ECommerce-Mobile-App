@@ -37,7 +37,7 @@
         android:background="@drawable/bg_input"
         android:drawableStart="@drawable/ic_person"
         android:drawablePadding="10dp"
-        android:hint="Ví dụ: Hoàng Tuấn Anh"
+        android:hint="Nhập họ và tên của bạn"
         android:imeOptions="actionDone"
         android:inputType="textPersonName"
         android:maxLines="1"

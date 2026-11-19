@@ -18,7 +18,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.Collections;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -34,7 +34,6 @@ public class LoginActivity extends AppCompatActivity {
 
         SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
         if (prefManager.isLoggedIn()) {
-            startActivity(new Intent(LoginActivity.this, ProductListActivity.class));
             finish();
             return;
         }
@@ -48,6 +47,7 @@ public class LoginActivity extends AppCompatActivity {
         btnTogglePassword = findViewById(R.id.btnTogglePassword);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         progressBarLogin = findViewById(R.id.progressBarLogin);
+        findViewById(R.id.btnBackToHome).setOnClickListener(v -> AuthGate.returnToHome(this));
 
         setupPasswordToggle(edtPassword, btnTogglePassword);
 
@@ -101,23 +101,38 @@ public class LoginActivity extends AppCompatActivity {
 
         setLoadingState(true);
 
-        FirestoreRepository.getInstance().checkLogin(account, password, new FirestoreRepository.UserCallback() {
+        FirestoreRepository.getInstance().getUserByAccount(account, new FirestoreRepository.UserCallback() {
             @Override
             public void onResult(User user) {
-
                 if (user == null) {
                     setLoadingState(false);
-                    Toast.makeText(LoginActivity.this, "Tên tài khoản hoặc mật khẩu không chính xác!",
+                    Toast.makeText(LoginActivity.this, "Thông tin đăng nhập hoặc mật khẩu không chính xác!",
                             Toast.LENGTH_SHORT).show();
                     return;
                 }
+                if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                    setLoadingState(false);
+                    Toast.makeText(LoginActivity.this, "Hồ sơ tài khoản thiếu email đăng nhập.", Toast.LENGTH_SHORT)
+                            .show();
+                    return;
+                }
 
-                prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(),
-                        user.getAddress());
-                Toast.makeText(LoginActivity.this, "Đăng nhập thành công! Xin chào " + user.getFullName(),
-                        Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(LoginActivity.this, ProductListActivity.class));
-                finish();
+                FirebaseAuth.getInstance().signInWithEmailAndPassword(user.getEmail(), password)
+                        .addOnCompleteListener(LoginActivity.this, task -> {
+                            setLoadingState(false);
+                            if (!task.isSuccessful()) {
+                                Toast.makeText(LoginActivity.this,
+                                        "Thông tin đăng nhập hoặc mật khẩu không chính xác!", Toast.LENGTH_SHORT)
+                                        .show();
+                                return;
+                            }
+
+                            prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(),
+                                    user.getAddress());
+                            Toast.makeText(LoginActivity.this,
+                                    "Đăng nhập thành công! Xin chào " + user.getFullName(), Toast.LENGTH_SHORT).show();
+                            finish();
+                        });
             }
 
             @Override
@@ -133,16 +148,9 @@ public class LoginActivity extends AppCompatActivity {
     private void showForgotPasswordDialog() {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_forgot_password, null);
         EditText edtForgotEmail = dialogView.findViewById(R.id.edtForgotEmail);
-        EditText edtForgotNewPassword = dialogView.findViewById(R.id.edtForgotNewPassword);
-        EditText edtForgotConfirmPassword = dialogView.findViewById(R.id.edtForgotConfirmPassword);
-        ImageView btnToggleForgotNewPassword = dialogView.findViewById(R.id.btnToggleForgotNewPassword);
-        ImageView btnToggleForgotConfirmPassword = dialogView.findViewById(R.id.btnToggleForgotConfirmPassword);
         ProgressBar progressBarForgot = dialogView.findViewById(R.id.progressBarForgot);
         Button btnCancel = dialogView.findViewById(R.id.btnCancelForgot);
         Button btnSubmit = dialogView.findViewById(R.id.btnSubmitForgot);
-
-        setupPasswordToggle(edtForgotNewPassword, btnToggleForgotNewPassword);
-        setupPasswordToggle(edtForgotConfirmPassword, btnToggleForgotConfirmPassword);
 
         String currentInput = edtEmail.getText().toString().trim();
         if (!currentInput.isEmpty() && Patterns.EMAIL_ADDRESS.matcher(currentInput).matches()) {
@@ -158,23 +166,13 @@ public class LoginActivity extends AppCompatActivity {
 
         btnSubmit.setOnClickListener(v -> {
             String email = edtForgotEmail.getText().toString().trim();
-            String newPassword = edtForgotNewPassword.getText().toString().trim();
-            String confirmPassword = edtForgotConfirmPassword.getText().toString().trim();
 
-            if (email.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
-                Toast.makeText(this, "Vui lòng điền đầy đủ các thông tin!", Toast.LENGTH_SHORT).show();
+            if (email.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập email tài khoản!", Toast.LENGTH_SHORT).show();
                 return;
             }
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                 Toast.makeText(this, "Địa chỉ email không đúng định dạng!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (newPassword.length() < 6) {
-                Toast.makeText(this, "Mật khẩu mới phải có tối thiểu 6 ký tự!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (!newPassword.equals(confirmPassword)) {
-                Toast.makeText(this, "Mật khẩu xác nhận không khớp!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -182,49 +180,27 @@ public class LoginActivity extends AppCompatActivity {
             btnSubmit.setEnabled(false);
             btnCancel.setEnabled(false);
 
-            FirestoreRepository.getInstance().getUserByEmail(email, new FirestoreRepository.UserCallback() {
-                @Override
-                public void onResult(User user) {
-                    if (user == null) {
+            FirebaseAuth auth = FirebaseAuth.getInstance();
+            auth.setLanguageCode("vi");
+            auth.sendPasswordResetEmail(email)
+                    .addOnCompleteListener(this, task -> {
                         progressBarForgot.setVisibility(View.GONE);
                         btnSubmit.setEnabled(true);
                         btnCancel.setEnabled(true);
-                        Toast.makeText(LoginActivity.this, "Không tìm thấy tài khoản với email này!",
-                                Toast.LENGTH_SHORT).show();
-                        return;
-                    }
 
-                    FirestoreRepository.getInstance().updateUser(email,
-                            Collections.singletonMap("password", newPassword), success -> {
-                                progressBarForgot.setVisibility(View.GONE);
-                                btnSubmit.setEnabled(true);
-                                btnCancel.setEnabled(true);
-
-                                if (success) {
-
-                                    edtEmail.setText(email);
-                                    edtPassword.setText(newPassword);
-
-                                    Toast.makeText(LoginActivity.this,
-                                            "Đặt lại mật khẩu thành công! Vui lòng bấm Đăng nhập.", Toast.LENGTH_LONG)
-                                            .show();
-                                    dialog.dismiss();
-                                } else {
-                                    Toast.makeText(LoginActivity.this,
-                                            "Đặt lại mật khẩu thất bại, vui lòng thử lại sau!", Toast.LENGTH_SHORT)
-                                            .show();
-                                }
-                            });
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    progressBarForgot.setVisibility(View.GONE);
-                    btnSubmit.setEnabled(true);
-                    btnCancel.setEnabled(true);
-                    Toast.makeText(LoginActivity.this, "Lỗi kết nối: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+                        if (task.isSuccessful()) {
+                            dialog.dismiss();
+                            Toast.makeText(LoginActivity.this,
+                                    "Nếu email có tài khoản, hướng dẫn đặt lại mật khẩu đã được gửi.",
+                                    Toast.LENGTH_LONG).show();
+                        } else {
+                            String message = task.getException() == null
+                                    || task.getException().getLocalizedMessage() == null
+                                            ? "Không thể gửi email đặt lại mật khẩu."
+                                            : task.getException().getLocalizedMessage();
+                            Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+                        }
+                    });
         });
 
         dialog.show();

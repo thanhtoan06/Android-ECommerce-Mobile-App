@@ -1,6 +1,7 @@
 
 package com.example.e_commerce;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
@@ -13,6 +14,9 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -37,13 +41,19 @@ public class RegisterActivity extends AppCompatActivity {
         btnToggleRegisterPassword = findViewById(R.id.btnToggleRegisterPassword);
         btnToggleConfirmPassword = findViewById(R.id.btnToggleConfirmPassword);
         progressBarRegister = findViewById(R.id.progressBarRegister);
+        findViewById(R.id.btnBackToHome).setOnClickListener(v -> AuthGate.returnToHome(this));
 
         setupPasswordToggle(edtRegisterPassword, btnToggleRegisterPassword);
         setupPasswordToggle(edtConfirmPassword, btnToggleConfirmPassword);
 
         btnSubmitRegister.setOnClickListener(v -> handleRegister());
 
-        btnBackToLogin.setOnClickListener(v -> finish());
+        btnBackToLogin.setOnClickListener(v -> {
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
     }
 
     private void setupPasswordToggle(EditText editText, ImageView toggleView) {
@@ -109,20 +119,44 @@ public class RegisterActivity extends AppCompatActivity {
 
         setLoadingState(true);
 
-        FirestoreRepository.getInstance().checkEmailExists(email, exists -> {
-            if (exists) {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        auth.createUserWithEmailAndPassword(email, pass).addOnCompleteListener(this, task -> {
+            if (!task.isSuccessful()) {
                 setLoadingState(false);
-                Toast.makeText(this, "Email này đã được đăng ký! Vui lòng chọn email khác.", Toast.LENGTH_LONG).show();
+                if (task.getException() instanceof FirebaseAuthUserCollisionException) {
+                    Toast.makeText(this, "Email này đã được đăng ký! Vui lòng chọn email khác.", Toast.LENGTH_LONG)
+                            .show();
+                } else {
+                    String message = task.getException() == null
+                            || task.getException().getLocalizedMessage() == null
+                                    ? "Đăng ký thất bại."
+                                    : task.getException().getLocalizedMessage();
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                }
                 return;
             }
 
-            FirestoreRepository.getInstance().registerUser(name, email, pass, phone, success -> {
+            FirestoreRepository.getInstance().registerUser(name, email, phone, success -> {
                 if (!success) {
-                    setLoadingState(false);
-                    Toast.makeText(this, "Đăng ký Firebase thất bại, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+                    if (auth.getCurrentUser() != null) {
+                        auth.getCurrentUser().delete().addOnCompleteListener(this, deleteTask -> {
+                            auth.signOut();
+                            setLoadingState(false);
+                            String message = deleteTask.isSuccessful()
+                                    ? "Không thể lưu hồ sơ tài khoản. Vui lòng thử lại."
+                                    : "Không thể lưu hồ sơ hoặc hủy tài khoản vừa tạo. Vui lòng liên hệ hỗ trợ.";
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                        });
+                    } else {
+                        setLoadingState(false);
+                        Toast.makeText(this, "Không thể lưu hồ sơ tài khoản. Vui lòng thử lại.", Toast.LENGTH_LONG)
+                                .show();
+                    }
                     return;
                 }
 
+                auth.signOut();
+                setLoadingState(false);
                 Toast.makeText(this, "Đăng ký thành công! Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show();
                 finish();
             });

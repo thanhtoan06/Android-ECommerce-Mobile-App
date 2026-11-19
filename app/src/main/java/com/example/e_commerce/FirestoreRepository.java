@@ -451,19 +451,12 @@ public class FirestoreRepository {
                 }).addOnFailureListener(callback::onError);
     }
 
-    public void checkEmailExists(String email, Consumer<Boolean> callback) {
-        firestore.collection("users").document(normalizeEmail(email)).get()
-                .addOnSuccessListener(d -> callback.accept(d.exists()))
-                .addOnFailureListener(e -> callback.accept(false));
-    }
-
-    public void registerUser(String fullName, String email, String password, String phone, BooleanCallback callback) {
+    public void registerUser(String fullName, String email, String phone, BooleanCallback callback) {
         String normalized = normalizeEmail(email);
         Map<String, Object> data = new HashMap<>();
         data.put("id", normalized.hashCode());
         data.put("fullName", fullName.trim());
         data.put("email", normalized);
-        data.put("password", password);
         data.put("avatar", "👤");
         data.put("phone", phone == null ? "" : phone.trim());
         data.put("address", "");
@@ -472,17 +465,26 @@ public class FirestoreRepository {
                 .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
     }
 
-    public void checkLogin(String account, String password, UserCallback callback) {
-        String value = account == null ? "" : account.trim().toLowerCase();
+    public void getUserByAccount(String account, UserCallback callback) {
+        String value = account == null ? "" : account.trim();
+        String lowerValue = value.toLowerCase();
         firestore.collection("users").get().addOnSuccessListener(snapshot -> {
             User found = null;
             for (DocumentSnapshot d : snapshot) {
                 String email = d.getString("email");
                 String name = d.getString("fullName");
-                boolean isAccountMatch = value.equals(email) || value.equalsIgnoreCase(name)
-                        || (email != null && email.startsWith(value + "@"));
+                String username = d.getString("username");
+                String phone = d.getString("phone");
 
-                if (isAccountMatch && password.equals(d.getString("password"))) {
+                boolean isEmailMatch = email != null && (lowerValue.equals(email.trim().toLowerCase())
+                        || email.toLowerCase().startsWith(lowerValue + "@"));
+                boolean isNameMatch = (name != null && (value.equalsIgnoreCase(name.trim()) || lowerValue.equals(name.trim().toLowerCase())))
+                        || (username != null && (value.equalsIgnoreCase(username.trim()) || lowerValue.equals(username.trim().toLowerCase())));
+                boolean isPhoneMatch = isPhoneMatch(value, phone);
+
+                boolean isAccountMatch = isEmailMatch || isNameMatch || isPhoneMatch;
+
+                if (isAccountMatch) {
                     found = toUser(d);
                     break;
                 }
@@ -491,24 +493,36 @@ public class FirestoreRepository {
         }).addOnFailureListener(callback::onError);
     }
 
+    private boolean isPhoneMatch(String input, String target) {
+        if (input == null || target == null) {
+            return false;
+        }
+        String cleanInput = input.trim().replaceAll("[^0-9]", "");
+        String cleanTarget = target.trim().replaceAll("[^0-9]", "");
+        if (cleanInput.isEmpty() || cleanTarget.isEmpty()) {
+            return false;
+        }
+        if (cleanInput.equals(cleanTarget)) {
+            return true;
+        }
+        // Normalize Vietnamese phone numbers (+84xxxxxxxxx vs 0xxxxxxxxx)
+        if (cleanInput.startsWith("84") && cleanInput.length() >= 10) {
+            String withZero = "0" + cleanInput.substring(2);
+            if (withZero.equals(cleanTarget)) {
+                return true;
+            }
+        }
+        if (cleanTarget.startsWith("84") && cleanTarget.length() >= 10) {
+            String withZero = "0" + cleanTarget.substring(2);
+            return cleanInput.equals(withZero);
+        }
+        return false;
+    }
+
     public void getUserByEmail(String email, UserCallback callback) {
         firestore.collection("users").document(normalizeEmail(email)).get()
                 .addOnSuccessListener(d -> callback.onResult(d.exists() ? toUser(d) : null))
                 .addOnFailureListener(callback::onError);
-    }
-
-    public void checkPassword(String email, String password, BooleanCallback callback) {
-        getUserByEmail(email, new UserCallback() {
-            @Override
-            public void onResult(User user) {
-                callback.onResult(user != null && password.equals(user.getPassword()));
-            }
-
-            @Override
-            public void onError(Exception e) {
-                callback.onResult(false);
-            }
-        });
     }
 
     public void checkUsernameExists(String username, String currentEmail, Consumer<Boolean> callback) {
@@ -543,8 +557,8 @@ public class FirestoreRepository {
     }
 
     private User toUser(DocumentSnapshot d) {
-        return new User(value(d, "id"), d.getString("fullName"), d.getString("email"), d.getString("password"),
-                d.getString("avatar"), d.getString("phone"), d.getString("address"));
+        return new User(value(d, "id"), d.getString("fullName"), d.getString("email"), d.getString("avatar"),
+                d.getString("phone"), d.getString("address"));
     }
 
     private int value(DocumentSnapshot d, String key) {

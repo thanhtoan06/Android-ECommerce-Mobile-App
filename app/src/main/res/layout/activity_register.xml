@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -7,43 +8,73 @@
     android:background="@color/page_background"
     android:fillViewport="true"
     tools:context=".RegisterActivity">
-<LinearLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="20dp">
-<TextView
+        <ImageButton
+            android:id="@+id/btnBackToHome"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại trang chủ"
+            android:padding="12dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/primary" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="@color/primary"
+            app:cardCornerRadius="38dp"
+            app:cardElevation="3dp"
+            app:strokeWidth="0dp">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="Logo ứng dụng"
+                android:scaleType="centerCrop"
+                android:scaleX="1.35"
+                android:scaleY="1.35"
+                android:src="@drawable/ic_launcher_foreground" />
+        </com.google.android.material.card.MaterialCardView>
+        <TextView
+            android:id="@+id/tvBrandName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:letterSpacing="0.03"
+            android:text="Tech Device Store"
+            android:textColor="@color/primary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+        <TextView
             android:id="@+id/tvRegisterTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="Tạo tài khoản mới"
             android:textColor="@color/text_primary"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
-<TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="20dp"
-            android:text="Bắt đầu mua sắm cùng E-Commerce"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
-<LinearLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card_white"
             android:elevation="3dp"
             android:orientation="vertical"
             android:padding="22dp">
-<TextView
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="HỌ VÀ TÊN"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-<EditText
+            <EditText
                 android:id="@+id/edtFullName"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -52,7 +83,7 @@
                 android:background="@drawable/bg_input"
                 android:drawableStart="@drawable/ic_person"
                 android:drawablePadding="10dp"
-                android:hint="Ví dụ: Nguyễn Văn An"
+                android:hint="Nhập họ và tên của bạn"
                 android:imeOptions="actionNext"
                 android:inputType="textPersonName"
                 android:maxLines="1"
@@ -60,14 +91,14 @@
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="14sp" />
-<TextView
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="ĐỊA CHỈ EMAIL"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-<EditText
+            <EditText
                 android:id="@+id/edtRegisterEmail"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -76,7 +107,7 @@
                 android:background="@drawable/bg_input"
                 android:drawableStart="@drawable/ic_email"
                 android:drawablePadding="10dp"
-                android:hint="Ví dụ: example@email.com"
+                android:hint="Nhập email của bạn"
                 android:imeOptions="actionNext"
                 android:inputType="textEmailAddress"
                 android:maxLines="1"
@@ -84,14 +115,14 @@
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="14sp" />
-<TextView
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="SỐ ĐIỆN THOẠI"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-<EditText
+            <EditText
                 android:id="@+id/edtRegisterPhone"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -100,7 +131,7 @@
                 android:background="@drawable/bg_input"
                 android:drawableStart="@drawable/ic_phone"
                 android:drawablePadding="10dp"
-                android:hint="Ví dụ: 0912345678"
+                android:hint="Nhập số điện thoại của bạn"
                 android:imeOptions="actionNext"
                 android:inputType="phone"
                 android:maxLines="1"
@@ -108,19 +139,19 @@
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="14sp" />
-<TextView
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="MẬT KHẨU (TỐI THIỂU 6 KÝ TỰ)"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-<RelativeLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:layout_marginBottom="12dp">
-<EditText
+                <EditText
                     android:id="@+id/edtRegisterPassword"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -136,7 +167,7 @@
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_tertiary"
                     android:textSize="14sp" />
-<ImageView
+                <ImageView
                     android:id="@+id/btnToggleRegisterPassword"
                     android:layout_width="44dp"
                     android:layout_height="48dp"
@@ -150,19 +181,19 @@
                     android:src="@drawable/ic_visibility_off"
                     app:tint="@color/text_secondary" />
             </RelativeLayout>
-<TextView
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="XÁC NHẬN MẬT KHẨU"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-<RelativeLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:layout_marginBottom="20dp">
-<EditText
+                <EditText
                     android:id="@+id/edtConfirmPassword"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -178,7 +209,7 @@
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_tertiary"
                     android:textSize="14sp" />
-<ImageView
+                <ImageView
                     android:id="@+id/btnToggleConfirmPassword"
                     android:layout_width="44dp"
                     android:layout_height="48dp"
@@ -192,10 +223,10 @@
                     android:src="@drawable/ic_visibility_off"
                     app:tint="@color/text_secondary" />
             </RelativeLayout>
-<FrameLayout
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="48dp">
-<Button
+                <Button
                     android:id="@+id/btnSubmitRegister"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -205,7 +236,7 @@
                     android:textSize="14sp"
                     android:textStyle="bold"
                     app:backgroundTint="@null" />
-<ProgressBar
+                <ProgressBar
                     android:id="@+id/progressBarRegister"
                     android:layout_width="26dp"
                     android:layout_height="26dp"
@@ -214,15 +245,15 @@
                     android:indeterminateTint="@color/white"
                     android:visibility="gone" />
             </FrameLayout>
-<Button
+            <Button
                 android:id="@+id/btnBackToLogin"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_secondary_button"
-                android:text="← QUAY LẠI ĐĂNG NHẬP"
+                android:text="ĐĂNG NHẬP NGAY"
                 android:textColor="@color/primary"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 app:backgroundTint="@null" />
         </LinearLayout>

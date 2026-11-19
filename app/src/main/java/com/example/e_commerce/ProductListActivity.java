@@ -44,6 +44,8 @@ public class ProductListActivity extends AppCompatActivity {
     private View layoutEmpty;
     private Button btnResetFilter;
     private ProgressBar progressBarLoading;
+    private View layoutUserInfo;
+    private View layoutGuestActions;
 
     private Product[] allProducts = new Product[0];
     private Product[] filteredProducts = new Product[0];
@@ -67,6 +69,13 @@ public class ProductListActivity extends AppCompatActivity {
         layoutEmpty = findViewById(R.id.layoutEmpty);
         btnResetFilter = findViewById(R.id.btnResetFilter);
         progressBarLoading = findViewById(R.id.progressBarLoading);
+        layoutUserInfo = findViewById(R.id.layoutUserInfo);
+        layoutGuestActions = findViewById(R.id.layoutGuestActions);
+
+        findViewById(R.id.btnHomeLogin).setOnClickListener(v ->
+                startActivity(new Intent(this, LoginActivity.class)));
+        findViewById(R.id.btnHomeRegister).setOnClickListener(v ->
+                startActivity(new Intent(this, RegisterActivity.class)));
 
         swipeRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.primary));
         swipeRefresh.setOnRefreshListener(() -> loadProductsFromFirebase(true));
@@ -93,6 +102,13 @@ public class ProductListActivity extends AppCompatActivity {
 
     private void updateUserHeader() {
         SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
+        boolean isLoggedIn = prefManager.isLoggedIn();
+        layoutUserInfo.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
+        layoutGuestActions.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+        if (!isLoggedIn) {
+            return;
+        }
+
         String username = prefManager.getUsername();
         String userEmail = prefManager.getEmail();
 
@@ -277,12 +293,23 @@ public class ProductListActivity extends AppCompatActivity {
         findViewById(R.id.menuHome)
                 .setOnClickListener(v -> Toast.makeText(this, "Bạn đang ở trang Sản phẩm", Toast.LENGTH_SHORT).show());
 
-        findViewById(R.id.menuCart).setOnClickListener(v -> startActivity(new Intent(this, CartActivity.class)));
+        findViewById(R.id.menuCart).setOnClickListener(v -> {
+            if (AuthGate.requireLogin(this)) {
+                startActivity(new Intent(this, CartActivity.class));
+            }
+        });
 
-        findViewById(R.id.menuOrders)
-                .setOnClickListener(v -> startActivity(new Intent(this, OrderHistoryActivity.class)));
+        findViewById(R.id.menuOrders).setOnClickListener(v -> {
+            if (AuthGate.requireLogin(this)) {
+                startActivity(new Intent(this, OrderHistoryActivity.class));
+            }
+        });
 
-        findViewById(R.id.menuAccount).setOnClickListener(v -> startActivity(new Intent(this, AccountActivity.class)));
+        findViewById(R.id.menuAccount).setOnClickListener(v -> {
+            if (AuthGate.requireLogin(this)) {
+                startActivity(new Intent(this, AccountActivity.class));
+            }
+        });
     }
 
     private int dpToPx(int dp) {
