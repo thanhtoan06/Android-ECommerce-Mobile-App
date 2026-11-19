@@ -108,8 +108,10 @@ public final class VoucherCalculator {
         if (voucher.isApplicableToAll()) {
             return true;
         }
-        return voucher.isApplicableToCategory()
-                && voucher.getCategory().equalsIgnoreCase(product.getCategory());
+        if (voucher.isApplicableToCategory()) {
+            return voucher.getCategory().equalsIgnoreCase(product.getCategory());
+        }
+        return voucher.appliesToProduct(product.getId());
     }
 
     public static final class ProductDiscount {

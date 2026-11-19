@@ -13,6 +13,7 @@
     tools:context=".VoucherActivity">
 
     <LinearLayout
+        android:id="@+id/layoutVoucherBadge"
         android:layout_width="86dp"
         android:layout_height="match_parent"
         android:background="@drawable/bg_voucher_badge_sawtooth"

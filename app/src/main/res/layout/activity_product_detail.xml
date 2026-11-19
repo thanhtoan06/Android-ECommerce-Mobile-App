@@ -215,15 +215,27 @@
                     android:layout_height="1dp"
                     android:layout_marginVertical="12dp"
                     android:background="@color/card_stroke" />
-<TextView
-                    android:id="@+id/tvOriginalPrice"
+<FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_tertiary"
-                    android:textSize="13sp"
-                    android:visibility="gone"
-                    tools:text="5.990.000 ₫"
-                    tools:visibility="visible" />
+                    android:layout_height="wrap_content">
+                    <TextView
+                        android:id="@+id/tvOriginalPrice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:text="5.990.000 ₫"
+                        tools:visibility="visible" />
+                    <View
+                        android:layout_width="96dp"
+                        android:layout_height="2dp"
+                        android:layout_gravity="start|center_vertical"
+                        android:background="@color/text_secondary"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+                </FrameLayout>
 <TextView
                     android:id="@+id/tvPrice"
                     android:layout_width="match_parent"

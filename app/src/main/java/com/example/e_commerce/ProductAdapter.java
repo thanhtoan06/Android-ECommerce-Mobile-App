@@ -80,7 +80,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
     private void bindVoucherPrice(ViewHolder holder, Product product) {
         Voucher bestProductVoucher = null;
         long bestDiscount = 0;
-        boolean hasFreeShippingVoucher = false;
+        long bestShippingDiscount = 0;
         CartItem singleItem = new CartItem(product.getId(), product, 1);
         for (Voucher voucher : savedVouchers) {
             if (!voucher.isSaved() || voucher.isExpired(new Date())) {
@@ -94,12 +94,12 @@ public class ProductAdapter extends ArrayAdapter<Product> {
                     bestDiscount = discount.getTotalDiscount();
                     bestProductVoucher = voucher;
                 }
-            } else if (voucher.isShippingVoucher()
-                    && VoucherCalculator.calculateShippingDiscount(
-                            java.util.Collections.singletonList(singleItem),
-                            voucher,
-                            VoucherCalculator.BASE_SHIPPING_FEE) >= VoucherCalculator.BASE_SHIPPING_FEE) {
-                hasFreeShippingVoucher = true;
+            } else if (voucher.isShippingVoucher()) {
+                long shippingDiscount = VoucherCalculator.calculateShippingDiscount(
+                        java.util.Collections.singletonList(singleItem),
+                        voucher,
+                        VoucherCalculator.BASE_SHIPPING_FEE);
+                bestShippingDiscount = Math.max(bestShippingDiscount, shippingDiscount);
             }
         }
 
@@ -116,7 +116,14 @@ public class ProductAdapter extends ArrayAdapter<Product> {
             holder.tvPrice.setText(product.getFormattedPrice());
             holder.layoutProductVoucherTag.setVisibility(View.GONE);
         }
-        holder.tvProductFreeShipping.setVisibility(hasFreeShippingVoucher ? View.VISIBLE : View.GONE);
+        if (bestShippingDiscount > 0) {
+            holder.tvProductFreeShipping.setText(bestShippingDiscount >= VoucherCalculator.BASE_SHIPPING_FEE
+                    ? "Free ship"
+                    : "Ship -" + formatMoney(bestShippingDiscount));
+            holder.tvProductFreeShipping.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvProductFreeShipping.setVisibility(View.GONE);
+        }
     }
 
     private String voucherDiscountLabel(Voucher voucher, long actualDiscount) {

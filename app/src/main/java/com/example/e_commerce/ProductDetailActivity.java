@@ -234,7 +234,7 @@ public class ProductDetailActivity extends AppCompatActivity {
                 CartItem item = new CartItem(product.getId(), product, 1);
                 Voucher bestProductVoucher = null;
                 long bestDiscount = 0;
-                boolean hasFreeShipping = false;
+                long bestShippingDiscount = 0;
                 for (Voucher voucher : wallet.getSaved()) {
                     if (voucher.isExpired(new java.util.Date())) {
                         continue;
@@ -247,12 +247,12 @@ public class ProductDetailActivity extends AppCompatActivity {
                             bestDiscount = discount.getTotalDiscount();
                             bestProductVoucher = voucher;
                         }
-                    } else if (voucher.isShippingVoucher()
-                            && VoucherCalculator.calculateShippingDiscount(
-                                    java.util.Collections.singletonList(item),
-                                    voucher,
-                                    VoucherCalculator.BASE_SHIPPING_FEE) >= VoucherCalculator.BASE_SHIPPING_FEE) {
-                        hasFreeShipping = true;
+                    } else if (voucher.isShippingVoucher()) {
+                        long shippingDiscount = VoucherCalculator.calculateShippingDiscount(
+                                java.util.Collections.singletonList(item),
+                                voucher,
+                                VoucherCalculator.BASE_SHIPPING_FEE);
+                        bestShippingDiscount = Math.max(bestShippingDiscount, shippingDiscount);
                     }
                 }
 
@@ -266,7 +266,14 @@ public class ProductDetailActivity extends AppCompatActivity {
                             + " · -" + formatMoney(bestDiscount));
                     voucherOfferLayout.setVisibility(View.VISIBLE);
                 }
-                freeShipping.setVisibility(hasFreeShipping ? View.VISIBLE : View.GONE);
+                if (bestShippingDiscount > 0) {
+                    freeShipping.setText(bestShippingDiscount >= VoucherCalculator.BASE_SHIPPING_FEE
+                            ? "Miễn phí vận chuyển"
+                            : "Giảm phí ship " + formatMoney(bestShippingDiscount));
+                    freeShipping.setVisibility(View.VISIBLE);
+                } else {
+                    freeShipping.setVisibility(View.GONE);
+                }
             }
 
             @Override

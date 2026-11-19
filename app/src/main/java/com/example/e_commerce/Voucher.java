@@ -4,7 +4,10 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 public final class Voucher implements Serializable {
 
@@ -17,6 +20,8 @@ public final class Voucher implements Serializable {
     private final long value;
     private final String appliesTo;
     private final String category;
+    private final List<Integer> productIds;
+    private final List<String> productNames;
     private final long minimumOrderAmount;
     private final long maximumDiscountAmount;
     private final int validityAfterSaveDays;
@@ -29,9 +34,9 @@ public final class Voucher implements Serializable {
     private final boolean active;
 
     Voucher(String id, String code, String name, String description, String type, String discountType,
-            long value, String appliesTo, String category, long minimumOrderAmount, long maximumDiscountAmount,
-            int validityAfterSaveDays, Date campaignEndsAt, Date savedAt, Date expiresAt, Date usedAt, String state,
-            int sortOrder, boolean active) {
+            long value, String appliesTo, String category, List<Integer> productIds, List<String> productNames,
+            long minimumOrderAmount, long maximumDiscountAmount, int validityAfterSaveDays, Date campaignEndsAt,
+            Date savedAt, Date expiresAt, Date usedAt, String state, int sortOrder, boolean active) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -41,6 +46,8 @@ public final class Voucher implements Serializable {
         this.value = value;
         this.appliesTo = appliesTo;
         this.category = category;
+        this.productIds = Collections.unmodifiableList(new ArrayList<>(productIds));
+        this.productNames = Collections.unmodifiableList(new ArrayList<>(productNames));
         this.minimumOrderAmount = minimumOrderAmount;
         this.maximumDiscountAmount = maximumDiscountAmount;
         this.validityAfterSaveDays = validityAfterSaveDays;
@@ -51,6 +58,44 @@ public final class Voucher implements Serializable {
         this.state = state;
         this.sortOrder = sortOrder;
         this.active = active;
+    }
+
+    private static List<Integer> readProductIds(DocumentSnapshot document) {
+        List<Integer> productIds = new ArrayList<>();
+        addProductId(productIds, document.get("productId"));
+        Object value = document.get("productIds");
+        if (value instanceof List<?>) {
+            for (Object productId : (List<?>) value) {
+                addProductId(productIds, productId);
+            }
+        }
+        return productIds;
+    }
+
+    private static void addProductId(List<Integer> productIds, Object value) {
+        if (value instanceof Number) {
+            int productId = ((Number) value).intValue();
+            if (productId > 0 && !productIds.contains(productId)) {
+                productIds.add(productId);
+            }
+        }
+    }
+
+    private static List<String> readProductNames(DocumentSnapshot document) {
+        List<String> productNames = new ArrayList<>();
+        String productName = document.getString("productName");
+        if (productName != null && !productName.trim().isEmpty()) {
+            productNames.add(productName.trim());
+        }
+        Object value = document.get("productNames");
+        if (value instanceof List<?>) {
+            for (Object name : (List<?>) value) {
+                if (name instanceof String && !((String) name).trim().isEmpty()) {
+                    productNames.add(((String) name).trim());
+                }
+            }
+        }
+        return productNames;
     }
 
     public static Voucher fromDocument(DocumentSnapshot document) {
@@ -64,6 +109,8 @@ public final class Voucher implements Serializable {
                 longOrZero(document.getLong("value")),
                 stringOrDefault(document.getString("appliesTo"), "all"),
                 stringOrEmpty(document.getString("category")),
+                readProductIds(document),
+                readProductNames(document),
                 longOrZero(document.getLong("minimumOrderAmount")),
                 longOrZero(document.getLong("maximumDiscountAmount")),
                 (int) longOrZero(document.getLong("validityAfterSaveDays")),
@@ -120,6 +167,19 @@ public final class Voucher implements Serializable {
         return "category".equals(appliesTo) && !category.isEmpty();
     }
 
+    public boolean isApplicableToSpecificProducts() {
+        return isSpecificProductScope() && !productIds.isEmpty();
+    }
+
+    public boolean isSpecificProductScope() {
+        return "product".equals(appliesTo) || "products".equals(appliesTo)
+                || "specific_product".equals(appliesTo);
+    }
+
+    public boolean appliesToProduct(int productId) {
+        return isApplicableToSpecificProducts() && productIds.contains(productId);
+    }
+
     public boolean isExpired(Date now) {
         Date expiry = expiresAt != null ? expiresAt : campaignEndsAt;
         return expiry != null && !expiry.after(now);
@@ -159,6 +219,14 @@ public final class Voucher implements Serializable {
 
     public String getCategory() {
         return category;
+    }
+
+    public List<Integer> getProductIds() {
+        return productIds;
+    }
+
+    public List<String> getProductNames() {
+        return productNames;
     }
 
     public long getMinimumOrderAmount() {

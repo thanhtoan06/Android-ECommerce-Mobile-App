@@ -28,6 +28,13 @@ public final class PointsRules {
         return Math.min(availableBalance, requestedAmount);
     }
 
+    public static long maximumCheckoutSpend(long availableBalance, long discountedMerchandiseSubtotal) {
+        if (availableBalance < 0 || discountedMerchandiseSubtotal < 0) {
+            throw new IllegalArgumentException("Point amounts cannot be negative.");
+        }
+        return Math.min(availableBalance, discountedMerchandiseSubtotal / 2);
+    }
+
     public static String dateKey(Date date, TimeZone timeZone) {
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
         format.setTimeZone(timeZone);

@@ -289,9 +289,14 @@ public class FirestoreRepository {
     }
 
     public void createOrder(String email, String name, String phone, String address, String note, String payment,
-            List<CartItem> cartItems, String productVoucherId, String shippingVoucherId, OrderCallback callback) {
+            List<CartItem> cartItems, String productVoucherId, String shippingVoucherId, long pointsToUse,
+            OrderCallback callback) {
         if (cartItems == null || cartItems.isEmpty()) {
             callback.onResult(-1);
+            return;
+        }
+        if (pointsToUse < 0) {
+            callback.onError(new IllegalArgumentException("Không thể sử dụng số Xu âm."));
             return;
         }
 
@@ -326,6 +331,46 @@ public class FirestoreRepository {
             productRefs.put(productId, firestore.collection("products").document(String.valueOf(productId)));
             cartRefs.put(productId, firestore.collection("carts").document(normalized + "_" + productId));
         }
+
+        OrderRequest request = new OrderRequest(
+                normalized, name, phone, address, note, payment, cartItems, pointsToUse,
+                numericId, date, orderRef, notificationRef, productVoucherRef, shippingVoucherRef,
+                orderedQuantities, productRefs, cartRefs);
+        if (pointsToUse == 0) {
+            commitOrder(request, new ArrayList<>(), callback);
+            return;
+        }
+
+        PointsRepository.getInstance().loadSpendableLots(normalized, new PointsRepository.SpendLotsCallback() {
+            @Override
+            public void onResult(List<DocumentSnapshot> lots) {
+                commitOrder(request, lots, callback);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                callback.onError(error);
+            }
+        });
+    }
+
+    private void commitOrder(OrderRequest request, List<DocumentSnapshot> pointLots, OrderCallback callback) {
+        String normalized = request.normalized;
+        String name = request.name;
+        String phone = request.phone;
+        String address = request.address;
+        String note = request.note;
+        String payment = request.payment;
+        long numericId = request.numericId;
+        String date = request.date;
+        DocumentReference orderRef = request.orderRef;
+        DocumentReference notificationRef = request.notificationRef;
+        DocumentReference productVoucherRef = request.productVoucherRef;
+        DocumentReference shippingVoucherRef = request.shippingVoucherRef;
+        List<CartItem> cartItems = request.cartItems;
+        Map<Integer, Integer> orderedQuantities = request.orderedQuantities;
+        Map<Integer, DocumentReference> productRefs = request.productRefs;
+        Map<Integer, DocumentReference> cartRefs = request.cartRefs;
 
         firestore.runTransaction(transaction -> {
             DocumentSnapshot existingOrder = transaction.get(orderRef);
@@ -390,7 +435,18 @@ public class FirestoreRepository {
             }
             long discountedItemsSubtotal = Math.max(0, itemsSubtotal - productDiscount.getTotalDiscount());
             long discountedShipping = Math.max(0, VoucherCalculator.BASE_SHIPPING_FEE - shippingDiscount);
-            long total = Math.addExact(discountedItemsSubtotal, discountedShipping);
+            long pointsBalanceAfter = request.pointsToUse > 0
+                    ? PointsRepository.getInstance().spendForOrder(
+                            transaction,
+                            normalized,
+                            request.pointsToUse,
+                            String.valueOf(numericId),
+                            discountedItemsSubtotal,
+                            pointLots)
+                    : 0;
+            long total = Math.subtractExact(
+                    Math.addExact(discountedItemsSubtotal, discountedShipping),
+                    request.pointsToUse);
 
             Map<String, Object> order = new HashMap<>();
             order.put("id", numericId);
@@ -404,10 +460,16 @@ public class FirestoreRepository {
             order.put("productDiscount", productDiscount.getTotalDiscount());
             order.put("shippingFee", VoucherCalculator.BASE_SHIPPING_FEE);
             order.put("shippingDiscount", shippingDiscount);
+            order.put("pointsUsed", request.pointsToUse);
+            order.put("pointsDiscount", request.pointsToUse);
             order.put("productVoucherId", productVoucher == null ? "" : productVoucher.getId());
             order.put("productVoucherCode", productVoucher == null ? "" : productVoucher.getCode());
             order.put("shippingVoucherId", shippingVoucher == null ? "" : shippingVoucher.getId());
             order.put("shippingVoucherCode", shippingVoucher == null ? "" : shippingVoucher.getCode());
+            if (request.pointsToUse > 0) {
+                order.put("pointsBalanceAfter", pointsBalanceAfter);
+                order.put("pointsSpendReferenceId", String.valueOf(numericId));
+            }
             order.put("totalAmount", total);
             order.put("orderDate", date);
             order.put("status", "Đặt hàng thành công");
@@ -467,6 +529,51 @@ public class FirestoreRepository {
             return numericId;
         }).addOnSuccessListener(callback::onResult)
                 .addOnFailureListener(callback::onError);
+    }
+
+    private static final class OrderRequest {
+        private final String normalized;
+        private final String name;
+        private final String phone;
+        private final String address;
+        private final String note;
+        private final String payment;
+        private final List<CartItem> cartItems;
+        private final long pointsToUse;
+        private final long numericId;
+        private final String date;
+        private final DocumentReference orderRef;
+        private final DocumentReference notificationRef;
+        private final DocumentReference productVoucherRef;
+        private final DocumentReference shippingVoucherRef;
+        private final Map<Integer, Integer> orderedQuantities;
+        private final Map<Integer, DocumentReference> productRefs;
+        private final Map<Integer, DocumentReference> cartRefs;
+
+        private OrderRequest(String normalized, String name, String phone, String address, String note,
+                String payment, List<CartItem> cartItems, long pointsToUse, long numericId, String date,
+                DocumentReference orderRef, DocumentReference notificationRef,
+                DocumentReference productVoucherRef, DocumentReference shippingVoucherRef,
+                Map<Integer, Integer> orderedQuantities, Map<Integer, DocumentReference> productRefs,
+                Map<Integer, DocumentReference> cartRefs) {
+            this.normalized = normalized;
+            this.name = name;
+            this.phone = phone;
+            this.address = address;
+            this.note = note;
+            this.payment = payment;
+            this.cartItems = cartItems;
+            this.pointsToUse = pointsToUse;
+            this.numericId = numericId;
+            this.date = date;
+            this.orderRef = orderRef;
+            this.notificationRef = notificationRef;
+            this.productVoucherRef = productVoucherRef;
+            this.shippingVoucherRef = shippingVoucherRef;
+            this.orderedQuantities = orderedQuantities;
+            this.productRefs = productRefs;
+            this.cartRefs = cartRefs;
+        }
     }
 
     private void validateOwnedVoucher(DocumentSnapshot voucher, String expectedType) {

@@ -367,8 +367,7 @@
                         android:backgroundTint="#EEF2FF"
                         android:contentDescription="Kho voucher"
                         android:padding="10dp"
-                        android:src="@drawable/ic_receipt"
-                        app:tint="#4F46E5" />
+                        android:src="@drawable/ic_voucher" />
 
                     <LinearLayout
                         android:layout_width="0dp"

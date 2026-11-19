@@ -50,6 +50,20 @@ public class VoucherCalculatorTest {
     }
 
     @Test
+    public void productVoucherCanTargetSpecificProducts() {
+        Voucher voucher = voucher("product", "fixed_per_item", 25_000, "product", "", 0, 0,
+                Collections.singletonList(2));
+        VoucherCalculator.ProductDiscount result = VoucherCalculator.calculateProductDiscount(
+                Arrays.asList(new CartItem(1, product(1, "Phone A", 100_000), 1),
+                        new CartItem(2, product(2, "Phone B", 200_000), 1)),
+                voucher);
+
+        assertEquals(25_000, result.getTotalDiscount());
+        assertEquals(0, result.getDiscountForProduct(1));
+        assertEquals(25_000, result.getDiscountForProduct(2));
+    }
+
+    @Test
     public void shippingDiscountIsCappedByFeeAndVoucherMaximum() {
         Voucher voucher = voucher("shipping", "shipping_percentage", 70, "all", "", 0, 15_000);
         long discount = VoucherCalculator.calculateShippingDiscount(
@@ -66,7 +80,14 @@ public class VoucherCalculatorTest {
 
     private static Voucher voucher(String type, String discountType, long value, String appliesTo,
             String category, long minimumOrderAmount, long maximumDiscountAmount) {
+        return voucher(type, discountType, value, appliesTo, category, minimumOrderAmount, maximumDiscountAmount,
+                Collections.emptyList());
+    }
+
+    private static Voucher voucher(String type, String discountType, long value, String appliesTo,
+            String category, long minimumOrderAmount, long maximumDiscountAmount, java.util.List<Integer> productIds) {
         return new Voucher("id", "code", "name", "", type, discountType, value, appliesTo, category,
+                productIds, Collections.emptyList(),
                 minimumOrderAmount, maximumDiscountAmount, 30, null, null, null, null, "saved", 1, true);
     }
 }

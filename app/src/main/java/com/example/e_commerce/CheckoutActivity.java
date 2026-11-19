@@ -15,6 +15,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.switchmaterial.SwitchMaterial;
+
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,6 +32,8 @@ public class CheckoutActivity extends AppCompatActivity {
     private LinearLayout llOrderItemsContainer;
     private TextView tvCheckoutItemsSubtotal;
     private TextView tvCheckoutProductDiscount;
+    private TextView tvCheckoutPointsDiscount;
+    private TextView tvCheckoutPointsHint;
     private TextView tvCheckoutShippingFee;
     private TextView tvCheckoutShippingDiscount;
     private TextView tvCheckoutGrandTotal;
@@ -38,9 +42,11 @@ public class CheckoutActivity extends AppCompatActivity {
     private View btnSelectShippingVoucher;
     private TextView tvSelectProductVoucherLabel;
     private TextView tvSelectShippingVoucherLabel;
+    private SwitchMaterial switchUsePoints;
 
     private FirestoreRepository repository;
     private VoucherRepository voucherRepository;
+    private PointsRepository pointsRepository;
     private SharedPrefManager prefManager;
     private String currentUserEmail;
     private List<CartItem> cartItems;
@@ -50,10 +56,15 @@ public class CheckoutActivity extends AppCompatActivity {
     private VoucherCalculator.ProductDiscount currentProductDiscount;
     private long currentItemsSubtotal;
     private long currentShippingDiscount;
+    private long availablePoints;
+    private long currentPointsDiscount;
     private String pendingProductVoucherId;
     private String pendingShippingVoucherId;
     private boolean cartReady;
     private boolean voucherWalletReady;
+    private boolean pointsReady;
+    private boolean updatingPointsSwitch;
+    private boolean submittingOrder;
     private long totalAmount = 0;
 
     @Override
@@ -64,6 +75,7 @@ public class CheckoutActivity extends AppCompatActivity {
 
         repository = FirestoreRepository.getInstance();
         voucherRepository = VoucherRepository.getInstance();
+        pointsRepository = PointsRepository.getInstance();
         prefManager = SharedPrefManager.getInstance(this);
         currentUserEmail = prefManager.getEmail();
         pendingProductVoucherId = getIntent().getStringExtra(VoucherActivity.EXTRA_PRODUCT_VOUCHER_ID);
@@ -77,6 +89,8 @@ public class CheckoutActivity extends AppCompatActivity {
         llOrderItemsContainer = findViewById(R.id.llOrderItemsContainer);
         tvCheckoutItemsSubtotal = findViewById(R.id.tvCheckoutItemsSubtotal);
         tvCheckoutProductDiscount = findViewById(R.id.tvCheckoutProductDiscount);
+        tvCheckoutPointsDiscount = findViewById(R.id.tvCheckoutPointsDiscount);
+        tvCheckoutPointsHint = findViewById(R.id.tvCheckoutPointsHint);
         tvCheckoutShippingFee = findViewById(R.id.tvCheckoutShippingFee);
         tvCheckoutShippingDiscount = findViewById(R.id.tvCheckoutShippingDiscount);
         tvCheckoutGrandTotal = findViewById(R.id.tvCheckoutGrandTotal);
@@ -85,11 +99,18 @@ public class CheckoutActivity extends AppCompatActivity {
         btnSelectShippingVoucher = findViewById(R.id.btnSelectShippingVoucher);
         tvSelectProductVoucherLabel = findViewById(R.id.tvSelectProductVoucherLabel);
         tvSelectShippingVoucherLabel = findViewById(R.id.tvSelectShippingVoucherLabel);
+        switchUsePoints = findViewById(R.id.switchUsePoints);
         btnConfirmOrder.setEnabled(false);
+        switchUsePoints.setEnabled(false);
 
         tvCheckoutBack.setOnClickListener(v -> finish());
         btnSelectProductVoucher.setOnClickListener(v -> selectVoucher(true));
         btnSelectShippingVoucher.setOnClickListener(v -> selectVoucher(false));
+        switchUsePoints.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (!updatingPointsSwitch && cartItems != null) {
+                renderCartSummary();
+            }
+        });
 
         View samplePreview = findViewById(R.id.sampleCheckoutItemPreview);
         if (samplePreview != null) {
@@ -144,6 +165,54 @@ public class CheckoutActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadVoucherWallet();
+        loadPointsDashboard();
+    }
+
+    private void loadPointsDashboard() {
+        if (currentUserEmail == null || currentUserEmail.trim().isEmpty() || !prefManager.isLoggedIn()) {
+            availablePoints = 0;
+            pointsReady = true;
+            renderIfCartLoaded();
+            updatePlaceOrderEnabled();
+            return;
+        }
+
+        pointsReady = false;
+        switchUsePoints.setEnabled(false);
+        updatePlaceOrderEnabled();
+        pointsRepository.getDashboard(currentUserEmail, new PointsRepository.DashboardCallback() {
+            @Override
+            public void onResult(PointsRepository.PointsDashboard dashboard) {
+                availablePoints = dashboard.getBalance();
+                pointsReady = true;
+                renderIfCartLoaded();
+                updatePlaceOrderEnabled();
+            }
+
+            @Override
+            public void onError(Exception error) {
+                availablePoints = 0;
+                pointsReady = true;
+                setPointsSwitchChecked(false);
+                Toast.makeText(CheckoutActivity.this,
+                        "Không thể tải số dư Xu. Bạn vẫn có thể đặt hàng mà không dùng Xu.",
+                        Toast.LENGTH_LONG).show();
+                renderIfCartLoaded();
+                updatePlaceOrderEnabled();
+            }
+        });
+    }
+
+    private void renderIfCartLoaded() {
+        if (cartItems != null && !cartItems.isEmpty()) {
+            renderCartSummary();
+        }
+    }
+
+    private void setPointsSwitchChecked(boolean checked) {
+        updatingPointsSwitch = true;
+        switchUsePoints.setChecked(checked);
+        updatingPointsSwitch = false;
     }
 
     private void loadVoucherWallet() {
@@ -319,12 +388,15 @@ public class CheckoutActivity extends AppCompatActivity {
 
         long discountedItemsSubtotal = Math.max(0,
                 currentItemsSubtotal - currentProductDiscount.getTotalDiscount());
+        updatePointsSelection(discountedItemsSubtotal);
         long discountedShipping = Math.max(0,
                 VoucherCalculator.BASE_SHIPPING_FEE - currentShippingDiscount);
-        totalAmount = discountedItemsSubtotal + discountedShipping;
+        totalAmount = discountedItemsSubtotal + discountedShipping - currentPointsDiscount;
         tvCheckoutItemsSubtotal.setText(formatMoney(currentItemsSubtotal));
         tvCheckoutProductDiscount.setText(currentProductDiscount.getTotalDiscount() > 0
                 ? "-" + formatMoney(currentProductDiscount.getTotalDiscount()) : formatMoney(0));
+        tvCheckoutPointsDiscount.setText(currentPointsDiscount > 0
+                ? "-" + formatMoney(currentPointsDiscount) : formatMoney(0));
         tvCheckoutShippingFee.setText(formatMoney(VoucherCalculator.BASE_SHIPPING_FEE));
         tvCheckoutShippingDiscount.setText(currentShippingDiscount > 0
                 ? "-" + formatMoney(currentShippingDiscount) : formatMoney(0));
@@ -333,6 +405,24 @@ public class CheckoutActivity extends AppCompatActivity {
         String formattedTotal = formatMoney(totalAmount);
         tvCheckoutGrandTotal.setText(formattedTotal);
         btnConfirmOrder.setText("ĐẶT HÀNG • " + formattedTotal);
+    }
+
+    private void updatePointsSelection(long discountedItemsSubtotal) {
+        long maximumPointsToUse = pointsReady
+                ? PointsRules.maximumCheckoutSpend(availablePoints, discountedItemsSubtotal)
+                : 0;
+        if (pointsReady && maximumPointsToUse == 0 && switchUsePoints.isChecked()) {
+            setPointsSwitchChecked(false);
+        }
+        switchUsePoints.setEnabled(pointsReady && maximumPointsToUse > 0 && !submittingOrder);
+        currentPointsDiscount = pointsReady && switchUsePoints.isChecked() ? maximumPointsToUse : 0;
+
+        if (pointsReady) {
+            tvCheckoutPointsHint.setText("Khả dụng: " + formatNumber(availablePoints)
+                    + " Xu · Tối đa dùng " + formatNumber(maximumPointsToUse) + " Xu");
+        } else {
+            tvCheckoutPointsHint.setText("Đang tải số dư Xu...");
+        }
     }
 
     private void selectVoucher(boolean productVoucher) {
@@ -395,11 +485,15 @@ public class CheckoutActivity extends AppCompatActivity {
     }
 
     private void updatePlaceOrderEnabled() {
-        btnConfirmOrder.setEnabled(cartReady && voucherWalletReady);
+        btnConfirmOrder.setEnabled(cartReady && voucherWalletReady && pointsReady && !submittingOrder);
     }
 
     private String formatMoney(long amount) {
         return NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(amount) + " ₫";
+    }
+
+    private String formatNumber(long amount) {
+        return NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")).format(amount);
     }
 
     private void handlePlaceOrder() {
@@ -434,16 +528,22 @@ public class CheckoutActivity extends AppCompatActivity {
 
         String paymentMethod = "Thanh toán khi nhận hàng (COD)";
 
-        btnConfirmOrder.setEnabled(false);
+        submittingOrder = true;
+        setCheckoutOptionsEnabled(false);
+        updatePlaceOrderEnabled();
+        long requestedPoints = currentPointsDiscount;
 
         repository.createOrder(currentUserEmail, name, phone, address, note, paymentMethod, cartItems,
                 selectedProductVoucher == null ? null : selectedProductVoucher.getId(),
                 selectedShippingVoucher == null ? null : selectedShippingVoucher.getId(),
+                requestedPoints,
                 new FirestoreRepository.OrderCallback() {
                     @Override
                     public void onResult(long orderId) {
                         if (orderId < 0) {
-                            btnConfirmOrder.setEnabled(true);
+                            submittingOrder = false;
+                            setCheckoutOptionsEnabled(true);
+                            updatePlaceOrderEnabled();
                             Toast.makeText(CheckoutActivity.this, "Không thể tạo đơn hàng trên Firebase.",
                                     Toast.LENGTH_LONG).show();
                             return;
@@ -457,15 +557,32 @@ public class CheckoutActivity extends AppCompatActivity {
                     @Override
                     public void onError(Exception e) {
 
-                        btnConfirmOrder.setEnabled(true);
+                        submittingOrder = false;
+                        setCheckoutOptionsEnabled(true);
+                        updatePlaceOrderEnabled();
                         String detail = e.getMessage();
                         Toast.makeText(CheckoutActivity.this,
                                 detail == null || detail.trim().isEmpty()
                                         ? "Không thể tạo đơn hàng trên Firebase."
                                         : "Không thể đặt hàng: " + detail,
                                 Toast.LENGTH_LONG).show();
+                        if (requestedPoints > 0) {
+                            loadPointsDashboard();
+                        }
                     }
                 });
+    }
+
+    private void setCheckoutOptionsEnabled(boolean enabled) {
+        btnSelectProductVoucher.setEnabled(enabled);
+        btnSelectShippingVoucher.setEnabled(enabled);
+        if (!enabled) {
+            switchUsePoints.setEnabled(false);
+        } else if (cartItems != null && currentProductDiscount != null) {
+            long discountedItemsSubtotal = Math.max(
+                    0, currentItemsSubtotal - currentProductDiscount.getTotalDiscount());
+            updatePointsSelection(discountedItemsSubtotal);
+        }
     }
 
     private void showOrderSuccessDialog(long orderId, String name, String phone, String address, String paymentMethod) {

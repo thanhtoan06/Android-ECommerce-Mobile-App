@@ -53,6 +53,13 @@ public class PointsRulesTest {
     }
 
     @Test
+    public void checkoutSpendIsLimitedByBalanceAndHalfOfDiscountedMerchandise() {
+        assertEquals(400, PointsRules.maximumCheckoutSpend(1_000, 800));
+        assertEquals(300, PointsRules.maximumCheckoutSpend(300, 800));
+        assertEquals(0, PointsRules.maximumCheckoutSpend(500, 1));
+    }
+
+    @Test
     public void pointsExpireAtTheEndOfTheFollowingCalendarMonth() {
         assertEquals(date("2026-12-31 23:59:59.999").getTime(),
                 PointsRules.expirationDate(date("2026-11-19 10:00:00.000"), UTC).getTime());

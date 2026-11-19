@@ -34,6 +34,12 @@ public final class PointsRepository {
         void onError(Exception e);
     }
 
+    public interface SpendLotsCallback {
+        void onResult(List<DocumentSnapshot> lots);
+
+        void onError(Exception e);
+    }
+
     public interface ActionCallback {
         void onResult(ActionResult result);
 
@@ -68,6 +74,17 @@ public final class PointsRepository {
                 }
                 loadDashboard(normalizedEmail, callback);
             });
+        });
+    }
+
+    public void loadSpendableLots(String email, SpendLotsCallback callback) {
+        String normalizedEmail = normalizeEmail(email);
+        expireDueLots(normalizedEmail, error -> {
+            if (error != null) {
+                callback.onError(error);
+                return;
+            }
+            loadActiveLots(normalizedEmail, callback::onResult, callback::onError);
         });
     }
 
@@ -380,6 +397,77 @@ public final class PointsRepository {
             return ActionResult.success("Đã sử dụng " + amount + " Xu.", newBalance, 0, 0, amount);
         }).addOnSuccessListener(callback::onResult)
                 .addOnFailureListener(callback::onError);
+    }
+
+    public long spendForOrder(com.google.firebase.firestore.Transaction transaction, String email, long amount,
+            String referenceId, long discountedMerchandiseSubtotal, List<DocumentSnapshot> candidateLots)
+            throws com.google.firebase.firestore.FirebaseFirestoreException {
+        if (amount <= 0 || isBlank(referenceId)) {
+            throw new IllegalArgumentException("Thông tin sử dụng Xu cho đơn hàng không hợp lệ.");
+        }
+        if (amount > PointsRules.maximumCheckoutSpend(Long.MAX_VALUE, discountedMerchandiseSubtotal)) {
+            throw new IllegalStateException("Số Xu sử dụng vượt quá 50% tiền hàng sau voucher.");
+        }
+
+        Date now = new Date();
+        DocumentReference userRef = userDocument(email);
+        DocumentReference transactionRef = transactionsCollection(email)
+                .document(operationDocumentId("spend", referenceId));
+        DocumentSnapshot user = transaction.get(userRef);
+        DocumentSnapshot existing = transaction.get(transactionRef);
+        List<DocumentSnapshot> lots = new ArrayList<>();
+        for (DocumentSnapshot candidateLot : candidateLots) {
+            lots.add(transaction.get(candidateLot.getReference()));
+        }
+
+        long balance = nonNegativeLong(user, "pointsBalance");
+        if (existing.exists()) {
+            throw new IllegalStateException("Xu cho đơn hàng này đã được sử dụng.");
+        }
+        if (balance < amount) {
+            throw new IllegalStateException("Số dư Xu đã thay đổi. Vui lòng kiểm tra lại.");
+        }
+
+        List<Map<String, Object>> allocations = new ArrayList<>();
+        long remainingToSpend = amount;
+        for (DocumentSnapshot lot : lots) {
+            if (!lot.exists() || !isUnexpired(lot, now)) {
+                continue;
+            }
+            long remaining = nonNegativeLong(lot, "remainingAmount");
+            long consumed = Math.min(remaining, remainingToSpend);
+            if (consumed > 0) {
+                Map<String, Object> allocation = new HashMap<>();
+                allocation.put("lotId", lot.getId());
+                allocation.put("amount", consumed);
+                allocations.add(allocation);
+                remainingToSpend -= consumed;
+            }
+            if (remainingToSpend == 0) {
+                break;
+            }
+        }
+        if (remainingToSpend > 0) {
+            throw new IllegalStateException("Không thể đối soát các khoản Xu còn hạn. Vui lòng thử lại.");
+        }
+
+        for (Map<String, Object> allocation : allocations) {
+            String lotId = (String) allocation.get("lotId");
+            long consumed = (long) allocation.get("amount");
+            DocumentSnapshot lot = findLotSnapshot(lots, lotId);
+            transaction.update(lotsCollection(email).document(lotId),
+                    "remainingAmount", nonNegativeLong(lot, "remainingAmount") - consumed);
+        }
+
+        long newBalance = balance - amount;
+        updateUserPoints(transaction, userRef, newBalance);
+        Map<String, Object> spendData = transactionData(
+                "spend", -amount, -amount, 0, newBalance, 0,
+                "Dùng Xu thanh toán đơn hàng.", "checkout", referenceId, null);
+        spendData.put("allocations", allocations);
+        spendData.put("refundedAmount", 0L);
+        transaction.set(transactionRef, spendData);
+        return newBalance;
     }
 
     private void performRefund(String email, String spendReferenceId, long amount, String refundReferenceId,

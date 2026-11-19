@@ -1,6 +1,7 @@
 package com.example.e_commerce;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,10 +31,14 @@ public class VoucherActivity extends AppCompatActivity {
     private static final int TAB_AVAILABLE = 0;
     private static final int TAB_SAVED = 1;
     private static final int TAB_USED = 2;
+    private static final int FILTER_ALL = 0;
+    private static final int FILTER_PRODUCT = 1;
+    private static final int FILTER_SHIPPING = 2;
 
     private VoucherRepository repository;
     private String userEmail;
     private int selectedTab = TAB_AVAILABLE;
+    private int selectedTypeFilter = FILTER_ALL;
     private VoucherRepository.VoucherWallet wallet;
     private LinearLayout layoutVoucherList;
     private TextView tvSectionTitle;
@@ -42,6 +47,9 @@ public class VoucherActivity extends AppCompatActivity {
     private MaterialButton btnAvailable;
     private MaterialButton btnSaved;
     private MaterialButton btnUsed;
+    private MaterialButton btnFilterAll;
+    private MaterialButton btnFilterProduct;
+    private MaterialButton btnFilterShipping;
     private final NumberFormat currencyFormat = NumberFormat.getIntegerInstance(new Locale("vi", "VN"));
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", new Locale("vi", "VN"));
 
@@ -63,11 +71,18 @@ public class VoucherActivity extends AppCompatActivity {
         btnAvailable = findViewById(R.id.btnTabAvailable);
         btnSaved = findViewById(R.id.btnTabSaved);
         btnUsed = findViewById(R.id.btnTabUsed);
+        btnFilterAll = findViewById(R.id.btnFilterAllVouchers);
+        btnFilterProduct = findViewById(R.id.btnFilterProductVouchers);
+        btnFilterShipping = findViewById(R.id.btnFilterShippingVouchers);
 
         findViewById(R.id.btnBackVouchers).setOnClickListener(v -> finish());
         btnAvailable.setOnClickListener(v -> selectTab(TAB_AVAILABLE));
         btnSaved.setOnClickListener(v -> selectTab(TAB_SAVED));
         btnUsed.setOnClickListener(v -> selectTab(TAB_USED));
+        btnFilterAll.setOnClickListener(v -> selectTypeFilter(FILTER_ALL));
+        btnFilterProduct.setOnClickListener(v -> selectTypeFilter(FILTER_PRODUCT));
+        btnFilterShipping.setOnClickListener(v -> selectTypeFilter(FILTER_SHIPPING));
+        updateTypeFilterButtons();
         setupBottomMenu();
     }
 
@@ -103,6 +118,12 @@ public class VoucherActivity extends AppCompatActivity {
         renderVouchers();
     }
 
+    private void selectTypeFilter(int filter) {
+        selectedTypeFilter = filter;
+        updateTypeFilterButtons();
+        renderVouchers();
+    }
+
     private void updateTabLabels() {
         int availableCount = wallet == null ? 0 : wallet.getAvailable().size();
         int savedCount = wallet == null ? 0 : wallet.getSaved().size();
@@ -123,6 +144,21 @@ public class VoucherActivity extends AppCompatActivity {
                 this, selected ? R.color.primary : R.color.card_stroke));
     }
 
+    private void updateTypeFilterButtons() {
+        styleTypeFilter(btnFilterAll, selectedTypeFilter == FILTER_ALL, R.color.primary);
+        styleTypeFilter(btnFilterProduct, selectedTypeFilter == FILTER_PRODUCT, R.color.primary);
+        styleTypeFilter(btnFilterShipping, selectedTypeFilter == FILTER_SHIPPING, R.color.success_dark);
+    }
+
+    private void styleTypeFilter(MaterialButton button, boolean selected, int accentColor) {
+        int backgroundColor = ContextCompat.getColor(this, selected ? accentColor : R.color.surface);
+        int textColor = ContextCompat.getColor(this, selected ? R.color.white : accentColor);
+        int strokeColor = ContextCompat.getColor(this, selected ? accentColor : R.color.card_stroke);
+        button.setBackgroundTintList(ColorStateList.valueOf(backgroundColor));
+        button.setTextColor(textColor);
+        button.setStrokeColor(ColorStateList.valueOf(strokeColor));
+    }
+
     private void renderVouchers() {
         layoutVoucherList.removeAllViews();
         if (wallet == null) {
@@ -136,10 +172,13 @@ public class VoucherActivity extends AppCompatActivity {
         String title = selectedTab == TAB_AVAILABLE
                 ? "Voucher có thể lưu"
                 : selectedTab == TAB_SAVED ? "Voucher của tôi" : "Lịch sử đã sử dụng";
+        if (selectedTypeFilter == FILTER_PRODUCT) {
+            title = "Voucher sản phẩm · " + title;
+        } else if (selectedTypeFilter == FILTER_SHIPPING) {
+            title = "Voucher vận chuyển · " + title;
+        }
         tvSectionTitle.setText(title + " (" + vouchers.size() + ")");
-        tvEmpty.setText(selectedTab == TAB_USED
-                ? "Bạn chưa sử dụng voucher nào."
-                : selectedTab == TAB_SAVED ? "Bạn chưa lưu voucher nào." : "Hiện không có voucher mới.");
+        tvEmpty.setText(emptyMessage());
         tvEmpty.setVisibility(vouchers.isEmpty() ? View.VISIBLE : View.GONE);
 
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -154,15 +193,43 @@ public class VoucherActivity extends AppCompatActivity {
         if (wallet == null) {
             return new ArrayList<>();
         }
+        List<Voucher> source;
         switch (selectedTab) {
             case TAB_SAVED:
-                return wallet.getSaved();
+                source = wallet.getSaved();
+                break;
             case TAB_USED:
-                return wallet.getUsed();
+                source = wallet.getUsed();
+                break;
             case TAB_AVAILABLE:
             default:
-                return wallet.getAvailable();
+                source = wallet.getAvailable();
+                break;
         }
+        if (selectedTypeFilter == FILTER_ALL) {
+            return source;
+        }
+
+        List<Voucher> filtered = new ArrayList<>();
+        for (Voucher voucher : source) {
+            if ((selectedTypeFilter == FILTER_PRODUCT && voucher.isProductVoucher())
+                    || (selectedTypeFilter == FILTER_SHIPPING && voucher.isShippingVoucher())) {
+                filtered.add(voucher);
+            }
+        }
+        return filtered;
+    }
+
+    private String emptyMessage() {
+        if (selectedTypeFilter == FILTER_PRODUCT) {
+            return "Không có voucher giảm giá sản phẩm trong mục này.";
+        }
+        if (selectedTypeFilter == FILTER_SHIPPING) {
+            return "Không có voucher giảm phí vận chuyển trong mục này.";
+        }
+        return selectedTab == TAB_USED
+                ? "Bạn chưa sử dụng voucher nào."
+                : selectedTab == TAB_SAVED ? "Bạn chưa lưu voucher nào." : "Hiện không có voucher mới.";
     }
 
     private void bindVoucher(View card, Voucher voucher) {
@@ -172,10 +239,21 @@ public class VoucherActivity extends AppCompatActivity {
         TextView description = card.findViewById(R.id.tvVoucherDescription);
         TextView conditions = card.findViewById(R.id.tvVoucherConditions);
         TextView expiry = card.findViewById(R.id.tvVoucherExpiry);
+        View badge = card.findViewById(R.id.layoutVoucherBadge);
         MaterialButton details = card.findViewById(R.id.btnVoucherDetails);
         MaterialButton action = card.findViewById(R.id.btnVoucherAction);
 
-        type.setText(voucher.isShippingVoucher() ? "GIẢM PHÍ VẬN CHUYỂN" : "GIẢM GIÁ SẢN PHẨM");
+        boolean shippingVoucher = voucher.isShippingVoucher();
+        int accentColor = ContextCompat.getColor(this,
+                shippingVoucher ? R.color.success_dark : R.color.primary);
+        badge.setBackgroundResource(shippingVoucher
+                ? R.drawable.bg_voucher_badge_sawtooth_green
+                : R.drawable.bg_voucher_badge_sawtooth);
+        code.setTextColor(shippingVoucher ? 0xFFD1FAE5 : 0xFFE0E7FF);
+        expiry.setTextColor(accentColor);
+        details.setTextColor(accentColor);
+        action.setBackgroundTintList(ColorStateList.valueOf(accentColor));
+        type.setText(shippingVoucher ? "GIẢM PHÍ VẬN CHUYỂN" : "GIẢM GIÁ SẢN PHẨM");
         code.setText(voucher.getCode());
         name.setText(voucher.getName());
         description.setText(voucher.getDescription());
@@ -231,17 +309,27 @@ public class VoucherActivity extends AppCompatActivity {
     private void showDetails(Voucher voucher) {
         StringBuilder message = new StringBuilder(voucher.getDescription());
         message.append("\n\nPhạm vi: ").append(scopeText(voucher));
+        message.append("\nMức giảm: ").append(discountSummary(voucher));
         if (voucher.getMinimumOrderAmount() > 0) {
             message.append("\nĐơn tối thiểu: ").append(money(voucher.getMinimumOrderAmount()));
         }
         if (voucher.getMaximumDiscountAmount() > 0) {
             message.append("\nMức giảm tối đa: ").append(money(voucher.getMaximumDiscountAmount()));
         }
-        if (selectedTab == TAB_AVAILABLE) {
-            message.append("\nHạn sau khi lưu: ").append(voucher.getValidityAfterSaveDays()).append(" ngày");
+        if (voucher.getExpiresAt() != null) {
+            message.append("\nHạn sử dụng thực tế: ").append(dateFormat.format(voucher.getExpiresAt()));
+        } else if (voucher.getCampaignEndsAt() != null) {
+            message.append("\nChương trình kết thúc: ").append(dateFormat.format(voucher.getCampaignEndsAt()));
+        }
+        if (!voucher.isSaved() && !voucher.isUsed() && voucher.getValidityAfterSaveDays() > 0) {
+            message.append("\nThời hạn sau khi lưu: tối đa ")
+                    .append(voucher.getValidityAfterSaveDays()).append(" ngày");
             if (voucher.getCampaignEndsAt() != null) {
-                message.append(", không muộn hơn ").append(dateFormat.format(voucher.getCampaignEndsAt()));
+                message.append(", nhưng không muộn hơn ngày kết thúc chương trình");
             }
+        }
+        if (voucher.getUsedAt() != null) {
+            message.append("\nĐã sử dụng ngày ").append(dateFormat.format(voucher.getUsedAt()));
         }
         message.append("\n\nMã voucher: ").append(voucher.getCode());
         new AlertDialog.Builder(this)
@@ -263,7 +351,51 @@ public class VoucherActivity extends AppCompatActivity {
     }
 
     private String scopeText(Voucher voucher) {
-        return voucher.isApplicableToCategory() ? "Danh mục " + voucher.getCategory() : "Toàn shop";
+        if ("category".equals(voucher.getAppliesTo())) {
+            return voucher.getCategory().isEmpty()
+                    ? "Danh mục chưa được cấu hình"
+                    : "Danh mục " + voucher.getCategory();
+        }
+        if (voucher.isSpecificProductScope()) {
+            if (!voucher.getProductNames().isEmpty()) {
+                StringBuilder productNames = new StringBuilder();
+                for (String productName : voucher.getProductNames()) {
+                    if (productNames.length() > 0) {
+                        productNames.append(", ");
+                    }
+                    productNames.append(productName);
+                }
+                return "Sản phẩm cụ thể: " + productNames;
+            }
+            StringBuilder productIds = new StringBuilder();
+            for (Integer productId : voucher.getProductIds()) {
+                if (productIds.length() > 0) {
+                    productIds.append(", ");
+                }
+                productIds.append("#").append(productId);
+            }
+            return productIds.length() == 0
+                    ? "Sản phẩm cụ thể chưa được cấu hình"
+                    : "Sản phẩm cụ thể: " + productIds;
+        }
+        return voucher.isApplicableToAll() ? "Toàn bộ sản phẩm" : "Phạm vi chưa được cấu hình";
+    }
+
+    private String discountSummary(Voucher voucher) {
+        switch (voucher.getDiscountType()) {
+            case "fixed_per_item":
+                return "Giảm " + money(voucher.getValue()) + " mỗi sản phẩm đủ điều kiện";
+            case "percentage_per_item":
+                return "Giảm " + voucher.getValue() + "% trên mỗi sản phẩm đủ điều kiện";
+            case "free_shipping":
+                return "Miễn phí vận chuyển";
+            case "shipping_percentage":
+                return "Giảm " + voucher.getValue() + "% phí vận chuyển";
+            case "shipping_fixed":
+                return "Giảm " + money(voucher.getValue()) + " phí vận chuyển";
+            default:
+                return money(voucher.getValue());
+        }
     }
 
     private String expirySummary(Voucher voucher) {
