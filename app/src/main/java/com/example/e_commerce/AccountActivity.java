@@ -35,7 +35,8 @@ public class AccountActivity extends AppCompatActivity {
                 startActivity(new Intent(this, OrderHistoryActivity.class));
             }
         });
-        findViewById(R.id.layoutPointsShortcut).setOnClickListener(v -> showUpcomingFeature());
+        findViewById(R.id.layoutPointsShortcut).setOnClickListener(v ->
+                startActivity(new Intent(this, PointsActivity.class)));
         findViewById(R.id.layoutVoucherShortcut).setOnClickListener(v -> showUpcomingFeature());
         findViewById(R.id.layoutReviewsShortcut).setOnClickListener(v -> showUpcomingFeature());
 

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingVertical="12dp"
+    tools:context=".PointsActivity">
+
+    <ImageView
+        android:id="@+id/ivTransactionIcon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_avatar_circle"
+        android:backgroundTint="#EEF2FF"
+        android:contentDescription="Giao dịch Xu"
+        android:padding="9dp"
+        android:src="@drawable/ic_coin" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvTransactionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#111827"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            tools:text="Điểm danh ngày 1" />
+
+        <TextView
+            android:id="@+id/tvTransactionDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#6B7280"
+            android:textSize="11sp"
+            tools:text="19/11/2026 21:30" />
+
+        <TextView
+            android:id="@+id/tvTransactionDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#4F46E5"
+            android:textSize="11sp"
+            tools:text="Hết hạn: 31/12/2026" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvTransactionAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:gravity="end"
+        android:textColor="@color/success_dark"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="+100 Xu" />
+</LinearLayout>
