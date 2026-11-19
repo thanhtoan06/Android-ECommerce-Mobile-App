@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Trạng thái nền cho nút hành động phụ của giao diện. -->
+<!-- Trạng thái nền cho nút hành động phụ của giao diện với góc bo tròn. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
             <solid android:color="#EEF2FF" />
+            <corners android:radius="10dp" />
             <stroke
-                android:width="2dp"
+                android:width="1.5dp"
                 android:color="@color/primary" />
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
             <solid android:color="#FFFFFF" />
+            <corners android:radius="10dp" />
             <stroke
-                android:width="2dp"
+                android:width="1.5dp"
                 android:color="@color/primary" />
         </shape>
     </item>

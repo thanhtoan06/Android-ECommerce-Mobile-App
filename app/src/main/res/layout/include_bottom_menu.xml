@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Thành phần menu điều hướng ở phía dưới các màn hình -->
+<!-- Thành phần menu điều hướng 4 mục ở phía dưới các màn hình -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="64dp"
     android:background="@color/surface"
@@ -8,7 +9,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
-    <!-- Nút điều hướng 1: Mở trang danh sách sản phẩm -->
+    <!-- Mục 1: Mở trang danh sách sản phẩm -->
     <LinearLayout
         android:id="@+id/menuHome"
         android:layout_width="0dp"
@@ -21,19 +22,19 @@
         android:orientation="vertical"
         android:paddingVertical="4dp">
 
-        <!-- Biểu tượng trang chủ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="⌂"
-            android:textColor="@color/primary"
-            android:textSize="22sp" />
+        <ImageView
+            android:id="@+id/ivMenuHome"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="Trang sản phẩm"
+            android:src="@drawable/ic_home"
+            app:tint="@color/primary" />
 
-        <!-- Nhãn trang sản phẩm -->
         <TextView
+            android:id="@+id/tvMenuHome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="3dp"
             android:text="Sản phẩm"
             android:textColor="@color/primary"
             android:textSize="11sp"
@@ -43,10 +44,10 @@
     <!-- Vạch ngăn cách dọc -->
     <View
         android:layout_width="1dp"
-        android:layout_height="28dp"
+        android:layout_height="24dp"
         android:background="@color/divider" />
 
-    <!-- Nút điều hướng 2: Mở trang giỏ hàng -->
+    <!-- Mục 2: Mở trang giỏ hàng -->
     <LinearLayout
         android:id="@+id/menuCart"
         android:layout_width="0dp"
@@ -59,18 +60,19 @@
         android:orientation="vertical"
         android:paddingVertical="4dp">
 
-        <!-- Biểu tượng giỏ hàng -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🛒"
-            android:textSize="18sp" />
+        <ImageView
+            android:id="@+id/ivMenuCart"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="Giỏ hàng"
+            android:src="@drawable/ic_cart"
+            app:tint="@color/text_secondary" />
 
-        <!-- Nhãn giỏ hàng -->
         <TextView
+            android:id="@+id/tvMenuCart"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="3dp"
             android:text="Giỏ hàng"
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
@@ -79,10 +81,47 @@
     <!-- Vạch ngăn cách dọc -->
     <View
         android:layout_width="1dp"
-        android:layout_height="28dp"
+        android:layout_height="24dp"
         android:background="@color/divider" />
 
-    <!-- Nút điều hướng 3: Mở trang tài khoản cá nhân -->
+    <!-- Mục 3: Mở trang lịch sử đơn hàng -->
+    <LinearLayout
+        android:id="@+id/menuOrders"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="4dp">
+
+        <ImageView
+            android:id="@+id/ivMenuOrders"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="Đơn hàng"
+            android:src="@drawable/ic_orders"
+            app:tint="@color/text_secondary" />
+
+        <TextView
+            android:id="@+id/tvMenuOrders"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:text="Đơn hàng"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Vạch ngăn cách dọc -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="@color/divider" />
+
+    <!-- Mục 4: Mở trang tài khoản cá nhân -->
     <LinearLayout
         android:id="@+id/menuAccount"
         android:layout_width="0dp"
@@ -95,18 +134,19 @@
         android:orientation="vertical"
         android:paddingVertical="4dp">
 
-        <!-- Biểu tượng tài khoản -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="👤"
-            android:textSize="18sp" />
+        <ImageView
+            android:id="@+id/ivMenuAccount"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="Tài khoản"
+            android:src="@drawable/ic_person"
+            app:tint="@color/text_secondary" />
 
-        <!-- Nhãn tài khoản -->
         <TextView
+            android:id="@+id/tvMenuAccount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="3dp"
             android:text="Tài khoản"
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />

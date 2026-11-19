@@ -9,7 +9,7 @@
     android:fillViewport="true"
     tools:context=".LoginActivity">
 
-    <!-- Khung bố cục chính xếp các thành phần theo chiều dọc và căn giữa màn hình -->
+    <!-- Khung bố cục chính căn giữa màn hình -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,11 +17,26 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Logo ứng dụng -->
-        <ImageView
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:src="@mipmap/ic_launcher" />
+        <!-- Khung chứa logo ứng dụng bo tròn liền mạch -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/primary"
+            app:cardCornerRadius="42dp"
+            app:cardElevation="3dp"
+            app:strokeWidth="0dp">
+
+            <!-- Biểu tượng túi mua sắm phóng to cân đối trong vòng tròn -->
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="Logo ứng dụng"
+                android:scaleType="centerCrop"
+                android:scaleX="1.35"
+                android:scaleY="1.35"
+                android:src="@drawable/ic_launcher_foreground" />
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Tiêu đề chính -->
         <TextView
@@ -44,14 +59,14 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
-        <!-- Khung trắng chứa biểu mẫu (Form) nhập liệu đăng nhập -->
+        <!-- Khung biểu mẫu nhập liệu đăng nhập -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card_white"
-            android:elevation="2dp"
+            android:elevation="3dp"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="22dp">
 
             <!-- Nhãn tài khoản hoặc email -->
             <TextView
@@ -70,8 +85,12 @@
                 android:layout_marginTop="6dp"
                 android:layout_marginBottom="14dp"
                 android:background="@drawable/bg_input"
+                android:drawableStart="@drawable/ic_email"
+                android:drawablePadding="10dp"
                 android:hint="Nhập email hoặc tên tài khoản"
+                android:imeOptions="actionNext"
                 android:inputType="textEmailAddress"
+                android:maxLines="1"
                 android:paddingHorizontal="14dp"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
@@ -86,38 +105,103 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <!-- Ô nhập mật khẩu -->
-            <EditText
-                android:id="@+id/edtPassword"
+            <!-- Khung chứa ô nhập mật khẩu và nút ẩn/hiện -->
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:layout_marginBottom="18dp"
-                android:background="@drawable/bg_input"
-                android:hint="Nhập mật khẩu của bạn"
-                android:inputType="textPassword"
-                android:paddingHorizontal="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_tertiary"
-                android:textSize="14sp" />
+                android:layout_marginBottom="8dp">
 
-            <!-- Nút bấm xác nhận đăng nhập -->
-            <Button
-                android:id="@+id/btnLogin"
+                <!-- Ô nhập mật khẩu -->
+                <EditText
+                    android:id="@+id/edtPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_input"
+                    android:drawableStart="@drawable/ic_lock"
+                    android:drawablePadding="10dp"
+                    android:hint="Nhập mật khẩu của bạn"
+                    android:imeOptions="actionDone"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="46dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_tertiary"
+                    android:textSize="14sp" />
+
+                <!-- Nút bấm ẩn/hiện mật khẩu -->
+                <ImageView
+                    android:id="@+id/btnTogglePassword"
+                    android:layout_width="44dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Ẩn hiện mật khẩu"
+                    android:focusable="true"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_visibility_off"
+                    app:tint="@color/text_secondary" />
+            </RelativeLayout>
+
+            <!-- Nút quên mật khẩu căn lề phải -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_primary_button"
-                android:text="ĐĂNG NHẬP"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvForgotPassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="4dp"
+                    android:text="Quên mật khẩu?"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Khung chứa nút Đăng nhập và vòng xoay tải -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp">
+
+                <!-- Nút bấm xác nhận đăng nhập -->
+                <Button
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_primary_button"
+                    android:text="ĐĂNG NHẬP"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+
+                <!-- Vòng xoay tải hiển thị khi đang xử lý -->
+                <ProgressBar
+                    android:id="@+id/progressBarLogin"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/white"
+                    android:visibility="gone" />
+            </FrameLayout>
 
             <!-- Đường kẻ ngang ngăn cách 2 nút -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginVertical="14dp"
+                android:layout_marginVertical="16dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 

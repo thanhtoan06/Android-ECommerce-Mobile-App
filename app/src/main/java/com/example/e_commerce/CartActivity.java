@@ -8,12 +8,14 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -240,34 +242,36 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                 .show();
     }
 
-    // Cài đặt thanh menu đáy: tô xanh mục "Giỏ hàng" và gắn sự kiện chuyển trang
+    // Cài đặt thanh menu đáy: tô xanh mục "Giỏ hàng" và gắn sự kiện chuyển trang (4 mục)
     private void setupBottomMenu() {
         View menuHome = findViewById(R.id.menuHome);
         View menuCart = findViewById(R.id.menuCart);
+        View menuOrders = findViewById(R.id.menuOrders);
         View menuAccount = findViewById(R.id.menuAccount);
 
+        // Cập nhật màu icon cho thanh điều hướng đáy
+        ImageView ivMenuHome = findViewById(R.id.ivMenuHome);
+        ImageView ivMenuCart = findViewById(R.id.ivMenuCart);
+        ImageView ivMenuOrders = findViewById(R.id.ivMenuOrders);
+        ImageView ivMenuAccount = findViewById(R.id.ivMenuAccount);
+
+        if (ivMenuHome != null) ivMenuHome.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
+        if (ivMenuCart != null) ivMenuCart.setImageTintList(ContextCompat.getColorStateList(this, R.color.primary));
+        if (ivMenuOrders != null) ivMenuOrders.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
+        if (ivMenuAccount != null) ivMenuAccount.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
+
         // Tô màu xanh in đậm cho mục "Giỏ hàng" để báo hiệu đang ở trang này
-        if (menuCart instanceof ViewGroup) {
-            ViewGroup cartGroup = (ViewGroup) menuCart;
-            for (int i = 0; i < cartGroup.getChildCount(); i++) {
-                View child = cartGroup.getChildAt(i);
-                if (child instanceof TextView && "Giỏ hàng".contentEquals(((TextView) child).getText())) {
-                    ((TextView) child).setTextColor(Color.parseColor("#1976D2"));
-                    ((TextView) child).setTypeface(null, Typeface.BOLD);
-                }
-            }
+        TextView tvMenuCart = findViewById(R.id.tvMenuCart);
+        if (tvMenuCart != null) {
+            tvMenuCart.setTextColor(ContextCompat.getColor(this, R.color.primary));
+            tvMenuCart.setTypeface(null, Typeface.BOLD);
         }
 
-        // Đặt màu xám mặc định cho mục "Sản phẩm"
-        if (menuHome instanceof ViewGroup) {
-            ViewGroup homeGroup = (ViewGroup) menuHome;
-            for (int i = 0; i < homeGroup.getChildCount(); i++) {
-                View child = homeGroup.getChildAt(i);
-                if (child instanceof TextView && "Sản phẩm".contentEquals(((TextView) child).getText())) {
-                    ((TextView) child).setTextColor(Color.parseColor("#757575"));
-                    ((TextView) child).setTypeface(null, Typeface.NORMAL);
-                }
-            }
+        // Đặt màu xám mặc định cho các mục còn lại
+        TextView tvMenuHome = findViewById(R.id.tvMenuHome);
+        if (tvMenuHome != null) {
+            tvMenuHome.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            tvMenuHome.setTypeface(null, Typeface.NORMAL);
         }
 
         // Bấm "Sản phẩm" -> quay về danh sách sản phẩm
@@ -282,6 +286,13 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         menuCart.setOnClickListener(v ->
                 Toast.makeText(this, "Bạn đang ở trang Giỏ hàng", Toast.LENGTH_SHORT).show()
         );
+
+        // Bấm "Đơn hàng" -> mở màn hình Lịch sử đơn mua
+        if (menuOrders != null) {
+            menuOrders.setOnClickListener(v ->
+                    startActivity(new Intent(this, OrderHistoryActivity.class))
+            );
+        }
 
         // Bấm "Tài khoản" -> mở màn hình Tài khoản
         menuAccount.setOnClickListener(v -> {

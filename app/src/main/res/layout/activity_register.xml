@@ -42,9 +42,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card_white"
-            android:elevation="2dp"
+            android:elevation="3dp"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="22dp">
 
             <!-- Nhãn họ và tên -->
             <TextView
@@ -63,8 +63,12 @@
                 android:layout_marginTop="6dp"
                 android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_input"
+                android:drawableStart="@drawable/ic_person"
+                android:drawablePadding="10dp"
                 android:hint="Ví dụ: Nguyễn Văn An"
+                android:imeOptions="actionNext"
                 android:inputType="textPersonName"
+                android:maxLines="1"
                 android:paddingHorizontal="14dp"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
@@ -87,8 +91,12 @@
                 android:layout_marginTop="6dp"
                 android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_input"
+                android:drawableStart="@drawable/ic_email"
+                android:drawablePadding="10dp"
                 android:hint="Ví dụ: example@email.com"
+                android:imeOptions="actionNext"
                 android:inputType="textEmailAddress"
+                android:maxLines="1"
                 android:paddingHorizontal="14dp"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
@@ -111,8 +119,12 @@
                 android:layout_marginTop="6dp"
                 android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_input"
+                android:drawableStart="@drawable/ic_phone"
+                android:drawablePadding="10dp"
                 android:hint="Ví dụ: 0912345678"
+                android:imeOptions="actionNext"
                 android:inputType="phone"
+                android:maxLines="1"
                 android:paddingHorizontal="14dp"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
@@ -127,20 +139,46 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <!-- Ô nhập mật khẩu đăng ký -->
-            <EditText
-                android:id="@+id/edtRegisterPassword"
+            <!-- Khung chứa ô nhập mật khẩu đăng ký và nút ẩn/hiện -->
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_input"
-                android:hint="Nhập mật khẩu an toàn"
-                android:inputType="textPassword"
-                android:paddingHorizontal="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_tertiary"
-                android:textSize="14sp" />
+                android:layout_marginBottom="12dp">
+
+                <!-- Ô nhập mật khẩu đăng ký -->
+                <EditText
+                    android:id="@+id/edtRegisterPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_input"
+                    android:drawableStart="@drawable/ic_lock"
+                    android:drawablePadding="10dp"
+                    android:hint="Nhập mật khẩu an toàn"
+                    android:imeOptions="actionNext"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="46dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_tertiary"
+                    android:textSize="14sp" />
+
+                <!-- Nút ẩn/hiện mật khẩu đăng ký -->
+                <ImageView
+                    android:id="@+id/btnToggleRegisterPassword"
+                    android:layout_width="44dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Ẩn hiện mật khẩu đăng ký"
+                    android:focusable="true"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_visibility_off"
+                    app:tint="@color/text_secondary" />
+            </RelativeLayout>
 
             <!-- Nhãn xác nhận mật khẩu -->
             <TextView
@@ -151,39 +189,81 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <!-- Ô nhập lại mật khẩu để kiểm tra khớp -->
-            <EditText
-                android:id="@+id/edtConfirmPassword"
+            <!-- Khung chứa ô nhập lại mật khẩu và nút ẩn/hiện -->
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:layout_marginBottom="20dp"
-                android:background="@drawable/bg_input"
-                android:hint="Nhập lại mật khẩu ở trên"
-                android:inputType="textPassword"
-                android:paddingHorizontal="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_tertiary"
-                android:textSize="14sp" />
+                android:layout_marginBottom="20dp">
 
-            <!-- Nút xác nhận hoàn tất đăng ký tài khoản -->
-            <Button
-                android:id="@+id/btnSubmitRegister"
+                <!-- Ô nhập lại mật khẩu để kiểm tra khớp -->
+                <EditText
+                    android:id="@+id/edtConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_input"
+                    android:drawableStart="@drawable/ic_lock"
+                    android:drawablePadding="10dp"
+                    android:hint="Nhập lại mật khẩu ở trên"
+                    android:imeOptions="actionDone"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="46dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_tertiary"
+                    android:textSize="14sp" />
+
+                <!-- Nút ẩn/hiện mật khẩu xác nhận -->
+                <ImageView
+                    android:id="@+id/btnToggleConfirmPassword"
+                    android:layout_width="44dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Ẩn hiện mật khẩu xác nhận"
+                    android:focusable="true"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_visibility_off"
+                    app:tint="@color/text_secondary" />
+            </RelativeLayout>
+
+            <!-- Khung chứa nút Hoàn tất đăng ký và vòng xoay tải -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_primary_button"
-                android:text="HOÀN TẤT ĐĂNG KÝ"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
+                android:layout_height="48dp">
+
+                <!-- Nút xác nhận hoàn tất đăng ký tài khoản -->
+                <Button
+                    android:id="@+id/btnSubmitRegister"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_primary_button"
+                    android:text="HOÀN TẤT ĐĂNG KÝ"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+
+                <!-- Vòng xoay tải khi đang xử lý đăng ký tài khoản -->
+                <ProgressBar
+                    android:id="@+id/progressBarRegister"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/white"
+                    android:visibility="gone" />
+            </FrameLayout>
 
             <!-- Nút quay lại màn hình đăng nhập -->
             <Button
                 android:id="@+id/btnBackToLogin"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/bg_secondary_button"
                 android:text="← QUAY LẠI ĐĂNG NHẬP"
                 android:textColor="@color/primary"

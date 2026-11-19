@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện màn hình danh sách và lọc sản phẩm theo danh mục -->
+<!-- Giao diện màn hình danh sách lưới 2 cột, tìm kiếm và lọc sản phẩm -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
     android:layout_width="match_parent"
@@ -9,35 +10,43 @@
     android:orientation="vertical"
     tools:context=".ProductListActivity">
 
-    <!-- Thanh tiêu đề phía trên cùng (Avatar, lời chào, email và tab danh mục) -->
+    <!-- Thanh tiêu đề phía trên cùng nền màu chủ đạo (#4F46E5) phân tách rõ ràng -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface"
-        android:elevation="2dp"
+        android:background="@color/primary"
+        android:elevation="4dp"
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
         android:paddingTop="14dp"
         android:paddingBottom="12dp">
 
-        <!-- Hàng hiển thị Avatar, tên tài khoản và email -->
+        <!-- Hàng hiển thị Avatar, tên tài khoản và email chữ màu trắng -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <!-- Biểu tượng ảnh đại diện người dùng -->
-            <TextView
-                android:id="@+id/tvHeaderAvatar"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
+            <!-- Khung ảnh đại diện nền trắng tròn nổi bật trên nền tím -->
+            <FrameLayout
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="@drawable/bg_avatar_circle"
-                android:gravity="center"
-                android:text="👤"
-                android:textSize="22sp" />
+                android:elevation="1dp"
+                android:padding="8dp">
 
-            <!-- Cụm hiển thị lời chào và email người dùng -->
+                <!-- Biểu tượng người dùng vector chuẩn màu tím -->
+                <ImageView
+                    android:id="@+id/ivHeaderAvatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Ảnh đại diện"
+                    android:src="@drawable/ic_person"
+                    app:tint="@color/primary" />
+            </FrameLayout>
+
+            <!-- Cụm hiển thị lời chào và email người dùng màu trắng -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -45,7 +54,7 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <!-- Lời chào kèm tên người dùng đang đăng nhập -->
+                <!-- Lời chào kèm tên người dùng chữ trắng nổi bật -->
                 <TextView
                     android:id="@+id/tvUserGreeting"
                     android:layout_width="match_parent"
@@ -53,11 +62,11 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="Xin chào, Người dùng"
-                    android:textColor="@color/text_primary"
+                    android:textColor="@color/white"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <!-- Email tài khoản hiện tại -->
+                <!-- Email tài khoản màu trắng mờ thanh lịch -->
                 <TextView
                     android:id="@+id/tvUserEmail"
                     android:layout_width="match_parent"
@@ -66,8 +75,92 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="user@example.com"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="#E0E7FF"
                     android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Hàng chứa thanh tìm kiếm nền trắng bo góc và nút sắp xếp nổi bật -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- Khung nhập từ khóa tìm kiếm nền trắng bo góc nổi bật -->
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_search_white"
+                android:elevation="1dp">
+
+                <!-- Ô nhập từ khóa tìm kiếm sản phẩm -->
+                <EditText
+                    android:id="@+id/edtSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@null"
+                    android:drawableStart="@drawable/ic_search"
+                    android:drawablePadding="10dp"
+                    android:hint="Tìm theo tên sản phẩm..."
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="38dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_tertiary"
+                    android:textSize="13sp" />
+
+                <!-- Nút xóa nhanh từ khóa tìm kiếm -->
+                <ImageView
+                    android:id="@+id/btnClearSearch"
+                    android:layout_width="38dp"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Xóa từ khóa"
+                    android:focusable="true"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_close"
+                    android:visibility="gone"
+                    app:tint="@color/text_tertiary" />
+            </RelativeLayout>
+
+            <!-- Nút bấm chọn sắp xếp giá nền trắng bo góc nổi bật -->
+            <LinearLayout
+                android:id="@+id/btnSort"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_search_white"
+                android:clickable="true"
+                android:elevation="1dp"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="12dp">
+
+                <ImageView
+                    android:id="@+id/ivSortIcon"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="Sắp xếp"
+                    android:src="@drawable/ic_sort"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:id="@+id/tvSortLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:text="Giá"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
 
@@ -75,7 +168,7 @@
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
             android:scrollbars="none">
 
             <!-- Vùng chứa danh sách các tab danh mục (tạo động từ code) -->
@@ -87,21 +180,95 @@
         </HorizontalScrollView>
     </LinearLayout>
 
-    <!-- Danh sách hiển thị các sản phẩm cuộn dọc -->
-    <ListView
-        android:id="@+id/listView"
+    <!-- Khung vuốt xuống để làm mới danh sách sản phẩm -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:divider="@null"
-        android:dividerHeight="0dp"
-        android:listSelector="?attr/selectableItemBackground"
-        android:paddingHorizontal="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="12dp" />
+        android:layout_weight="1">
 
-    <!-- Thanh menu điều hướng phía dưới cùng -->
+        <!-- Khung chứa lưới sản phẩm 2 cột, vòng xoay tải và giao diện trống -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Lưới hiển thị các sản phẩm bố cục 2 cột trực quan -->
+            <GridView
+                android:id="@+id/listView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:columnWidth="160dp"
+                android:horizontalSpacing="10dp"
+                android:numColumns="2"
+                android:padding="10dp"
+                android:stretchMode="columnWidth"
+                android:verticalSpacing="10dp"
+                tools:listitem="@layout/item_product" />
+
+            <!-- Giao diện thông báo khi không tìm thấy sản phẩm phù hợp -->
+            <LinearLayout
+                android:id="@+id/layoutEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:contentDescription="Trống"
+                    android:src="@drawable/ic_empty_box"
+                    app:tint="@color/gray_400" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Không tìm thấy sản phẩm nào"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:text="Thử tìm kiếm với từ khóa khác hoặc chuyển sang danh mục khác xem nhé."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnResetFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_primary_button"
+                    android:paddingHorizontal="20dp"
+                    android:text="Xem tất cả sản phẩm"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+            </LinearLayout>
+
+            <!-- Vòng xoay tải dữ liệu ban đầu từ Firebase -->
+            <ProgressBar
+                android:id="@+id/progressBarLoading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/primary"
+                android:visibility="gone" />
+
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Thanh menu điều hướng phía dưới cùng 4 mục -->
     <include
         android:id="@+id/bottomMenu"
         layout="@layout/include_bottom_menu" />

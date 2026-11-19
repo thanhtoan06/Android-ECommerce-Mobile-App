@@ -5,16 +5,20 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -360,8 +364,16 @@ public class AccountActivity extends AppCompatActivity {
         EditText edtCurrentPassword = dialogView.findViewById(R.id.edtCurrentPassword);
         EditText edtNewPassword = dialogView.findViewById(R.id.edtNewPassword);
         EditText edtConfirmNewPassword = dialogView.findViewById(R.id.edtConfirmNewPassword);
+        ImageView btnToggleCurrentPassword = dialogView.findViewById(R.id.btnToggleCurrentPassword);
+        ImageView btnToggleNewPassword = dialogView.findViewById(R.id.btnToggleNewPassword);
+        ImageView btnToggleConfirmNewPassword = dialogView.findViewById(R.id.btnToggleConfirmNewPassword);
         Button btnCancel = dialogView.findViewById(R.id.btnCancelPassword);
         Button btnSave = dialogView.findViewById(R.id.btnSavePassword);
+
+        // Cài đặt nút con mắt ẩn/hiện cho các ô mật khẩu
+        setupPasswordToggle(edtCurrentPassword, btnToggleCurrentPassword);
+        setupPasswordToggle(edtNewPassword, btnToggleNewPassword);
+        setupPasswordToggle(edtConfirmNewPassword, btnToggleConfirmNewPassword);
 
         // Tạo hộp thoại và làm trong suốt nền mặc định
         AlertDialog dialog = new AlertDialog.Builder(this).setView(dialogView).create();
@@ -420,34 +432,55 @@ public class AccountActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Cài đặt thanh menu đáy: tô xanh mục "Tài khoản" và gắn sự kiện chuyển trang
+    // Hàm tiện ích: Bật/tắt ẩn hiện mật khẩu và tự động đổi icon con mắt
+    private void setupPasswordToggle(EditText editText, ImageView toggleView) {
+        if (editText == null || toggleView == null) return;
+        toggleView.setOnClickListener(v -> {
+            boolean isCurrentlyPassword = editText.getTransformationMethod() instanceof PasswordTransformationMethod;
+            if (isCurrentlyPassword) {
+                // Đang ẩn -> chuyển sang hiện mật khẩu
+                editText.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+                toggleView.setImageResource(R.drawable.ic_visibility);
+            } else {
+                // Đang hiện -> chuyển sang ẩn mật khẩu
+                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                toggleView.setImageResource(R.drawable.ic_visibility_off);
+            }
+            // Luôn giữ con trỏ chuột ở cuối văn bản sau khi chuyển đổi
+            editText.setSelection(editText.getText().length());
+        });
+    }
+
+    // Cài đặt thanh menu đáy: tô xanh mục "Tài khoản" và gắn sự kiện chuyển trang (4 mục)
     private void setupBottomMenu() {
         View menuHome = findViewById(R.id.menuHome);
         View menuCart = findViewById(R.id.menuCart);
+        View menuOrders = findViewById(R.id.menuOrders);
         View menuAccount = findViewById(R.id.menuAccount);
 
+        // Cập nhật màu icon cho thanh điều hướng đáy
+        ImageView ivMenuHome = findViewById(R.id.ivMenuHome);
+        ImageView ivMenuCart = findViewById(R.id.ivMenuCart);
+        ImageView ivMenuOrders = findViewById(R.id.ivMenuOrders);
+        ImageView ivMenuAccount = findViewById(R.id.ivMenuAccount);
+
+        if (ivMenuHome != null) ivMenuHome.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
+        if (ivMenuCart != null) ivMenuCart.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
+        if (ivMenuOrders != null) ivMenuOrders.setImageTintList(ContextCompat.getColorStateList(this, R.color.text_secondary));
+        if (ivMenuAccount != null) ivMenuAccount.setImageTintList(ContextCompat.getColorStateList(this, R.color.primary));
+
         // Tô màu xanh in đậm cho mục "Tài khoản" để báo hiệu đang ở trang này
-        if (menuAccount instanceof ViewGroup) {
-            ViewGroup accountGroup = (ViewGroup) menuAccount;
-            for (int i = 0; i < accountGroup.getChildCount(); i++) {
-                View child = accountGroup.getChildAt(i);
-                if (child instanceof TextView && "Tài khoản".contentEquals(((TextView) child).getText())) {
-                    ((TextView) child).setTextColor(Color.parseColor("#1976D2"));
-                    ((TextView) child).setTypeface(null, Typeface.BOLD);
-                }
-            }
+        TextView tvMenuAccount = findViewById(R.id.tvMenuAccount);
+        if (tvMenuAccount != null) {
+            tvMenuAccount.setTextColor(ContextCompat.getColor(this, R.color.primary));
+            tvMenuAccount.setTypeface(null, Typeface.BOLD);
         }
 
         // Đặt màu xám mặc định cho mục "Sản phẩm"
-        if (menuHome instanceof ViewGroup) {
-            ViewGroup homeGroup = (ViewGroup) menuHome;
-            for (int i = 0; i < homeGroup.getChildCount(); i++) {
-                View child = homeGroup.getChildAt(i);
-                if (child instanceof TextView && "Sản phẩm".contentEquals(((TextView) child).getText())) {
-                    ((TextView) child).setTextColor(Color.parseColor("#757575"));
-                    ((TextView) child).setTypeface(null, Typeface.NORMAL);
-                }
-            }
+        TextView tvMenuHome = findViewById(R.id.tvMenuHome);
+        if (tvMenuHome != null) {
+            tvMenuHome.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            tvMenuHome.setTypeface(null, Typeface.NORMAL);
         }
 
         // Bấm "Sản phẩm" -> quay về danh sách sản phẩm
@@ -463,6 +496,14 @@ public class AccountActivity extends AppCompatActivity {
             startActivity(new Intent(this, CartActivity.class));
             finish();
         });
+
+        // Bấm "Đơn hàng" -> mở màn hình Lịch sử đơn mua
+        if (menuOrders != null) {
+            menuOrders.setOnClickListener(v -> {
+                startActivity(new Intent(this, OrderHistoryActivity.class));
+                finish();
+            });
+        }
 
         // Bấm "Tài khoản" -> báo đang ở sẵn trang Tài khoản
         menuAccount.setOnClickListener(v ->

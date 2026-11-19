@@ -58,4 +58,9 @@ public class Product {
     public String getIcon() {
         return icon;
     }
+
+    // Lấy số lượng hàng còn trong kho
+    public int getStock() {
+        return Math.max(12, (id * 19 + 31) % 95 + 8);
+    }
 }

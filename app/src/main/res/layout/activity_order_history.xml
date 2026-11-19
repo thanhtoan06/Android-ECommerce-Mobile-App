@@ -64,7 +64,8 @@
     <!-- Khung nội dung chính (hiển thị trạng thái trống hoặc danh sách đơn hàng) -->
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <!-- Khối thông báo khi chưa có đơn hàng nào -->
         <LinearLayout
@@ -76,18 +77,19 @@
             android:padding="24dp"
             android:visibility="gone">
 
-            <!-- Biểu tượng hộp đơn hàng trống -->
+            <!-- Biểu tượng hộp đơn hàng trống dạng vector chuẩn -->
             <FrameLayout
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:background="@drawable/bg_avatar_circle">
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+                android:background="@drawable/bg_avatar_circle"
+                android:padding="16dp">
 
-                <TextView
+                <ImageView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:text="📦"
-                    android:textSize="48sp" />
+                    android:contentDescription="Hộp trống"
+                    android:src="@drawable/ic_orders"
+                    app:tint="@color/primary" />
             </FrameLayout>
 
             <!-- Dòng thông báo chính khi chưa có đơn -->
@@ -118,7 +120,7 @@
                 android:layout_marginTop="20dp"
                 android:background="@drawable/bg_primary_button"
                 android:paddingHorizontal="24dp"
-                android:text="🛍️ MUA SẮM NGAY"
+                android:text="MUA SẮM NGAY"
                 android:textColor="@color/white"
                 android:textSize="13sp"
                 android:textStyle="bold"
@@ -138,5 +140,10 @@
             android:paddingBottom="16dp" />
 
     </FrameLayout>
+
+    <!-- Thanh menu điều hướng phía dưới cùng 4 mục -->
+    <include
+        android:id="@+id/bottomMenu"
+        layout="@layout/include_bottom_menu" />
 
 </LinearLayout>
