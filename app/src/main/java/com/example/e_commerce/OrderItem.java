@@ -1,10 +1,11 @@
 // Đối tượng lưu trữ thông tin chi tiết từng sản phẩm thuộc một đơn hàng (mã đơn, tên sản phẩm, biểu tượng, đơn giá, số lượng và thành tiền)
 package com.example.e_commerce;
 
+import java.io.Serializable;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-public class OrderItem {
+public class OrderItem implements Serializable {
 
     // Khai báo các thuộc tính của một dòng sản phẩm trong đơn hàng
     private int id;

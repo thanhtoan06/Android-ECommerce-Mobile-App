@@ -10,55 +10,50 @@
     android:orientation="vertical"
     tools:context=".OrderHistoryActivity">
 
-    <!-- Thanh tiêu đề phía trên cùng -->
+    <!-- Thanh tiêu đề phía trên cùng nền màu chủ đạo (#4F46E5) -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/surface"
-        android:elevation="2dp"
+        android:background="@color/primary"
+        android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="12dp">
+        android:paddingHorizontal="16dp">
 
-        <!-- Nút quay lại màn hình trước -->
+        <!-- Nút quay lại màn hình trước (ẩn đi nhưng giữ lại ID để tương thích mã Java) -->
         <TextView
             android:id="@+id/tvBack"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:background="@drawable/bg_counter_btn"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="←"
-            android:textColor="@color/primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
-        <!-- Tiêu đề màn hình -->
+        <!-- Tiêu đề màn hình căn trái chữ trắng nổi bật (18sp, in đậm) giống màn hình Giỏ hàng -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="center"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="Lịch sử đơn mua"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
-        <!-- Nhãn đếm tổng số đơn hàng -->
+        <!-- Nhãn đếm tổng số đơn hàng nổi bật bên phải -->
         <TextView
             android:id="@+id/tvOrderCountBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_chip_blue"
-            android:paddingHorizontal="8dp"
+            android:background="@drawable/bg_tab_active_white"
+            android:paddingHorizontal="12dp"
             android:paddingVertical="4dp"
             android:text="0 đơn"
             android:textColor="@color/primary"
-            android:textSize="11sp"
-            android:textStyle="bold" />
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:text="3 đơn" />
     </LinearLayout>
 
     <!-- Khung nội dung chính (hiển thị trạng thái trống hoặc danh sách đơn hàng) -->
@@ -137,7 +132,8 @@
             android:dividerHeight="0dp"
             android:paddingHorizontal="12dp"
             android:paddingTop="8dp"
-            android:paddingBottom="16dp" />
+            android:paddingBottom="16dp"
+            tools:listitem="@layout/item_order" />
 
     </FrameLayout>
 

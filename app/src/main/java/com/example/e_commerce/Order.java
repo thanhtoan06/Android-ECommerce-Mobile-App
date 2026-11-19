@@ -1,10 +1,11 @@
 // Đối tượng lưu trữ thông tin một đơn hàng đã đặt (mã đơn, người nhận, địa chỉ, phương thức thanh toán, tổng tiền, ngày đặt và trạng thái)
 package com.example.e_commerce;
 
+import java.io.Serializable;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-public class Order {
+public class Order implements Serializable {
 
     // Khai báo các thuộc tính lưu trữ thông tin của một đơn hàng
     private int id;

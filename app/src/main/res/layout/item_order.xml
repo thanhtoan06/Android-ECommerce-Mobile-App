@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Giao diện một đơn hàng trong danh sách lịch sử đơn hàng -->
+<!-- Giao diện một thẻ tóm tắt đơn hàng tinh gọn trong danh sách Lịch sử đơn mua -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardOrder"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="5dp"
+    android:layout_marginHorizontal="2dp"
+    android:layout_marginVertical="6dp"
     android:background="@drawable/bg_card_white"
-    android:elevation="1dp"
+    android:clickable="true"
+    android:elevation="2dp"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
     android:orientation="vertical"
     android:padding="14dp">
 
-    <!-- Phần đầu thẻ: Mã đơn, ngày đặt và trạng thái -->
+    <!-- Phần đầu thẻ: Mã đơn, ngày giờ đặt và nhãn trạng thái -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,34 +35,52 @@
                 android:id="@+id/tvOrderCode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="#DH00001"
                 android:textColor="@color/primary"
                 android:textSize="15sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="#DH00001" />
 
-            <!-- Ngày giờ tạo đơn hàng -->
-            <TextView
-                android:id="@+id/tvOrderDate"
+            <!-- Ngày giờ tạo đơn hàng kèm biểu tượng lịch vector -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="12/11/2026 10:00"
-                android:textColor="@color/text_secondary"
-                android:textSize="11sp" />
+                android:layout_marginTop="3dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="Lịch"
+                    android:src="@drawable/ic_calendar"
+                    app:tint="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/tvOrderDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="12/11/2026 10:00" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Nhãn trạng thái đơn hàng -->
+        <!-- Nhãn trạng thái đơn hàng kèm biểu tượng tích xanh vector -->
         <TextView
             android:id="@+id/tvOrderStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_chip_green"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="3dp"
-            android:text="✓ Đặt hàng thành công"
+            android:drawablePadding="4dp"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
             android:textColor="@color/success_dark"
             android:textSize="11sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_check_circle"
+            app:drawableTint="@color/success_dark"
+            tools:text="Đặt hàng thành công" />
     </LinearLayout>
 
     <!-- Đường kẻ phân cách -->
@@ -65,12 +90,25 @@
         android:layout_marginVertical="10dp"
         android:background="@color/card_stroke" />
 
-    <!-- Khung chứa danh sách từng sản phẩm trong đơn -->
+    <!-- Dòng tóm tắt sản phẩm đã mua ở giữa thẻ -->
+    <TextView
+        android:id="@+id/tvOrderSummary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:lineSpacingExtra="3dp"
+        android:maxLines="2"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp"
+        tools:text="Áo thun cotton basic ×2, Giày sneaker trắng thể thao ×1" />
+
+    <!-- Khung chứa động các món (giữ ID để tương thích mã cũ) -->
     <LinearLayout
         android:id="@+id/llOrderItems"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical" />
+        android:orientation="vertical"
+        android:visibility="gone" />
 
     <!-- Đường kẻ phân cách -->
     <View
@@ -79,80 +117,87 @@
         android:layout_marginVertical="10dp"
         android:background="@color/card_stroke" />
 
-    <!-- Thông tin người nhận và hình thức thanh toán -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <!-- Tên và số điện thoại người nhận -->
-        <TextView
-            android:id="@+id/tvReceiverInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="👤 Người nhận: Nguyễn Văn An (0912345678)"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <!-- Địa chỉ giao hàng -->
-        <TextView
-            android:id="@+id/tvReceiverAddress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="📍 Địa chỉ: 123 Đường ABC, Phường X, Quận Y"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <!-- Phương thức thanh toán đã chọn -->
-        <TextView
-            android:id="@+id/tvPaymentMethod"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="💳 Thanh toán: Tiền mặt khi nhận hàng (COD)"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <!-- Đường kẻ phân cách -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginVertical="10dp"
-        android:background="@color/card_stroke" />
-
-    <!-- Tổng thanh toán của đơn hàng -->
+    <!-- Phần chân thẻ: Tổng tiền bên trái và nút Xem chi tiết bên phải -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <!-- Nhãn tổng số lượng sản phẩm -->
-        <TextView
-            android:id="@+id/tvItemCount"
+        <!-- Cụm hiển thị tổng tiền -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Tổng thanh toán (1 sản phẩm):"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
 
-        <!-- Tổng số tiền của đơn hàng -->
-        <TextView
-            android:id="@+id/tvOrderTotal"
+            <TextView
+                android:id="@+id/tvItemCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tổng thanh toán"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                tools:text="Tổng thanh toán (2 món):" />
+
+            <TextView
+                android:id="@+id/tvOrderTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/danger"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                tools:text="358.000 ₫" />
+        </LinearLayout>
+
+        <!-- Nút Xem chi tiết màu tím chàm kèm icon vector mũi tên -->
+        <LinearLayout
+            android:id="@+id/btnOrderDetail"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="189.000 ₫"
-            android:textColor="@color/danger"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_height="34dp"
+            android:background="@drawable/bg_chip_blue"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Xem chi tiết"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="2dp"
+                android:contentDescription="Xem chi tiết"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="@color/primary" />
+        </LinearLayout>
     </LinearLayout>
+
+    <!-- Các trường ẩn giữ ID để tương thích mã cũ -->
+    <TextView
+        android:id="@+id/tvReceiverInfo"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvReceiverAddress"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvPaymentMethod"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
 
 </LinearLayout>

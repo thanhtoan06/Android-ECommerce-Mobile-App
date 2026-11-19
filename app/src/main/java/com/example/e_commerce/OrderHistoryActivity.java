@@ -55,6 +55,17 @@ public class OrderHistoryActivity extends AppCompatActivity {
         adapter = new OrderAdapter(this, orderList);
         lvOrders.setAdapter(adapter);
 
+        // Bấm vào bất kỳ dòng đơn hàng nào trên danh sách -> mở Chi tiết đơn hàng
+        lvOrders.setOnItemClickListener((parent, view, position, id) -> {
+            if (position >= 0 && position < orderList.size()) {
+                Order order = orderList.get(position);
+                Intent intent = new Intent(this, OrderDetailActivity.class);
+                intent.putExtra("order", order);
+                intent.putExtra("order_id", order.getId());
+                startActivity(intent);
+            }
+        });
+
         // Bấm nút "Mua sắm ngay" (khi danh sách đơn trống) -> chuyển về màn hình Danh sách sản phẩm
         findViewById(R.id.btnShopNow).setOnClickListener(v -> {
             Intent intent = new Intent(this, ProductListActivity.class);
