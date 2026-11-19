@@ -157,7 +157,8 @@
                 android:text="0 ₫"
                 android:textColor="@color/danger"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="5.990.000 ₫" />
         </LinearLayout>
 <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCheckout"
@@ -170,7 +171,8 @@
             android:textStyle="bold"
             app:backgroundTint="@color/primary"
             app:cornerRadius="10dp"
-            app:elevation="0dp" />
+            app:elevation="0dp"
+            tools:text="THANH TOÁN (1)" />
     </LinearLayout>
 <include
         android:id="@+id/bottomMenu"

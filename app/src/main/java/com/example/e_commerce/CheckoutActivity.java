@@ -9,7 +9,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,8 +26,6 @@ public class CheckoutActivity extends AppCompatActivity {
     private EditText etReceiverPhone;
     private EditText etReceiverAddress;
     private EditText etOrderNote;
-    private RadioGroup rgPaymentMethods;
-    private View layoutBankInfo;
     private LinearLayout llOrderItemsContainer;
     private TextView tvCheckoutItemsSubtotal;
     private TextView tvCheckoutGrandTotal;
@@ -55,8 +52,6 @@ public class CheckoutActivity extends AppCompatActivity {
         etReceiverPhone = findViewById(R.id.etReceiverPhone);
         etReceiverAddress = findViewById(R.id.etReceiverAddress);
         etOrderNote = findViewById(R.id.etOrderNote);
-        rgPaymentMethods = findViewById(R.id.rgPaymentMethods);
-        layoutBankInfo = findViewById(R.id.layoutBankInfo);
         llOrderItemsContainer = findViewById(R.id.llOrderItemsContainer);
         tvCheckoutItemsSubtotal = findViewById(R.id.tvCheckoutItemsSubtotal);
         tvCheckoutGrandTotal = findViewById(R.id.tvCheckoutGrandTotal);
@@ -105,14 +100,6 @@ public class CheckoutActivity extends AppCompatActivity {
 
             @Override
             public void onError(Exception e) {
-            }
-        });
-
-        rgPaymentMethods.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.rbBankTransfer) {
-                layoutBankInfo.setVisibility(View.VISIBLE);
-            } else {
-                layoutBankInfo.setVisibility(View.GONE);
             }
         });
 
@@ -228,15 +215,7 @@ public class CheckoutActivity extends AppCompatActivity {
             return;
         }
 
-        String paymentMethod;
-        int checkedId = rgPaymentMethods.getCheckedRadioButtonId();
-        if (checkedId == R.id.rbBankTransfer) {
-            paymentMethod = "Chuyển khoản ngân hàng";
-        } else if (checkedId == R.id.rbEWallet) {
-            paymentMethod = "Ví điện tử (MoMo / ZaloPay)";
-        } else {
-            paymentMethod = "Thanh toán khi nhận hàng (COD)";
-        }
+        String paymentMethod = "Thanh toán khi nhận hàng (COD)";
 
         btnConfirmOrder.setEnabled(false);
 
@@ -270,12 +249,12 @@ public class CheckoutActivity extends AppCompatActivity {
 
         String formattedTotal = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(totalAmount) + " ₫";
 
-        String message = "🎉 Cảm ơn quý khách đã mua sắm!\n\n" + "• Mã đơn hàng: #DH"
+        String message = "Cảm ơn quý khách đã mua sắm!\n\n" + "• Mã đơn hàng: #DH"
                 + String.format(Locale.getDefault(), "%05d", orderId) + "\n" + "• Người nhận: " + name + " (" + phone
                 + ")\n" + "• Địa chỉ: " + address + "\n" + "• Phương thức: " + paymentMethod + "\n"
                 + "• Tổng thanh toán: " + formattedTotal;
 
-        new AlertDialog.Builder(this).setTitle("✅ ĐẶT HÀNG THÀNH CÔNG").setMessage(message).setCancelable(false)
+        new AlertDialog.Builder(this).setTitle("ĐẶT HÀNG THÀNH CÔNG").setMessage(message).setCancelable(false)
 
                 .setPositiveButton("Về trang chủ", (d, which) -> {
                     Intent intent = new Intent(this, ProductListActivity.class);

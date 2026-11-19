@@ -2,7 +2,10 @@
 package com.example.e_commerce;
 
 import java.text.NumberFormat;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class Product {
 
@@ -13,8 +16,17 @@ public class Product {
     private final String description;
     private final String icon;
     private final int stock;
+    private final int soldCount;
+    private final double averageRating;
+    private final int reviewCount;
+    private final Map<String, String> specifications;
 
     public Product(int id, String name, String category, long price, String description, String icon, int stock) {
+        this(id, name, category, price, description, icon, stock, 0, 0, 0, Collections.emptyMap());
+    }
+
+    public Product(int id, String name, String category, long price, String description, String icon, int stock,
+            int soldCount, double averageRating, int reviewCount, Map<String, String> specifications) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -22,6 +34,11 @@ public class Product {
         this.description = description;
         this.icon = icon;
         this.stock = stock;
+        this.soldCount = soldCount;
+        this.averageRating = averageRating;
+        this.reviewCount = reviewCount;
+        this.specifications = Collections.unmodifiableMap(
+                new HashMap<>(specifications == null ? Collections.emptyMap() : specifications));
     }
 
     public Product(int id, String name, String category, long price, String description, String icon) {
@@ -58,6 +75,22 @@ public class Product {
 
     public int getStock() {
         return stock;
+    }
+
+    public int getSoldCount() {
+        return soldCount;
+    }
+
+    public double getAverageRating() {
+        return averageRating;
+    }
+
+    public int getReviewCount() {
+        return reviewCount;
+    }
+
+    public Map<String, String> getSpecifications() {
+        return specifications;
     }
 
     public boolean isInStock() {

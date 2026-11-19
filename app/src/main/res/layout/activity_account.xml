@@ -62,10 +62,10 @@
                 android:layout_marginTop="10dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Người dùng"
                 android:textColor="@color/white"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="Name Test" />
 <TextView
                 android:id="@+id/tvAccountEmail"
                 android:layout_width="wrap_content"
@@ -73,9 +73,9 @@
                 android:layout_marginTop="3dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="user@example.com"
                 android:textColor="#E0E7FF"
-                android:textSize="13sp" />
+                android:textSize="13sp"
+                tools:text="test@example.com" />
         </LinearLayout>
     </LinearLayout>
 <ScrollView
@@ -138,10 +138,10 @@
                         android:ellipsize="end"
                         android:gravity="end"
                         android:singleLine="true"
-                        android:text="username"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="Name Test" />
 <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
@@ -181,10 +181,10 @@
                         android:ellipsize="end"
                         android:gravity="end"
                         android:singleLine="true"
-                        android:text="user@gmail.com"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="test@example.com" />
                 </LinearLayout>
 <View
                     android:layout_width="match_parent"
@@ -221,10 +221,10 @@
                         android:ellipsize="end"
                         android:gravity="end"
                         android:singleLine="true"
-                        android:text="Chưa thiết lập"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="0901234567" />
 <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
@@ -270,10 +270,10 @@
                         android:ellipsize="end"
                         android:gravity="end"
                         android:maxLines="2"
-                        android:text="Chưa thiết lập"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="123 Nguyễn Huệ, Quận 1, TP.HCM" />
 <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"

@@ -5,7 +5,8 @@
     android:layout_height="wrap_content"
     android:background="@drawable/bg_card_white"
     android:elevation="2dp"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context=".ProductListActivity">
 <FrameLayout
         android:id="@+id/flIconContainer"
         android:layout_width="match_parent"
@@ -41,7 +42,7 @@
                 android:textColor="@color/primary"
                 android:textSize="10sp"
                 android:textStyle="bold"
-                tools:text="Công nghệ" />
+                tools:text="Điện thoại" />
             <View
                 android:layout_width="0dp"
                 android:layout_height="0dp"
@@ -52,7 +53,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
-                tools:text="Còn 45 sp" />
+                tools:text="Còn 38 sp" />
         </LinearLayout>
 <TextView
             android:id="@+id/tvName"
@@ -66,7 +67,7 @@
             android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold"
-            tools:text="iPhone 15 Pro Max 256GB Chính Hãng" />
+            tools:text="Samsung Galaxy A16 5G 128GB" />
 <TextView
             android:id="@+id/tvPrice"
             android:layout_width="match_parent"
@@ -75,6 +76,6 @@
             android:textColor="@color/danger"
             android:textSize="15sp"
             android:textStyle="bold"
-            tools:text="29.990.000 ₫" />
+            tools:text="5.990.000 ₫" />
     </LinearLayout>
 </LinearLayout>

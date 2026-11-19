@@ -187,7 +187,7 @@
                         android:textColor="@color/primary"
                         android:textSize="12sp"
                         android:textStyle="bold"
-                        tools:text="Công nghệ" />
+                        tools:text="Điện thoại" />
                     <View
                         android:layout_width="0dp"
                         android:layout_height="0dp"
@@ -198,7 +198,7 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp"
-                        tools:text="Còn 45 sp" />
+                        tools:text="Còn 38 sp" />
                 </LinearLayout>
 <TextView
                     android:id="@+id/tvName"
@@ -209,7 +209,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    tools:text="iPhone 15 Pro Max 256GB Chính Hãng" />
+                    tools:text="Samsung Galaxy A16 5G 128GB" />
 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -222,7 +222,7 @@
                     android:textColor="@color/danger"
                     android:textSize="24sp"
                     android:textStyle="bold"
-                    tools:text="29.990.000 ₫" />
+                    tools:text="5.990.000 ₫" />
 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -306,7 +306,7 @@
                     android:lineSpacingExtra="4dp"
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp"
-                    tools:text="Mô tả chi tiết sản phẩm chính hãng với đầy đủ chế độ bảo hành 12 tháng, đổi trả 30 ngày." />
+                    tools:text="Màn hình Super AMOLED 6,7 inch 90Hz, camera chính 50MP và pin 5.000mAh." />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

@@ -11,7 +11,8 @@
     android:elevation="2dp"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="12dp">
+    android:padding="12dp"
+    tools:context=".CartActivity">
 <CheckBox
         android:id="@+id/cbCartItem"
         android:layout_width="22dp"
@@ -57,7 +58,7 @@
                 android:textColor="@color/primary"
                 android:textSize="10sp"
                 android:textStyle="bold"
-                tools:text="Công nghệ" />
+                tools:text="Điện thoại" />
 <View
                 android:layout_width="0dp"
                 android:layout_height="0dp"
@@ -84,7 +85,7 @@
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            tools:text="iPhone 15 Pro Max 256GB Chính Hãng" />
+            tools:text="Samsung Galaxy A16 5G 128GB" />
 <TextView
             android:id="@+id/tvCartUnitPrice"
             android:layout_width="match_parent"
@@ -92,7 +93,7 @@
             android:layout_marginTop="2dp"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
-            tools:text="Đơn giá: 29.990.000 ₫ (Kho: 45)" />
+            tools:text="Đơn giá: 5.990.000 ₫ (Kho: 38)" />
 <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -107,7 +108,7 @@
                 android:textColor="@color/danger"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                tools:text="29.990.000 ₫" />
+                tools:text="5.990.000 ₫" />
 <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

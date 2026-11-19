@@ -88,7 +88,8 @@
                 android:paddingHorizontal="14dp"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                tools:text="test@example.com" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -116,7 +117,8 @@
                     android:paddingEnd="46dp"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_tertiary"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    tools:text="********" />
                 <ImageView
                     android:id="@+id/btnTogglePassword"
                     android:layout_width="44dp"

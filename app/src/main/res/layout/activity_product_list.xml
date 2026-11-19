@@ -50,10 +50,10 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="Xin chào, Người dùng"
                     android:textColor="@color/white"
                     android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Xin chào, Name Test" />
                 <TextView
                     android:id="@+id/tvUserEmail"
                     android:layout_width="match_parent"
@@ -61,9 +61,9 @@
                     android:layout_marginTop="2dp"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="user@example.com"
                     android:textColor="#E0E7FF"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    tools:text="test@example.com" />
             </LinearLayout>
         </LinearLayout>
         <LinearLayout
@@ -206,7 +206,56 @@
                 android:id="@+id/layoutCategoryTabs"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal" />
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_tab_active_white"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:text="Tất cả"
+                    tools:visibility="visible" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_tab_inactive_translucent"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:text="Điện thoại"
+                    tools:visibility="visible" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_tab_inactive_translucent"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:text="Laptop"
+                    tools:visibility="visible" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_tab_inactive_translucent"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:text="Tai nghe"
+                    tools:visibility="visible" />
+            </LinearLayout>
         </HorizontalScrollView>
     </LinearLayout>
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout

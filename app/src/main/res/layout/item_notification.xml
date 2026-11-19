@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="2dp"
@@ -11,7 +12,8 @@
     android:foreground="?attr/selectableItemBackground"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="14dp">
+    android:padding="14dp"
+    tools:context=".NotificationActivity">
 
     <FrameLayout
         android:layout_width="44dp"
@@ -40,7 +42,8 @@
             android:layout_height="wrap_content"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            tools:text="Đơn hàng đã được giao" />
 
         <TextView
             android:id="@+id/tvNotificationMessage"
@@ -48,7 +51,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
+            android:textSize="13sp"
+            tools:text="Đơn hàng #DH00001 đã được giao thành công. Cảm ơn bạn đã mua sắm!" />
 
         <TextView
             android:id="@+id/tvNotificationDate"
@@ -56,7 +60,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:textColor="@color/text_tertiary"
-            android:textSize="11sp" />
+            android:textSize="11sp"
+            tools:text="19/11/2026 10:30" />
     </LinearLayout>
 
     <TextView
@@ -70,5 +75,6 @@
         android:text="MỚI"
         android:textColor="@color/primary"
         android:textSize="10sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        tools:visibility="visible" />
 </LinearLayout>

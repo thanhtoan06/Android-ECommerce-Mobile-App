@@ -6,7 +6,8 @@
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingVertical="8dp">
+    android:paddingVertical="8dp"
+    tools:context=".CheckoutActivity">
 <ImageView
         android:id="@+id/ivSummaryIcon"
         android:layout_width="44dp"
@@ -31,7 +32,7 @@
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            tools:text="Tên sản phẩm" />
+            tools:text="Samsung Galaxy A16 5G 128GB" />
 <TextView
             android:id="@+id/tvSummaryQuantity"
             android:layout_width="wrap_content"
@@ -52,5 +53,5 @@
         android:textColor="@color/danger"
         android:textSize="14sp"
         android:textStyle="bold"
-        tools:text="189.000 ₫" />
+        tools:text="5.990.000 ₫" />
 </LinearLayout>

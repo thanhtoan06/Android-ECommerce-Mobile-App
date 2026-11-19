@@ -97,55 +97,18 @@ public class FirestoreRepository {
         return (email == null || email.trim().isEmpty()) ? GUEST_EMAIL : email.trim().toLowerCase();
     }
 
-    public void seedProductsIfNeeded() {
-        firestore.collection("products").limit(1).get().addOnSuccessListener(snapshot -> {
-
-            if (!snapshot.isEmpty())
-                return;
-            writeDefaultProducts(null);
-        });
-    }
-
     public void getAllProducts(ProductsCallback callback) {
-        firestore.collection("products").orderBy("id", Query.Direction.ASCENDING).get()
-                .addOnSuccessListener(snapshot -> {
-
-                    if (snapshot.isEmpty()) {
-                        writeDefaultProducts(() -> getAllProducts(callback));
-                        return;
-                    }
-
-                    List<Product> products = new ArrayList<>();
-                    int[] defaultStocks = { 45, 28, 63, 17, 52, 34, 80, 23, 71, 12, 55, 39 };
-
-                    for (DocumentSnapshot d : snapshot.getDocuments()) {
-                        Product p = toProduct(d);
-
-                        if (d.getLong("stock") == null) {
-                            int fallbackStock = (p.getId() >= 1 && p.getId() <= defaultStocks.length)
-                                    ? defaultStocks[p.getId() - 1]
-                                    : 30;
-                            Map<String, Object> update = new HashMap<>();
-                            update.put("stock", fallbackStock);
-                            firestore.collection("products").document(d.getId()).set(update, SetOptions.merge());
-                            p = new Product(p.getId(), p.getName(), p.getCategory(), p.getPrice(), p.getDescription(),
-                                    p.getIcon(), fallbackStock);
-                        }
-                        products.add(p);
-                    }
-                    callback.onResult(products);
-                }).addOnFailureListener(callback::onError);
-    }
-
-    private void writeDefaultProducts(Runnable onComplete) {
-        WriteBatch batch = firestore.batch();
-        for (Product p : defaultProducts()) {
-            batch.set(firestore.collection("products").document(String.valueOf(p.getId())), productData(p));
-        }
-        batch.commit().addOnCompleteListener(task -> {
-            if (onComplete != null)
-                onComplete.run();
-        });
+        InitialCatalogSeeder.seedCatalogAndVouchersIfNeeded(firestore)
+                .addOnSuccessListener(seeded -> firestore.collection("products")
+                        .orderBy("id", Query.Direction.ASCENDING).get()
+                        .addOnSuccessListener(snapshot -> {
+                            List<Product> products = new ArrayList<>();
+                            for (DocumentSnapshot document : snapshot.getDocuments()) {
+                                products.add(toProduct(document));
+                            }
+                            callback.onResult(products);
+                        }).addOnFailureListener(callback::onError))
+                .addOnFailureListener(callback::onError);
     }
 
     public void getProductById(int id, ProductCallback callback) {
@@ -708,8 +671,21 @@ public class FirestoreRepository {
 
     private Product toProduct(DocumentSnapshot d) {
         int stock = (d.getLong("stock") != null) ? d.getLong("stock").intValue() : 0;
+        Object rawSpecifications = d.get("specifications");
+        Map<String, String> specifications = new HashMap<>();
+        if (rawSpecifications instanceof Map<?, ?>) {
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) rawSpecifications).entrySet()) {
+                if (entry.getKey() instanceof String && entry.getValue() instanceof String) {
+                    specifications.put((String) entry.getKey(), (String) entry.getValue());
+                }
+            }
+        }
+        double averageRating = d.get("averageRating") instanceof Number
+                ? ((Number) d.get("averageRating")).doubleValue()
+                : 0.0;
         return new Product(value(d, "id"), d.getString("name"), d.getString("category"), longValue(d, "price"),
-                d.getString("description"), d.getString("icon"), stock);
+                d.getString("description"), d.getString("icon"), stock, value(d, "soldCount"), averageRating,
+                value(d, "reviewCount"), specifications);
     }
 
     private Order toOrder(DocumentSnapshot d) {
@@ -746,43 +722,4 @@ public class FirestoreRepository {
         return value == null ? 0 : value;
     }
 
-    private Map<String, Object> productData(Product p) {
-        Map<String, Object> d = new HashMap<>();
-        d.put("id", p.getId());
-        d.put("name", p.getName());
-        d.put("category", p.getCategory());
-        d.put("price", p.getPrice());
-        d.put("description", p.getDescription());
-        d.put("icon", p.getIcon());
-        d.put("stock", p.getStock());
-        return d;
-    }
-
-    private Product[] defaultProducts() {
-        return new Product[] {
-                new Product(1, "Áo thun cotton basic", "Thời trang", 189000,
-                        "Áo thun cotton 100% mềm mịn, thấm hút mồ hôi tốt, form regular dễ phối đồ.", "👕", 45),
-                new Product(2, "Giày sneaker trắng thể thao", "Giày dép", 890000,
-                        "Giày sneaker trắng thiết kế tối giản, đế cao su êm ái và chống trượt.", "👟", 28),
-                new Product(3, "Balo laptop chống nước cao cấp", "Phụ kiện", 459000,
-                        "Balo vải Oxford chống nước, ngăn đệm chống sốc cho laptop đến 15.6 inch.", "🎒", 63),
-                new Product(4, "Đồng hồ thông minh Smartwatch Pro", "Công nghệ", 1790000,
-                        "Đồng hồ thông minh theo dõi nhịp tim, giấc ngủ và số bước chân.", "⌚", 17),
-                new Product(5, "Tai nghe không dây Bluetooth TWS", "Công nghệ", 690000,
-                        "Tai nghe không dây Bluetooth 5.3, chống ồn chủ động ANC.", "🎧", 52),
-                new Product(6, "Kính mát phân cực UV400", "Phụ kiện", 320000,
-                        "Tròng kính Polarized phân cực, chống 100% tia UV400.", "🕶️", 34),
-                new Product(7, "Bình giữ nhiệt inox 304 600ml", "Gia dụng", 245000,
-                        "Bình inox 304 cao cấp dung tích 600ml, giữ nóng 12 giờ.", "🥤", 80),
-                new Product(8, "Sạc dự phòng 20000mAh PD 22.5W", "Công nghệ", 490000,
-                        "Pin dự phòng dung lượng 20000mAh, hỗ trợ sạc nhanh PD 22.5W.", "🔋", 23),
-                new Product(9, "Mũ lưỡi trai phong cách Unisex", "Thời trang", 129000,
-                        "Mũ lưỡi trai vải kaki thoáng mát, khóa kim loại điều chỉnh.", "🧢", 71),
-                new Product(10, "Bàn phím cơ không dây RGB", "Công nghệ", 1250000,
-                        "Bàn phím cơ layout 87 phím, switch gõ êm, đèn nền RGB.", "⌨️", 12),
-                new Product(11, "Chuột quang không dây Silent", "Công nghệ", 299000,
-                        "Chuột bấm siêu êm, cảm biến quang học 4000 DPI.", "🖱️", 55),
-                new Product(12, "Áo khoác Hoodie nỉ dày dặn", "Thời trang", 359000,
-                        "Áo Hoodie chất nỉ lót bông mềm mại, form oversize trẻ trung.", "🧥", 39) };
-    }
 }
