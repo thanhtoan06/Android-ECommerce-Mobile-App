@@ -9,6 +9,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -73,6 +74,12 @@ public class FirestoreRepository {
 
     public interface OrderStatusCallback {
         void onResult(String status);
+
+        void onError(Exception e);
+    }
+
+    public interface OrderReturnCallback {
+        void onSuccess();
 
         void onError(Exception e);
     }
@@ -776,6 +783,232 @@ public class FirestoreRepository {
                 }).addOnFailureListener(callback::onError);
     }
 
+    public void requestOrderReturn(long orderId, String email, String reasonType, String reason,
+            OrderReturnCallback callback) {
+        String normalizedEmail = normalizeEmail(email);
+        if (!OrderReturnRules.isValidReason(reasonType, reason)) {
+            callback.onError(new IllegalArgumentException("Vui lòng nhập lý do hoàn trả hợp lệ."));
+            return;
+        }
+
+        DocumentReference orderRef = firestore.collection("orders").document(String.valueOf(orderId));
+        Date requestTime = new Date();
+        orderRef.get().addOnSuccessListener(order -> {
+            if (!order.exists() || !normalizedEmail.equals(order.getString("userEmail"))
+                    || !OrderReturnRules.isEligible(
+                            order.getString("status"), timestampDate(order, "deliveredAt"),
+                            order.getString("orderDate"), requestTime)) {
+                callback.onError(new IllegalStateException(
+                        "Chỉ có thể hoàn trả đơn đã giao trong vòng 7 ngày."));
+                return;
+            }
+
+            orderRef.collection("items").get().addOnSuccessListener(items ->
+                    PointsRepository.getInstance().loadSpendableLots(
+                            normalizedEmail, new PointsRepository.SpendLotsCallback() {
+                                @Override
+                                public void onResult(List<DocumentSnapshot> lots) {
+                                    applyOrderReturn(orderId, normalizedEmail, reasonType, reason,
+                                            requestTime, order, items, lots, callback);
+                                }
+
+                                @Override
+                                public void onError(Exception error) {
+                                    callback.onError(error);
+                                }
+                            }))
+                    .addOnFailureListener(callback::onError);
+        }).addOnFailureListener(callback::onError);
+    }
+
+    private void applyOrderReturn(long orderId, String email, String reasonType, String reason, Date requestTime,
+            DocumentSnapshot originalOrder, QuerySnapshot itemDocuments, List<DocumentSnapshot> pointLots,
+            OrderReturnCallback callback) {
+        if (itemDocuments.isEmpty()) {
+            callback.onError(new IllegalStateException("Đơn hàng chưa có sản phẩm để hoàn trả."));
+            return;
+        }
+
+        DocumentReference orderRef = originalOrder.getReference();
+        List<DocumentReference> itemRefs = new ArrayList<>();
+        Map<String, OrderItem> expectedItems = new HashMap<>();
+        Map<Integer, Long> quantities = new HashMap<>();
+        Map<Integer, DocumentReference> productRefs = new HashMap<>();
+        for (DocumentSnapshot itemDocument : itemDocuments.getDocuments()) {
+            OrderItem item = toOrderItem(itemDocument);
+            if (item.getProductId() <= 0 || item.getQuantity() <= 0) {
+                callback.onError(new IllegalStateException("Sản phẩm trong đơn hàng không hợp lệ."));
+                return;
+            }
+            try {
+                quantities.merge(item.getProductId(), (long) item.getQuantity(), Math::addExact);
+            } catch (ArithmeticException error) {
+                callback.onError(new IllegalStateException("Số lượng hoàn trả không hợp lệ.", error));
+                return;
+            }
+            itemRefs.add(itemDocument.getReference());
+            expectedItems.put(itemDocument.getId(), item);
+            productRefs.put(item.getProductId(),
+                    firestore.collection("products").document(String.valueOf(item.getProductId())));
+        }
+
+        Map<Integer, DocumentReference> soldOrderRefs = new HashMap<>();
+        for (Integer productId : quantities.keySet()) {
+            soldOrderRefs.put(productId, productRefs.get(productId)
+                    .collection("soldOrders").document(String.valueOf(orderId)));
+        }
+
+        String productVoucherId = originalOrder.getString("productVoucherId");
+        String shippingVoucherId = originalOrder.getString("shippingVoucherId");
+        DocumentReference productVoucherRef = isBlank(productVoucherId)
+                ? null
+                : VoucherRepository.userVoucherDocument(firestore, email, productVoucherId);
+        DocumentReference shippingVoucherRef = isBlank(shippingVoucherId)
+                ? null
+                : VoucherRepository.userVoucherDocument(firestore, email, shippingVoucherId);
+        DocumentReference notificationRef = firestore.collection("notifications")
+                .document("order_" + orderId + "_returned");
+
+        List<String> reviewIds = new ArrayList<>();
+        for (Integer productId : quantities.keySet()) {
+            reviewIds.add(ReviewRules.documentId((int) orderId, productId));
+        }
+
+        firestore.runTransaction(transaction -> {
+            DocumentSnapshot order = transaction.get(orderRef);
+            if (!order.exists() || !email.equals(order.getString("userEmail"))
+                    || !OrderReturnRules.isEligible(
+                            order.getString("status"), timestampDate(order, "deliveredAt"),
+                            order.getString("orderDate"), requestTime)) {
+                throw new IllegalStateException("Đơn hàng không còn đủ điều kiện hoàn trả.");
+            }
+
+            Map<String, DocumentSnapshot> currentItems = new HashMap<>();
+            for (DocumentReference itemRef : itemRefs) {
+                currentItems.put(itemRef.getId(), transaction.get(itemRef));
+            }
+            Map<Integer, DocumentSnapshot> products = new HashMap<>();
+            Map<Integer, DocumentSnapshot> soldMarkers = new HashMap<>();
+            for (Integer productId : quantities.keySet()) {
+                products.put(productId, transaction.get(productRefs.get(productId)));
+                soldMarkers.put(productId, transaction.get(soldOrderRefs.get(productId)));
+            }
+            DocumentSnapshot productVoucher = productVoucherRef == null
+                    ? null
+                    : transaction.get(productVoucherRef);
+            DocumentSnapshot shippingVoucher = shippingVoucherRef == null
+                    ? null
+                    : transaction.get(shippingVoucherRef);
+            DocumentSnapshot existingNotification = transaction.get(notificationRef);
+
+            for (DocumentReference itemRef : itemRefs) {
+                DocumentSnapshot item = currentItems.get(itemRef.getId());
+                if (!item.exists()) {
+                    throw new IllegalStateException("Chi tiết đơn hàng đã thay đổi.");
+                }
+                OrderItem expected = expectedItems.get(itemRef.getId());
+                OrderItem current = toOrderItem(item);
+                if (expected == null || expected.getProductId() != current.getProductId()
+                        || expected.getQuantity() != current.getQuantity()) {
+                    throw new IllegalStateException("Chi tiết đơn hàng đã thay đổi.");
+                }
+            }
+            for (Map.Entry<Integer, Long> entry : quantities.entrySet()) {
+                DocumentSnapshot product = products.get(entry.getKey());
+                if (!product.exists() || product.getLong("stock") == null) {
+                    throw new IllegalStateException("Không tìm thấy tồn kho sản phẩm cần hoàn.");
+                }
+                Math.addExact(product.getLong("stock"), entry.getValue());
+            }
+
+            PointsRepository.getInstance().applyOrderReturnInTransaction(
+                    transaction, email, orderId, longValue(order, "pointsUsed"), reviewIds, pointLots);
+
+            for (Map.Entry<Integer, Long> entry : quantities.entrySet()) {
+                int productId = entry.getKey();
+                DocumentSnapshot product = products.get(productId);
+                long restoredStock = Math.addExact(product.getLong("stock"), entry.getValue());
+                DocumentSnapshot soldMarker = soldMarkers.get(productId);
+                if (soldMarker.exists()) {
+                    long soldQuantity = soldMarker.getLong("quantity") == null
+                            ? entry.getValue()
+                            : Math.max(0, soldMarker.getLong("quantity"));
+                    long soldCount = Math.max(0, longValue(product, "soldCount") - soldQuantity);
+                    transaction.update(productRefs.get(productId),
+                            "stock", restoredStock,
+                            "soldCount", soldCount);
+                    transaction.delete(soldOrderRefs.get(productId));
+                } else {
+                    transaction.update(productRefs.get(productId), "stock", restoredStock);
+                }
+            }
+
+            restoreVoucherIfValid(transaction, productVoucherRef, productVoucher, orderId, requestTime);
+            restoreVoucherIfValid(transaction, shippingVoucherRef, shippingVoucher, orderId, requestTime);
+
+            Map<String, Object> orderUpdate = new HashMap<>();
+            orderUpdate.put("status", OrderReturnRules.STATUS_RETURNED);
+            orderUpdate.put("returnStatus", "accepted");
+            orderUpdate.put("returnReasonType", reasonType);
+            orderUpdate.put("returnReason", displayReturnReason(reasonType, reason));
+            orderUpdate.put("returnRequestedAt", FieldValue.serverTimestamp());
+            orderUpdate.put("returnAcceptedAt", FieldValue.serverTimestamp());
+            orderUpdate.put("returnedAt", FieldValue.serverTimestamp());
+            orderUpdate.put("updatedAt", FieldValue.serverTimestamp());
+            transaction.update(orderRef, orderUpdate);
+
+            if (!existingNotification.exists()) {
+                Map<String, Object> notification = new HashMap<>();
+                notification.put("userEmail", email);
+                notification.put("type", "order_return");
+                notification.put("title", "Đơn hàng đã hoàn trả");
+                notification.put("message", "Yêu cầu hoàn trả đơn hàng #DH"
+                        + String.format(Locale.getDefault(), "%05d", orderId) + " đã được chấp nhận.");
+                notification.put("orderId", orderId);
+                notification.put("status", OrderReturnRules.STATUS_RETURNED);
+                notification.put("createdAt", FieldValue.serverTimestamp());
+                notification.put("isRead", false);
+                transaction.set(notificationRef, notification);
+            }
+            return null;
+        }).addOnSuccessListener(ignored -> callback.onSuccess())
+                .addOnFailureListener(callback::onError);
+    }
+
+    private void restoreVoucherIfValid(com.google.firebase.firestore.Transaction transaction,
+            DocumentReference voucherRef, DocumentSnapshot voucher, long orderId, Date now)
+            throws com.google.firebase.firestore.FirebaseFirestoreException {
+        if (voucherRef == null || voucher == null || !voucher.exists()
+                || !"used".equals(voucher.getString("state"))
+                || longValue(voucher, "orderId") != orderId) {
+            return;
+        }
+        Timestamp expiresAt = voucher.getTimestamp("expiresAt");
+        if (expiresAt == null || !expiresAt.toDate().after(now)) {
+            return;
+        }
+        transaction.update(voucherRef,
+                "state", "saved",
+                "usedAt", FieldValue.delete(),
+                "orderId", FieldValue.delete(),
+                "discountAmount", FieldValue.delete());
+    }
+
+    private String displayReturnReason(String reasonType, String reason) {
+        if (OrderReturnRules.REASON_WRONG_MODEL.equals(reasonType)) {
+            return "Không đúng mẫu";
+        }
+        if (OrderReturnRules.REASON_MISSING_ITEM.equals(reasonType)) {
+            return "Thiếu sản phẩm";
+        }
+        return reason.trim();
+    }
+
+    private Date timestampDate(DocumentSnapshot document, String field) {
+        Timestamp timestamp = document.getTimestamp(field);
+        return timestamp == null ? null : timestamp.toDate();
+    }
+
     public void advanceOrderStatusForDemo(long orderId, String email, OrderStatusCallback callback) {
         String normalizedEmail = normalizeEmail(email);
         DocumentReference orderRef = firestore.collection("orders").document(String.valueOf(orderId));
@@ -1025,10 +1258,14 @@ public class FirestoreRepository {
     }
 
     private Order toOrder(DocumentSnapshot d) {
-        return new Order(value(d, "id"), d.getString("userEmail"), d.getString("receiverName"),
+        Order order = new Order(value(d, "id"), d.getString("userEmail"), d.getString("receiverName"),
                 d.getString("receiverPhone"), d.getString("receiverAddress"), d.getString("note"),
                 d.getString("paymentMethod"), longValue(d, "totalAmount"), d.getString("orderDate"),
                 d.getString("status"));
+        Timestamp deliveredAt = d.getTimestamp("deliveredAt");
+        order.setDeliveredAt(deliveredAt == null ? null : deliveredAt.toDate());
+        order.setReturnReason(d.getString("returnReason"));
+        return order;
     }
 
     private OrderItem toOrderItem(DocumentSnapshot d) {

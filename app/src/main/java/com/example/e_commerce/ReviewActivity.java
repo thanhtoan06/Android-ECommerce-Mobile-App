@@ -317,7 +317,8 @@ public class ReviewActivity extends AppCompatActivity {
                         public void onResult(ReviewRepository.SaveResult result) {
                             dialog.dismiss();
                             if (result.isCreated() && result.isRewardGranted()) {
-                                Toast.makeText(ReviewActivity.this, "Đánh giá thành công, bạn nhận 500 Xu.",
+                                Toast.makeText(ReviewActivity.this,
+                                        "Đánh giá hợp lệ, 500 Xu đã được ghi nhận và bù trừ nếu có khoản thu hồi.",
                                         Toast.LENGTH_LONG).show();
                             } else if (result.isCreated()) {
                                 Toast.makeText(ReviewActivity.this, "Đánh giá đã được ghi nhận.", Toast.LENGTH_SHORT)

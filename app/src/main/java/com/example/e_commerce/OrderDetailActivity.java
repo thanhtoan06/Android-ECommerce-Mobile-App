@@ -4,19 +4,23 @@ package com.example.e_commerce;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Button;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -32,9 +36,11 @@ public class OrderDetailActivity extends AppCompatActivity {
     private TextView tvSubtotalLabel;
     private TextView tvSubtotalAmount;
     private TextView tvTotalAmountDetail;
+    private TextView tvOrderReturnInfo;
     private LinearLayout llOrderDetailProducts;
     private ProgressBar pbLoadingProducts;
     private com.google.android.material.button.MaterialButton btnAdvanceOrderDemo;
+    private com.google.android.material.button.MaterialButton btnReturnOrder;
 
     private FirestoreRepository repository;
     private Order currentOrder;
@@ -49,6 +55,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         initViews();
         btnAdvanceOrderDemo.setVisibility(isDebugBuild() ? View.VISIBLE : View.GONE);
         btnAdvanceOrderDemo.setOnClickListener(v -> advanceOrderStatusForDemo());
+        btnReturnOrder.setOnClickListener(v -> showReturnReasonOptions());
 
         View samplePreview = findViewById(R.id.layoutSampleProductPreview);
         if (samplePreview != null) {
@@ -114,15 +121,18 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvSubtotalLabel = findViewById(R.id.tvSubtotalLabel);
         tvSubtotalAmount = findViewById(R.id.tvSubtotalAmount);
         tvTotalAmountDetail = findViewById(R.id.tvTotalAmountDetail);
+        tvOrderReturnInfo = findViewById(R.id.tvOrderReturnInfo);
         llOrderDetailProducts = findViewById(R.id.llOrderDetailProducts);
         pbLoadingProducts = findViewById(R.id.pbLoadingProducts);
         btnAdvanceOrderDemo = findViewById(R.id.btnAdvanceOrderDemo);
+        btnReturnOrder = findViewById(R.id.btnReturnOrder);
     }
 
     private void bindOrderDetails(Order order) {
         tvOrderDetailCode.setText(String.format(Locale.getDefault(), "#DH%05d", order.getId()));
         tvOrderDetailStatus.setText(order.getStatus());
         updateDemoStatusButton(order);
+        updateReturnControls(order);
         tvOrderDetailDate.setText(order.getOrderDate());
 
         tvReceiverNamePhone.setText(order.getReceiverName() + " (" + order.getReceiverPhone() + ")");
@@ -276,11 +286,126 @@ public class OrderDetailActivity extends AppCompatActivity {
     }
 
     private void updateDemoStatusButton(Order order) {
+        if (OrderReturnRules.STATUS_RETURNED.equals(order.getStatus())) {
+            btnAdvanceOrderDemo.setText("Đơn đã hoàn trả");
+            btnAdvanceOrderDemo.setEnabled(false);
+            return;
+        }
         String nextStatus = ReviewRules.nextDemoStatus(order.getStatus());
         btnAdvanceOrderDemo.setText(nextStatus == null
                 ? "Đơn đã giao"
                 : "Demo: Chuyển sang " + nextStatus);
         btnAdvanceOrderDemo.setEnabled(nextStatus != null);
+    }
+
+    private void updateReturnControls(Order order) {
+        boolean returned = OrderReturnRules.STATUS_RETURNED.equals(order.getStatus());
+        boolean eligible = OrderReturnRules.isEligible(
+                order.getStatus(), order.getDeliveredAt(), order.getOrderDate(), new Date());
+        btnReturnOrder.setVisibility(eligible ? View.VISIBLE : View.GONE);
+        tvOrderReturnInfo.setVisibility(View.GONE);
+        if (returned) {
+            tvOrderReturnInfo.setText("Đã hoàn trả · Lý do: "
+                    + (order.getReturnReason() == null ? "" : order.getReturnReason()));
+            tvOrderReturnInfo.setVisibility(View.VISIBLE);
+        } else if (ReviewRules.isDelivered(order.getStatus()) && !eligible) {
+            tvOrderReturnInfo.setText("Đã quá thời hạn yêu cầu hoàn trả 7 ngày.");
+            tvOrderReturnInfo.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void showReturnReasonOptions() {
+        if (currentOrder == null || !AuthGate.requireLogin(this)) {
+            return;
+        }
+        String[] reasons = {"Không đúng mẫu", "Thiếu sản phẩm", "Lý do khác"};
+        new AlertDialog.Builder(this)
+                .setTitle("Chọn lý do hoàn trả")
+                .setItems(reasons, (dialog, selected) -> {
+                    if (selected == 0) {
+                        confirmReturn(OrderReturnRules.REASON_WRONG_MODEL, "");
+                    } else if (selected == 1) {
+                        confirmReturn(OrderReturnRules.REASON_MISSING_ITEM, "");
+                    } else {
+                        showOtherReturnReason();
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void showOtherReturnReason() {
+        EditText reasonInput = new EditText(this);
+        reasonInput.setHint("Nhập lý do hoàn trả");
+        reasonInput.setMinLines(3);
+        reasonInput.setGravity(Gravity.TOP | Gravity.START);
+        reasonInput.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        int padding = (int) (16 * getResources().getDisplayMetrics().density);
+        reasonInput.setPadding(padding, padding, padding, padding);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Lý do khác")
+                .setView(reasonInput)
+                .setPositiveButton("Tiếp tục", null)
+                .setNegativeButton("Hủy", null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                    String reason = reasonInput.getText().toString().trim();
+                    if (!OrderReturnRules.isValidReason(OrderReturnRules.REASON_OTHER, reason)) {
+                        Toast.makeText(this, "Vui lòng nhập lý do tối đa 500 ký tự.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    dialog.dismiss();
+                    confirmReturn(OrderReturnRules.REASON_OTHER, reason);
+                }));
+        dialog.show();
+    }
+
+    private void confirmReturn(String reasonType, String reason) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận hoàn trả")
+                .setMessage("Yêu cầu hoàn trả toàn bộ đơn hàng sẽ được tự động chấp nhận.")
+                .setPositiveButton("Gửi yêu cầu", (dialog, which) -> submitReturn(reasonType, reason))
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void submitReturn(String reasonType, String reason) {
+        btnReturnOrder.setEnabled(false);
+        String email = SharedPrefManager.getInstance(this).getEmail();
+        repository.requestOrderReturn(currentOrder.getId(), email, reasonType, reason,
+                new FirestoreRepository.OrderReturnCallback() {
+                    @Override
+                    public void onSuccess() {
+                        currentOrder.setStatus(OrderReturnRules.STATUS_RETURNED);
+                        currentOrder.setReturnReason(displayReturnReason(reasonType, reason));
+                        displayOrder(currentOrder);
+                        Toast.makeText(OrderDetailActivity.this,
+                                "Đơn hàng đã được hoàn trả.", Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        btnReturnOrder.setEnabled(true);
+                        Toast.makeText(OrderDetailActivity.this,
+                                error.getMessage() == null
+                                        ? "Không thể hoàn trả đơn hàng. Vui lòng thử lại."
+                                        : error.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private String displayReturnReason(String reasonType, String reason) {
+        if (OrderReturnRules.REASON_WRONG_MODEL.equals(reasonType)) {
+            return "Không đúng mẫu";
+        }
+        if (OrderReturnRules.REASON_MISSING_ITEM.equals(reasonType)) {
+            return "Thiếu sản phẩm";
+        }
+        return reason.trim();
     }
 
     private void advanceOrderStatusForDemo() {
@@ -294,6 +419,9 @@ public class OrderDetailActivity extends AppCompatActivity {
                     @Override
                     public void onResult(String status) {
                         currentOrder.setStatus(status);
+                        if (ReviewRules.isDelivered(status)) {
+                            currentOrder.setDeliveredAt(new Date());
+                        }
                         displayOrder(currentOrder);
                     }
 

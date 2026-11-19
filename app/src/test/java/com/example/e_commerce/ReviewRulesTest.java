@@ -30,6 +30,8 @@ public class ReviewRulesTest {
         assertTrue(ReviewRules.matchesStatusFilter("Đặt hàng thành công", ReviewRules.FILTER_WAITING));
         assertTrue(ReviewRules.matchesStatusFilter("Chờ xác nhận", ReviewRules.FILTER_WAITING));
         assertFalse(ReviewRules.matchesStatusFilter("Đang giao", ReviewRules.FILTER_WAITING));
+        assertTrue(ReviewRules.matchesStatusFilter(
+                OrderReturnRules.STATUS_RETURNED, ReviewRules.FILTER_RETURNED));
     }
 
     @Test

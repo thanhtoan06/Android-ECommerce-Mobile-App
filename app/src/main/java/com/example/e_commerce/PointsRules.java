@@ -28,6 +28,17 @@ public final class PointsRules {
         return Math.min(availableBalance, requestedAmount);
     }
 
+    public static long debtOffset(long incomingAmount, long currentDebt) {
+        if (incomingAmount < 0 || currentDebt < 0) {
+            throw new IllegalArgumentException("Point amounts cannot be negative.");
+        }
+        return Math.min(incomingAmount, currentDebt);
+    }
+
+    public static long remainingDebt(long currentDebt, long incomingAmount) {
+        return currentDebt - debtOffset(incomingAmount, currentDebt);
+    }
+
     public static long maximumCheckoutSpend(long availableBalance, long discountedMerchandiseSubtotal) {
         if (availableBalance < 0 || discountedMerchandiseSubtotal < 0) {
             throw new IllegalArgumentException("Point amounts cannot be negative.");

@@ -67,13 +67,7 @@ public final class PointsRepository {
                 callback.onError(error);
                 return;
             }
-            clearLegacyDebt(normalizedEmail, debtError -> {
-                if (debtError != null) {
-                    callback.onError(debtError);
-                    return;
-                }
-                loadDashboard(normalizedEmail, callback);
-            });
+            loadDashboard(normalizedEmail, callback);
         });
     }
 
@@ -178,23 +172,10 @@ public final class PointsRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    private void clearLegacyDebt(String email, CompletionCallback callback) {
-        DocumentReference userRef = userDocument(email);
-        userRef.get().addOnSuccessListener(user -> {
-            Long debt = user.getLong("pointsDebt");
-            if (debt == null || debt == 0) {
-                callback.onComplete(null);
-                return;
-            }
-            userRef.update("pointsDebt", 0L)
-                    .addOnSuccessListener(ignored -> callback.onComplete(null))
-                    .addOnFailureListener(callback::onComplete);
-        }).addOnFailureListener(callback::onComplete);
-    }
-
     private PointsDashboard toDashboard(DocumentSnapshot user, QuerySnapshot history,
             List<DocumentSnapshot> activeLots) {
         long balance = nonNegativeLong(user, "pointsBalance");
+        long debt = nonNegativeLong(user, "pointsDebt");
         String lastDate = user.getString("lastAttendanceDate");
         int lastDay = (int) nonNegativeLong(user, "attendanceDay");
         PointsRules.CheckInState checkInState = PointsRules.evaluateCheckIn(
@@ -222,7 +203,7 @@ public final class PointsRepository {
                         ? Long.MAX_VALUE : expiringPoints + remaining;
             }
         }
-        return new PointsDashboard(balance, 0, checkInState, entries, expiringPoints, nextExpiryDate);
+        return new PointsDashboard(balance, debt, checkInState, entries, expiringPoints, nextExpiryDate);
     }
 
     private PointsEntry toEntry(DocumentSnapshot document) {
@@ -271,23 +252,33 @@ public final class PointsRepository {
 
             int day = state.getDay();
             long reward = PointsRules.rewardForDay(day);
-            long newBalance = Math.addExact(balance, reward);
+            long debt = nonNegativeLong(user, "pointsDebt");
+            long offset = PointsRules.debtOffset(reward, debt);
+            long netReward = reward - offset;
+            long newDebt = debt - offset;
+            long newBalance = Math.addExact(balance, netReward);
             Date expiresAt = PointsRules.expirationDate(now, timeZone);
 
             Map<String, Object> userUpdate = new HashMap<>();
             userUpdate.put("pointsBalance", newBalance);
-            userUpdate.put("pointsDebt", 0L);
+            userUpdate.put("pointsDebt", newDebt);
             userUpdate.put("lastAttendanceDate", today);
             userUpdate.put("attendanceDay", day);
             userUpdate.put("pointsUpdatedAt", FieldValue.serverTimestamp());
             transaction.set(userRef, userUpdate, SetOptions.merge());
 
-            transaction.set(lotRef, lotData(reward, now, expiresAt, "daily_checkin", transactionRef.getId()));
+            if (netReward > 0) {
+                transaction.set(lotRef,
+                        lotData(netReward, now, expiresAt, "daily_checkin", transactionRef.getId()));
+            }
             transaction.set(transactionRef, transactionData(
-                    "earn", reward, reward, 0, newBalance, 0, "Điểm danh ngày " + day + ".",
+                    "earn", reward, netReward, offset, newBalance, newDebt, "Điểm danh ngày " + day + ".",
                     "daily_checkin", today, expiresAt));
-            return ActionResult.success("Điểm danh thành công, nhận " + reward + " Xu.",
-                    newBalance, 0, day, reward);
+            String message = offset == 0
+                    ? "Điểm danh thành công, nhận " + reward + " Xu."
+                    : "Điểm danh thành công, đã bù trừ " + offset + " Xu và nhận " + netReward + " Xu.";
+            return ActionResult.success(message,
+                    newBalance, newDebt, day, reward);
         }).addOnSuccessListener(callback::onResult)
                 .addOnFailureListener(callback::onError);
     }
@@ -304,22 +295,28 @@ public final class PointsRepository {
             DocumentSnapshot user = transaction.get(userRef);
             DocumentSnapshot existing = transaction.get(transactionRef);
             long balance = nonNegativeLong(user, "pointsBalance");
+            long debt = nonNegativeLong(user, "pointsDebt");
             if (existing.exists()) {
                 boolean sameGrant = "earn".equals(existing.getString("type"))
                         && valueOrZero(existing.getLong("amount")) == amount
                         && source.equals(existing.getString("source"));
                 return sameGrant
-                        ? ActionResult.success("Khoản Xu đã được ghi nhận.", balance, 0, 0, amount)
+                        ? ActionResult.success("Khoản Xu đã được ghi nhận.", balance, debt, 0, amount)
                         : ActionResult.failure("Mã giao dịch đã được dùng cho khoản Xu khác.", balance, 0);
             }
 
-            long newBalance = Math.addExact(balance, amount);
-            updateUserPoints(transaction, userRef, newBalance);
-            transaction.set(lotRef, lotData(amount, now, expiresAt, source, referenceId));
+            long offset = PointsRules.debtOffset(amount, debt);
+            long netAmount = amount - offset;
+            long newDebt = debt - offset;
+            long newBalance = Math.addExact(balance, netAmount);
+            updateUserPoints(transaction, userRef, newBalance, newDebt);
+            if (netAmount > 0) {
+                transaction.set(lotRef, lotData(netAmount, now, expiresAt, source, referenceId));
+            }
             transaction.set(transactionRef, transactionData(
-                    "earn", amount, amount, 0, newBalance, 0, "Nhận Xu.",
+                    "earn", amount, netAmount, offset, newBalance, newDebt, "Nhận Xu.",
                     source, referenceId, expiresAt));
-            return ActionResult.success("Đã ghi nhận " + amount + " Xu.", newBalance, 0, 0, amount);
+            return ActionResult.success("Đã ghi nhận " + netAmount + " Xu.", newBalance, newDebt, 0, amount);
         }).addOnSuccessListener(callback::onResult)
                 .addOnFailureListener(callback::onError);
     }
@@ -339,12 +336,16 @@ public final class PointsRepository {
             DocumentSnapshot user = transaction.get(userRef);
             DocumentSnapshot existing = transaction.get(transactionRef);
             long balance = nonNegativeLong(user, "pointsBalance");
+            long debt = nonNegativeLong(user, "pointsDebt");
             if (existing.exists()) {
                 boolean sameSpend = "spend".equals(existing.getString("type"))
                         && valueOrZero(existing.getLong("amount")) == -amount;
                 return sameSpend
-                        ? ActionResult.success("Giao dịch Xu đã được ghi nhận.", balance, 0, 0, amount)
+                        ? ActionResult.success("Giao dịch Xu đã được ghi nhận.", balance, debt, 0, amount)
                         : ActionResult.failure("Mã giao dịch đã được dùng cho thao tác Xu khác.", balance, 0);
+            }
+            if (debt > 0) {
+                return ActionResult.failure("Xu đang được dùng để bù trừ khoản thu hồi.", balance, debt);
             }
             if (balance < amount) {
                 return ActionResult.failure("Số dư Xu không đủ.", balance, 0);
@@ -421,8 +422,12 @@ public final class PointsRepository {
         }
 
         long balance = nonNegativeLong(user, "pointsBalance");
+        long debt = nonNegativeLong(user, "pointsDebt");
         if (existing.exists()) {
             throw new IllegalStateException("Xu cho đơn hàng này đã được sử dụng.");
+        }
+        if (debt > 0) {
+            throw new IllegalStateException("Xu đang được dùng để bù trừ khoản thu hồi.");
         }
         if (balance < amount) {
             throw new IllegalStateException("Số dư Xu đã thay đổi. Vui lòng kiểm tra lại.");
@@ -486,6 +491,7 @@ public final class PointsRepository {
         DocumentSnapshot user = transaction.get(userRef);
         DocumentSnapshot existing = transaction.get(transactionRef);
         long balance = nonNegativeLong(user, "pointsBalance");
+        long debt = nonNegativeLong(user, "pointsDebt");
 
         if (existing.exists()) {
             boolean sameGrant = "earn".equals(existing.getString("type"))
@@ -497,13 +503,198 @@ public final class PointsRepository {
             return false;
         }
 
-        long newBalance = Math.addExact(balance, amount);
-        updateUserPoints(transaction, userRef, newBalance);
-        transaction.set(lotRef, lotData(amount, now, expiresAt, source, referenceId));
+        long offset = PointsRules.debtOffset(amount, debt);
+        long netAmount = amount - offset;
+        long newDebt = debt - offset;
+        long newBalance = Math.addExact(balance, netAmount);
+        updateUserPoints(transaction, userRef, newBalance, newDebt);
+        if (netAmount > 0) {
+            transaction.set(lotRef, lotData(netAmount, now, expiresAt, source, referenceId));
+        }
         transaction.set(transactionRef, transactionData(
-                "earn", amount, amount, 0, newBalance, 0, "Thưởng đánh giá sản phẩm.",
+                "earn", amount, netAmount, offset, newBalance, newDebt, "Thưởng đánh giá sản phẩm.",
                 source, referenceId, expiresAt));
         return true;
+    }
+
+    void applyOrderReturnInTransaction(com.google.firebase.firestore.Transaction transaction, String email,
+            long orderId, long pointsToRefund, List<String> reviewIds, List<DocumentSnapshot> candidateLots)
+            throws com.google.firebase.firestore.FirebaseFirestoreException {
+        if (pointsToRefund < 0) {
+            throw new IllegalArgumentException("Số Xu hoàn không hợp lệ.");
+        }
+
+        List<String> reviewDocumentIds = reviewIds == null ? new ArrayList<>() : reviewIds;
+        if (pointsToRefund == 0 && reviewDocumentIds.isEmpty()) {
+            return;
+        }
+
+        String normalizedEmail = normalizeEmail(email);
+        DocumentReference userRef = userDocument(normalizedEmail);
+        DocumentSnapshot user = transaction.get(userRef);
+        long balance = nonNegativeLong(user, "pointsBalance");
+        long currentDebt = nonNegativeLong(user, "pointsDebt");
+        long pointsAfterRefund = Math.addExact(balance, pointsToRefund);
+        Date now = new Date();
+        Date expiresAt = PointsRules.expirationDate(now, TimeZone.getDefault());
+
+        String spendReferenceId = String.valueOf(orderId);
+        String refundReferenceId = "order_return_" + orderId;
+        DocumentReference spendRef = transactionsCollection(normalizedEmail)
+                .document(operationDocumentId("spend", spendReferenceId));
+        DocumentReference refundRef = transactionsCollection(normalizedEmail)
+                .document(operationDocumentId("refund", refundReferenceId));
+        DocumentReference refundLotRef = lotsCollection(normalizedEmail).document("refund_" + refundRef.getId());
+
+        DocumentSnapshot spend = null;
+        DocumentSnapshot existingRefund = null;
+        DocumentSnapshot existingRefundLot = null;
+        if (pointsToRefund > 0) {
+            spend = transaction.get(spendRef);
+            existingRefund = transaction.get(refundRef);
+            existingRefundLot = transaction.get(refundLotRef);
+            if (!spend.exists() || !"spend".equals(spend.getString("type"))) {
+                throw new IllegalStateException("Không tìm thấy giao dịch Xu đã dùng trong đơn hàng.");
+            }
+            if (existingRefund.exists() || existingRefundLot.exists()) {
+                throw new IllegalStateException("Xu của đơn hàng đã được hoàn trước đó.");
+            }
+            long originalSpend = Math.abs(valueOrZero(spend.getLong("amount")));
+            long alreadyRefunded = nonNegativeLong(spend, "refundedAmount");
+            if (pointsToRefund > originalSpend - alreadyRefunded) {
+                throw new IllegalStateException("Số Xu hoàn vượt quá số Xu đã dùng cho đơn.");
+            }
+        }
+
+        String recoveryReferenceId = "order_return_review_reward_" + orderId;
+        DocumentReference recoveryRef = transactionsCollection(normalizedEmail)
+                .document(operationDocumentId("recovery", recoveryReferenceId));
+        DocumentSnapshot existingRecovery = reviewDocumentIds.isEmpty()
+                ? null
+                : transaction.get(recoveryRef);
+        if (existingRecovery != null && existingRecovery.exists()) {
+            throw new IllegalStateException("Xu thưởng đánh giá của đơn đã được thu hồi trước đó.");
+        }
+
+        List<DocumentReference> reviewRefs = new ArrayList<>();
+        List<DocumentReference> grantRefs = new ArrayList<>();
+        List<DocumentSnapshot> reviewSnapshots = new ArrayList<>();
+        List<DocumentSnapshot> grantSnapshots = new ArrayList<>();
+        for (String reviewId : reviewDocumentIds) {
+            DocumentReference reviewRef = firestore.collection("reviews").document(reviewId);
+            reviewRefs.add(reviewRef);
+            grantRefs.add(transactionsCollection(normalizedEmail)
+                    .document(operationDocumentId("grant", reviewId)));
+        }
+        for (DocumentReference reviewRef : reviewRefs) {
+            reviewSnapshots.add(transaction.get(reviewRef));
+        }
+        for (DocumentReference grantRef : grantRefs) {
+            grantSnapshots.add(transaction.get(grantRef));
+        }
+
+        List<DocumentSnapshot> lots = new ArrayList<>();
+        for (DocumentSnapshot candidateLot : candidateLots) {
+            lots.add(transaction.get(candidateLot.getReference()));
+        }
+        long rewardToRecover = 0;
+        List<DocumentReference> earnedReviewRefs = new ArrayList<>();
+        for (int i = 0; i < reviewSnapshots.size(); i++) {
+            DocumentSnapshot review = reviewSnapshots.get(i);
+            DocumentSnapshot grant = grantSnapshots.get(i);
+            if (!review.exists() || review.getTimestamp("rewardRecoveredAt") != null
+                    || !grant.exists()
+                    || !"earn".equals(grant.getString("type"))
+                    || !"product_review".equals(grant.getString("source"))
+                    || valueOrZero(grant.getLong("amount")) != ReviewRepository.REVIEW_REWARD) {
+                continue;
+            }
+            Long netAmount = grant.getLong("netAmount");
+            long recoverableReward = netAmount == null
+                    ? ReviewRepository.REVIEW_REWARD
+                    : Math.max(0, netAmount);
+            if (recoverableReward > 0) {
+                rewardToRecover = Math.addExact(rewardToRecover, recoverableReward);
+                earnedReviewRefs.add(reviewRefs.get(i));
+            }
+        }
+        if (rewardToRecover > 0 && existingRecovery != null && existingRecovery.exists()) {
+            throw new IllegalStateException("Xu thưởng đánh giá của đơn đã được thu hồi trước đó.");
+        }
+
+        long availableToRecover = Math.addExact(pointsAfterRefund, 0);
+        long targetDeduction = PointsRules.recoverableAmount(availableToRecover, rewardToRecover);
+        long remainingToDeduct = targetDeduction;
+        List<Map<String, Object>> allocations = new ArrayList<>();
+        long refundLotDeduction = 0;
+        for (DocumentSnapshot lot : lots) {
+            if (remainingToDeduct == 0 || !lot.exists() || !isUnexpired(lot, now)) {
+                continue;
+            }
+            long remaining = nonNegativeLong(lot, "remainingAmount");
+            long deducted = Math.min(remaining, remainingToDeduct);
+            if (deducted > 0) {
+                Map<String, Object> allocation = new HashMap<>();
+                allocation.put("lotId", lot.getId());
+                allocation.put("amount", deducted);
+                allocations.add(allocation);
+                remainingToDeduct -= deducted;
+            }
+        }
+        if (pointsToRefund > 0 && remainingToDeduct > 0) {
+            refundLotDeduction = Math.min(pointsToRefund, remainingToDeduct);
+            if (refundLotDeduction > 0) {
+                Map<String, Object> allocation = new HashMap<>();
+                allocation.put("lotId", refundLotRef.getId());
+                allocation.put("amount", refundLotDeduction);
+                allocations.add(allocation);
+                remainingToDeduct -= refundLotDeduction;
+            }
+        }
+        long amountDeducted = targetDeduction - remainingToDeduct;
+        long finalBalance = pointsAfterRefund - amountDeducted;
+        long newDebt = Math.addExact(currentDebt, rewardToRecover - amountDeducted);
+
+        if (pointsToRefund > 0) {
+            long alreadyRefunded = nonNegativeLong(spend, "refundedAmount");
+            transaction.update(spendRef, "refundedAmount", alreadyRefunded + pointsToRefund);
+            Map<String, Object> refundData = transactionData(
+                    "refund", pointsToRefund, pointsToRefund, 0, pointsAfterRefund, currentDebt,
+                    "Hoàn Xu cho đơn hàng đã trả.", "order_return", refundReferenceId, expiresAt);
+            refundData.put("spendReferenceId", spendReferenceId);
+            transaction.set(refundRef, refundData);
+            Map<String, Object> refundLot = lotData(
+                    pointsToRefund, now, expiresAt, "refund", refundReferenceId);
+            refundLot.put("remainingAmount", pointsToRefund - refundLotDeduction);
+            transaction.set(refundLotRef, refundLot);
+        }
+
+        if (rewardToRecover > 0) {
+            for (DocumentReference reviewRef : earnedReviewRefs) {
+                transaction.update(reviewRef, "rewardRecoveredAt", FieldValue.serverTimestamp());
+            }
+            Map<String, Object> recoveryData = transactionData(
+                    "recovery", -rewardToRecover, -amountDeducted, rewardToRecover - amountDeducted,
+                    finalBalance, newDebt, "Thu hồi Xu thưởng đánh giá của đơn hoàn trả.",
+                    "order_return", recoveryReferenceId, null);
+            recoveryData.put("requestedAmount", rewardToRecover);
+            recoveryData.put("allocations", allocations);
+            transaction.set(recoveryRef, recoveryData);
+        }
+
+        for (Map<String, Object> allocation : allocations) {
+            String lotId = (String) allocation.get("lotId");
+            long deducted = (long) allocation.get("amount");
+            if (pointsToRefund > 0 && refundLotRef.getId().equals(lotId)) {
+                continue;
+            }
+            DocumentSnapshot lot = findLotSnapshot(lots, lotId);
+            transaction.update(lotsCollection(normalizedEmail).document(lotId),
+                    "remainingAmount", nonNegativeLong(lot, "remainingAmount") - deducted);
+        }
+        if (pointsToRefund > 0 || rewardToRecover > 0) {
+            updateUserPoints(transaction, userRef, finalBalance, newDebt);
+        }
     }
 
     private void performRefund(String email, String spendReferenceId, long amount, String refundReferenceId,
@@ -569,6 +760,7 @@ public final class PointsRepository {
             DocumentSnapshot user = transaction.get(userRef);
             DocumentSnapshot existing = transaction.get(transactionRef);
             long balance = nonNegativeLong(user, "pointsBalance");
+            long currentDebt = nonNegativeLong(user, "pointsDebt");
             if (existing.exists()) {
                 Long requestedAmount = existing.getLong("requestedAmount");
                 boolean sameRecovery = "recovery".equals(existing.getString("type"))
@@ -577,7 +769,8 @@ public final class PointsRepository {
                                 : requestedAmount == amount);
                 long recoveredAmount = Math.abs(valueOrZero(existing.getLong("netAmount")));
                 return sameRecovery
-                        ? ActionResult.success("Khoản thu hồi Xu đã được ghi nhận.", balance, 0, 0, recoveredAmount)
+                        ? ActionResult.success(
+                                "Khoản thu hồi Xu đã được ghi nhận.", balance, currentDebt, 0, recoveredAmount)
                         : ActionResult.failure("Mã giao dịch đã được dùng cho khoản thu hồi khác.", balance, 0);
             }
 
@@ -618,18 +811,20 @@ public final class PointsRepository {
             }
 
             long newBalance = balance - amountToDeduct;
-            updateUserPoints(transaction, userRef, newBalance);
+            long newDebt = Math.addExact(currentDebt, amount - amountToDeduct);
+            updateUserPoints(transaction, userRef, newBalance, newDebt);
             String description = amountToDeduct < amount
-                    ? "Yêu cầu thu hồi " + amount + " Xu; chỉ trừ " + amountToDeduct
-                            + " Xu từ số dư hiện có."
+                    ? "Thu hồi " + amount + " Xu; đã trừ " + amountToDeduct
+                            + " Xu và ghi nợ " + (amount - amountToDeduct) + " Xu."
                     : "Thu hồi Xu.";
             Map<String, Object> recoveryData = transactionData(
-                    "recovery", -amountToDeduct, -amountToDeduct, 0, newBalance, 0, description,
+                    "recovery", -amount, -amountToDeduct, amount - amountToDeduct, newBalance, newDebt, description,
                     "recovery", referenceId, null);
             recoveryData.put("requestedAmount", amount);
             recoveryData.put("allocations", allocations);
             transaction.set(transactionRef, recoveryData);
-            return ActionResult.success("Đã thu hồi " + amountToDeduct + " Xu.", newBalance, 0, 0, amountToDeduct);
+            return ActionResult.success(
+                    "Đã thu hồi " + amountToDeduct + " Xu.", newBalance, newDebt, 0, amountToDeduct);
         }).addOnSuccessListener(callback::onResult)
                 .addOnFailureListener(callback::onError);
     }
@@ -746,7 +941,15 @@ public final class PointsRepository {
             long balance) {
         Map<String, Object> userUpdate = new HashMap<>();
         userUpdate.put("pointsBalance", balance);
-        userUpdate.put("pointsDebt", 0L);
+        userUpdate.put("pointsUpdatedAt", FieldValue.serverTimestamp());
+        transaction.set(userRef, userUpdate, SetOptions.merge());
+    }
+
+    private void updateUserPoints(com.google.firebase.firestore.Transaction transaction, DocumentReference userRef,
+            long balance, long debt) {
+        Map<String, Object> userUpdate = new HashMap<>();
+        userUpdate.put("pointsBalance", balance);
+        userUpdate.put("pointsDebt", debt);
         userUpdate.put("pointsUpdatedAt", FieldValue.serverTimestamp());
         transaction.set(userRef, userUpdate, SetOptions.merge());
     }

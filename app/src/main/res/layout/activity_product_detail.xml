@@ -235,8 +235,9 @@
                         android:id="@+id/tvStock"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="#6B7280"
+                        android:textColor="#0D9488"
                         android:textSize="12sp"
+                        android:textStyle="bold"
                         tools:text="Còn 38 sp" />
                 </LinearLayout>
 
@@ -251,7 +252,7 @@
                     android:textStyle="bold"
                     tools:text="Samsung Galaxy A16 5G 128GB" />
 
-                <!-- Khung trung bình sao màu vàng -->
+                <!-- Khung trung bình sao màu vàng + đánh giá / đã bán -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

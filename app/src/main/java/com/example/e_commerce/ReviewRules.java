@@ -66,7 +66,10 @@ public final class ReviewRules {
             return isDelivered(status);
         }
         if (FILTER_RETURNED.equals(filter)) {
-            return "Hoàn trả".equals(status) || "Đã trả hàng".equals(status) || "Đã hủy".equals(status);
+            return OrderReturnRules.STATUS_RETURNED.equals(status)
+                    || "Hoàn trả".equals(status)
+                    || "Đã trả hàng".equals(status)
+                    || "Đã hủy".equals(status);
         }
         return false;
     }

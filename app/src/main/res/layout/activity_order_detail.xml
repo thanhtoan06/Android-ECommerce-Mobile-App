@@ -157,6 +157,36 @@
                     app:backgroundTint="#4F46E5"
                     app:cornerRadius="8dp"
                     tools:visibility="visible" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReturnOrder"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="10dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Yêu cầu hoàn trả đơn hàng"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="#D97706"
+                    app:cornerRadius="8dp" />
+
+                <TextView
+                    android:id="@+id/tvOrderReturnInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="#FFF7ED"
+                    android:padding="10dp"
+                    android:textColor="#9A3412"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="Đã hoàn trả · Lý do: Thiếu sản phẩm"
+                    tools:visibility="visible" />
             </LinearLayout>
 
             <!-- Card Danh sách sản phẩm -->

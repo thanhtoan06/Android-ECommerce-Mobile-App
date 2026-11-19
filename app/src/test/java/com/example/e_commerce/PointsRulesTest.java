@@ -53,6 +53,14 @@ public class PointsRulesTest {
     }
 
     @Test
+    public void futurePointsPayRecoveryDebtBeforeIncreasingBalance() {
+        assertEquals(200, PointsRules.debtOffset(500, 200));
+        assertEquals(0, PointsRules.remainingDebt(200, 500));
+        assertEquals(300, PointsRules.remainingDebt(500, 200));
+        assertEquals(0, PointsRules.debtOffset(500, 0));
+    }
+
+    @Test
     public void checkoutSpendIsLimitedByBalanceAndHalfOfDiscountedMerchandise() {
         assertEquals(400, PointsRules.maximumCheckoutSpend(1_000, 800));
         assertEquals(300, PointsRules.maximumCheckoutSpend(300, 800));

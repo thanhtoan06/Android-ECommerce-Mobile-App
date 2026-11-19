@@ -3,6 +3,7 @@ package com.example.e_commerce;
 
 import java.io.Serializable;
 import java.text.NumberFormat;
+import java.util.Date;
 import java.util.Locale;
 
 public class Order implements Serializable {
@@ -17,6 +18,8 @@ public class Order implements Serializable {
     private long totalAmount;
     private String orderDate;
     private String status;
+    private Date deliveredAt;
+    private String returnReason;
 
     public Order() {
     }
@@ -113,6 +116,22 @@ public class Order implements Serializable {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Date getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(Date deliveredAt) {
+        this.deliveredAt = deliveredAt;
+    }
+
+    public String getReturnReason() {
+        return returnReason;
+    }
+
+    public void setReturnReason(String returnReason) {
+        this.returnReason = returnReason;
     }
 
     public String getFormattedTotal() {

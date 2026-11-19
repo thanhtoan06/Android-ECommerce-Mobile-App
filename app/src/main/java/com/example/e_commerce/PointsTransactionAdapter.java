@@ -80,8 +80,13 @@ public class PointsTransactionAdapter extends BaseAdapter {
     private String detailFor(PointsRepository.PointsEntry entry) {
         List<String> details = new ArrayList<>();
         if (entry.getOffsetAmount() > 0) {
-            details.add("Thực nhận " + formatNumber(entry.getNetAmount()) + " Xu · bù trừ "
-                    + formatNumber(entry.getOffsetAmount()) + " Xu");
+            if ("recovery".equals(entry.getType())) {
+                details.add("Đã trừ " + formatNumber(Math.abs(entry.getNetAmount()))
+                        + " Xu · ghi nợ " + formatNumber(entry.getOffsetAmount()) + " Xu");
+            } else {
+                details.add("Thực nhận " + formatNumber(entry.getNetAmount()) + " Xu · bù trừ "
+                        + formatNumber(entry.getOffsetAmount()) + " Xu");
+            }
         }
         if (entry.getExpiresAt() != null) {
             details.add("Hết hạn: " + expiryFormat.format(entry.getExpiresAt()));
