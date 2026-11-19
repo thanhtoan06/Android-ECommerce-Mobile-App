@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Trạng thái ô tích đã chọn: nền trắng viền màu chủ đạo #4F46E5 bo góc 6dp kèm dấu tích màu tím chàm -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/white" />
+            <corners android:radius="6dp" />
+            <stroke
+                android:width="1.5dp"
+                android:color="@color/primary" />
+            <size android:width="22dp" android:height="22dp" />
+        </shape>
+    </item>
+    <item
+        android:width="15dp"
+        android:height="15dp"
+        android:gravity="center"
+        android:drawable="@drawable/ic_check_primary" />
+</layer-list>

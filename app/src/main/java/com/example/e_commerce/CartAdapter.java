@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,10 +18,11 @@ import java.util.List;
 
 public class CartAdapter extends ArrayAdapter<CartItem> {
 
-    // Giao diện gửi sự kiện tăng/giảm số lượng hoặc xóa sản phẩm về cho CartActivity xử lý
+    // Giao diện gửi sự kiện tăng/giảm số lượng, đổi trạng thái tích chọn hoặc xóa sản phẩm về cho CartActivity xử lý
     public interface OnCartItemListener {
         void onQuantityChanged(CartItem item, int newQuantity);
         void onItemDeleted(CartItem item);
+        void onItemSelectionChanged(CartItem item, boolean isSelected);
     }
 
     // Khai báo đối tượng nạp giao diện và bộ lắng nghe sự kiện thao tác trên từng dòng
@@ -44,6 +46,7 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.item_cart, parent, false);
             holder = new ViewHolder();
+            holder.cbItem = convertView.findViewById(R.id.cbCartItem);
             holder.tvIcon = convertView.findViewById(R.id.tvCartIcon);
             holder.tvCategory = convertView.findViewById(R.id.tvCartCategory);
             holder.tvName = convertView.findViewById(R.id.tvCartName);
@@ -62,6 +65,17 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
         // Lấy đối tượng CartItem tại vị trí hiện tại và đổ dữ liệu lên giao diện
         CartItem item = getItem(position);
         if (item != null) {
+            // Cài đặt trạng thái ô tích chọn sản phẩm
+            if (holder.cbItem != null) {
+                holder.cbItem.setOnCheckedChangeListener(null);
+                holder.cbItem.setChecked(item.isSelected());
+                holder.cbItem.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    item.setSelected(isChecked);
+                    if (listener != null) {
+                        listener.onItemSelectionChanged(item, isChecked);
+                    }
+                });
+            }
             Product product = item.getProduct();
             int stock = (product != null) ? product.getStock() : 0;
 
@@ -127,6 +141,7 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
 
     // Lớp ViewHolder giữ tham chiếu các thành phần giao diện của một dòng trong giỏ hàng
     private static class ViewHolder {
+        CheckBox cbItem;
         TextView tvIcon;
         TextView tvCategory;
         TextView tvName;
@@ -135,6 +150,6 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
         TextView tvQuantity;
         TextView btnMinus;
         TextView btnPlus;
-        TextView btnDelete;
+        View btnDelete;
     }
 }

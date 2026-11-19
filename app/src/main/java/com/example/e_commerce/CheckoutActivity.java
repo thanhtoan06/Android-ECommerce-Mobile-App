@@ -107,18 +107,29 @@ public class CheckoutActivity extends AppCompatActivity {
         btnConfirmOrder.setOnClickListener(v -> handlePlaceOrder());
     }
 
-    // Đọc giỏ hàng chính thức từ Firebase -> lưu bản sao xuống SQLite -> vẽ danh sách tóm tắt
+    // Đọc giỏ hàng chính thức từ Firebase -> lưu bản sao xuống SQLite -> lọc các món đã chọn -> vẽ danh sách tóm tắt
     private void loadCartSummary() {
+        ArrayList<Integer> selectedProductIds = getIntent().getIntegerArrayListExtra("SELECTED_PRODUCT_IDS");
         repository.getCartItems(currentUserEmail, new FirestoreRepository.CartCallback() {
             @Override
             public void onResult(List<CartItem> items) {
-                // Lưu danh sách giỏ hàng lấy được từ Firebase
-                cartItems = items;
-
-                // Cập nhật bản sao giỏ hàng dưới SQLite theo đúng dữ liệu từ Firebase
+                // Cập nhật bản sao toàn bộ giỏ hàng dưới SQLite theo đúng dữ liệu từ Firebase
                 databaseHelper.clearCart(currentUserEmail);
                 for (CartItem item : items) {
                     databaseHelper.addToCart(currentUserEmail, item.getProduct().getId(), item.getQuantity());
+                }
+
+                // Lọc chỉ giữ lại những sản phẩm được người dùng tích chọn thanh toán
+                if (selectedProductIds != null && !selectedProductIds.isEmpty()) {
+                    List<CartItem> filtered = new ArrayList<>();
+                    for (CartItem item : items) {
+                        if (item.getProduct() != null && selectedProductIds.contains(item.getProduct().getId())) {
+                            filtered.add(item);
+                        }
+                    }
+                    cartItems = filtered;
+                } else {
+                    cartItems = items;
                 }
 
                 // Hiển thị danh sách tóm tắt lên màn hình
@@ -265,6 +276,13 @@ public class CheckoutActivity extends AppCompatActivity {
                             btnConfirmOrder.setEnabled(true);
                             Toast.makeText(CheckoutActivity.this, "Không thể lưu bản sao SQLite.", Toast.LENGTH_LONG).show();
                             return;
+                        }
+
+                        // Xóa các món đã đặt mua khỏi giỏ hàng SQLite (giữ lại các món chưa chọn mua)
+                        for (CartItem cartItem : cartItems) {
+                            if (cartItem.getProduct() != null) {
+                                databaseHelper.removeCartItem(currentUserEmail, cartItem.getProduct().getId());
+                            }
                         }
 
                         // Bước 3: Lưu SĐT và địa chỉ làm mặc định cho các lần mua sau rồi hiện thông báo thành công

@@ -10,38 +10,42 @@
     android:orientation="vertical"
     tools:context=".CartActivity">
 
-    <!-- Thanh tiêu đề phía trên cùng -->
+    <!-- Thanh tiêu đề phía trên cùng nền màu chủ đạo (#4F46E5) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/surface"
-        android:elevation="2dp"
+        android:background="@color/primary"
+        android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp">
 
-        <!-- Tiêu đề giỏ hàng (kèm tổng số lượng món) -->
+        <!-- Tiêu đề giỏ hàng chữ trắng nổi bật (kèm tổng số lượng món) -->
         <TextView
             android:id="@+id/tvCartHeaderTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="Giỏ hàng của tôi"
-            android:textColor="@color/text_primary"
+            android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <!-- Nút xóa toàn bộ sản phẩm trong giỏ -->
+        <!-- Nút xóa toàn bộ sản phẩm trong giỏ kèm biểu tượng vector xóa -->
         <TextView
             android:id="@+id/btnClearAllCart"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="34dp"
             android:background="@drawable/bg_chip_red"
             android:clickable="true"
+            app:drawableStartCompat="@drawable/ic_delete"
+            android:drawablePadding="6dp"
             android:focusable="true"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="5dp"
-            android:text="🗑️ Xóa tất cả"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="Xóa tất cả"
             android:textColor="@color/danger"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -63,18 +67,19 @@
             android:padding="24dp"
             android:visibility="gone">
 
-            <!-- Biểu tượng giỏ hàng trống -->
+            <!-- Biểu tượng giỏ hàng trống bằng vector chuẩn trên nền tròn -->
             <FrameLayout
                 android:layout_width="96dp"
                 android:layout_height="96dp"
                 android:background="@drawable/bg_avatar_circle">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:text="🛒"
-                    android:textSize="48sp" />
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Giỏ hàng trống"
+                    android:src="@drawable/ic_cart"
+                    app:tint="@color/primary" />
             </FrameLayout>
 
             <!-- Dòng thông báo chính khi giỏ trống -->
@@ -97,22 +102,27 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
-            <!-- Nút quay về trang danh sách sản phẩm -->
-            <Button
+            <!-- Nút quay về trang danh sách sản phẩm phẳng bo góc hiện đại -->
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnShopNow"
                 android:layout_width="wrap_content"
-                android:layout_height="46dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="20dp"
-                android:background="@drawable/bg_primary_button"
                 android:paddingHorizontal="24dp"
-                android:text="🛍️ KHÁM PHÁ SẢN PHẨM"
+                android:text="KHÁM PHÁ SẢN PHẨM"
                 android:textColor="@color/white"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                app:backgroundTint="@null" />
+                app:backgroundTint="@color/primary"
+                app:cornerRadius="10dp"
+                app:elevation="0dp"
+                app:icon="@drawable/ic_home"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="@color/white" />
         </LinearLayout>
 
-        <!-- Danh sách sản phẩm trong giỏ hàng -->
+        <!-- Danh sách sản phẩm trong giỏ hàng gắn layout preview trực quan -->
         <ListView
             android:id="@+id/lvCartItems"
             android:layout_width="match_parent"
@@ -122,7 +132,8 @@
             android:dividerHeight="0dp"
             android:paddingHorizontal="12dp"
             android:paddingTop="6dp"
-            android:paddingBottom="10dp" />
+            android:paddingBottom="10dp"
+            tools:listitem="@layout/item_cart" />
 
     </FrameLayout>
 
@@ -137,6 +148,23 @@
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
         android:paddingVertical="12dp">
+
+        <!-- Ô tích chọn tất cả sản phẩm sử dụng drawable tùy chỉnh bo góc 6dp, dùng buttonTint=@null để giữ nguyên dấu tích trắng -->
+        <CheckBox
+            android:id="@+id/cbSelectAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:button="@drawable/sl_checkbox"
+            android:buttonTint="@null"
+            app:buttonTint="@null"
+            android:checked="true"
+            android:paddingStart="8dp"
+            android:paddingEnd="0dp"
+            android:text="Tất cả"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
         <!-- Cụm hiển thị tổng số tiền -->
         <LinearLayout
@@ -165,18 +193,19 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Nút chuyển sang màn hình Thanh toán -->
-        <Button
+        <!-- Nút chuyển sang màn hình Thanh toán bo góc mềm mại -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCheckout"
             android:layout_width="wrap_content"
-            android:layout_height="46dp"
-            android:background="@drawable/bg_primary_button"
-            android:paddingHorizontal="20dp"
+            android:layout_height="48dp"
+            android:paddingHorizontal="22dp"
             android:text="THANH TOÁN (0)"
             android:textColor="@color/white"
             android:textSize="13sp"
             android:textStyle="bold"
-            app:backgroundTint="@null" />
+            app:backgroundTint="@color/primary"
+            app:cornerRadius="10dp"
+            app:elevation="0dp" />
     </LinearLayout>
 
     <!-- Thanh menu điều hướng phía dưới cùng -->

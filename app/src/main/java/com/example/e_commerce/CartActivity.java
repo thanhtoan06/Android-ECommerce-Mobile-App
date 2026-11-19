@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -19,8 +20,10 @@ import androidx.core.content.ContextCompat;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class CartActivity extends AppCompatActivity implements CartAdapter.OnCartItemListener {
 
@@ -32,6 +35,8 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     private TextView tvCartHeaderTitle;
     private TextView btnClearAllCart;
     private Button btnCheckout;
+    private CheckBox cbSelectAll;
+    private boolean isUpdatingSelectAll = false;
 
     // Khai báo danh sách món hàng, bộ nạp giao diện Adapter, kho chính Firebase, kho bản sao SQLite và email người dùng
     private final List<CartItem> cartItemList = new ArrayList<>();
@@ -60,6 +65,19 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         tvCartHeaderTitle = findViewById(R.id.tvCartHeaderTitle);
         btnClearAllCart = findViewById(R.id.btnClearAllCart);
         btnCheckout = findViewById(R.id.btnCheckout);
+        cbSelectAll = findViewById(R.id.cbSelectAll);
+
+        // Bắt sự kiện chọn / bỏ chọn tất cả sản phẩm
+        if (cbSelectAll != null) {
+            cbSelectAll.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isUpdatingSelectAll) return;
+                for (CartItem item : cartItemList) {
+                    item.setSelected(isChecked);
+                }
+                adapter.notifyDataSetChanged();
+                updateCartVisibility();
+            });
+        }
 
         // Khởi tạo CartAdapter và gắn vào ListView để hiển thị từng món trong giỏ
         adapter = new CartAdapter(this, cartItemList, this);
@@ -112,21 +130,39 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                     .show();
         });
 
-        // Bấm nút "Thanh toán": kiểm tra giỏ có hàng và kiểm tra tồn kho trước khi chuyển sang Đặt hàng
+        // Bấm nút "Thanh toán": kiểm tra giỏ có hàng và kiểm tra tồn kho các sản phẩm được chọn
         btnCheckout.setOnClickListener(v -> {
             if (cartItemList.isEmpty()) {
                 Toast.makeText(this, "Giỏ hàng đang trống!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Kiểm tra từng sản phẩm xem có món nào hết hàng hoặc vượt quá số lượng trong kho không
+            // Lọc ra các món đang được người dùng tích chọn
+            List<CartItem> selectedItems = new ArrayList<>();
+            ArrayList<Integer> selectedProductIds = new ArrayList<>();
             for (CartItem item : cartItemList) {
+                if (item.isSelected()) {
+                    selectedItems.add(item);
+                    if (item.getProduct() != null) {
+                        selectedProductIds.add(item.getProduct().getId());
+                    }
+                }
+            }
+
+            // Nếu chưa tích chọn sản phẩm nào thì nhắc nhở
+            if (selectedItems.isEmpty()) {
+                Toast.makeText(this, "Vui lòng chọn ít nhất một sản phẩm để thanh toán!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Kiểm tra tồn kho chỉ cho những sản phẩm được tích chọn
+            for (CartItem item : selectedItems) {
                 Product p = item.getProduct();
                 if (p != null) {
                     if (p.getStock() <= 0) {
                         new AlertDialog.Builder(this)
                                 .setTitle("Sản phẩm hết hàng")
-                                .setMessage("Sản phẩm \"" + p.getName() + "\" hiện đã hết hàng trong kho. Vui lòng xóa món này khỏi giỏ trước khi thanh toán!")
+                                .setMessage("Sản phẩm \"" + p.getName() + "\" hiện đã hết hàng trong kho. Vui lòng bỏ chọn hoặc xóa món này khỏi giỏ trước khi thanh toán!")
                                 .setPositiveButton("Đã hiểu", null)
                                 .show();
                         return;
@@ -142,7 +178,10 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
                 }
             }
 
-            startActivity(new Intent(this, CheckoutActivity.class));
+            // Chuyển sang màn hình Thanh toán và gửi kèm danh sách ID các sản phẩm đã chọn
+            Intent intent = new Intent(this, CheckoutActivity.class);
+            intent.putIntegerArrayListExtra("SELECTED_PRODUCT_IDS", selectedProductIds);
+            startActivity(intent);
         });
 
         // Cài đặt thanh menu điều hướng dưới đáy màn hình
@@ -161,9 +200,22 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         repository.getCartItems(currentUserEmail, new FirestoreRepository.CartCallback() {
             @Override
             public void onResult(List<CartItem> items) {
-                // Cập nhật danh sách hiển thị trên màn hình
+                // Ghi nhớ trạng thái tích chọn hiện tại của từng sản phẩm
+                Map<Integer, Boolean> prevSelection = new HashMap<>();
+                for (CartItem ci : cartItemList) {
+                    if (ci.getProduct() != null) {
+                        prevSelection.put(ci.getProduct().getId(), ci.isSelected());
+                    }
+                }
+
+                // Cập nhật danh sách hiển thị trên màn hình và giữ nguyên trạng thái tích chọn
                 cartItemList.clear();
-                cartItemList.addAll(items);
+                for (CartItem ci : items) {
+                    if (ci.getProduct() != null && prevSelection.containsKey(ci.getProduct().getId())) {
+                        ci.setSelected(Boolean.TRUE.equals(prevSelection.get(ci.getProduct().getId())));
+                    }
+                    cartItemList.add(ci);
+                }
 
                 // Làm mới bản sao giỏ hàng dưới SQLite theo đúng dữ liệu từ Firebase
                 databaseHelper.clearCart(currentUserEmail);
@@ -200,19 +252,38 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
             layoutCheckoutBar.setVisibility(View.VISIBLE);
             btnClearAllCart.setVisibility(View.VISIBLE);
 
-            // Cộng dồn tổng tiền và tổng số lượng của tất cả món trong giỏ
+            // Cộng dồn tổng tiền và số món chỉ cho những sản phẩm đang được tích chọn
             long total = 0;
-            int totalQuantity = 0;
+            int selectedCount = 0;
+            boolean allSelected = !cartItemList.isEmpty();
+
             for (CartItem item : cartItemList) {
-                total += item.getSubtotal();
-                totalQuantity += item.getQuantity();
+                if (item.isSelected()) {
+                    total += item.getSubtotal();
+                    selectedCount++;
+                } else {
+                    allSelected = false;
+                }
             }
 
-            // Hiển thị tổng số lượng và định dạng tổng tiền theo kiểu tiền Việt Nam (VNĐ)
-            tvCartHeaderTitle.setText("Giỏ hàng (" + totalQuantity + ")");
+            // Đồng bộ trạng thái ô tích chọn "Tất cả"
+            if (cbSelectAll != null) {
+                isUpdatingSelectAll = true;
+                cbSelectAll.setChecked(allSelected);
+                isUpdatingSelectAll = false;
+            }
+
+            // Hiển thị tổng số lượng món trong giỏ và tổng tiền của các sản phẩm được chọn
+            tvCartHeaderTitle.setText("Giỏ hàng (" + cartItemList.size() + ")");
             tvCartTotalPrice.setText(NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")).format(total) + " ₫");
-            btnCheckout.setText("THANH TOÁN (" + totalQuantity + ")");
+            btnCheckout.setText("THANH TOÁN (" + selectedCount + ")");
         }
+    }
+
+    // Xử lý khi người dùng tích chọn hoặc bỏ chọn một sản phẩm
+    @Override
+    public void onItemSelectionChanged(CartItem item, boolean isSelected) {
+        updateCartVisibility();
     }
 
     // Xử lý khi bấm (+) hoặc (−) đổi số lượng: cập nhật Firebase trước -> thành công mới lưu bản sao SQLite

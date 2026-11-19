@@ -6,10 +6,11 @@ import java.util.Locale;
 
 public class CartItem {
 
-    // Khai báo các thuộc tính của một dòng trong giỏ hàng: mã dòng, đối tượng sản phẩm và số lượng
+    // Khai báo các thuộc tính của một dòng trong giỏ hàng: mã dòng, đối tượng sản phẩm, số lượng và trạng thái tích chọn
     private int id;
     private Product product;
     private int quantity;
+    private boolean selected = true;
 
     // Hàm khởi tạo một dòng sản phẩm trong giỏ hàng
     public CartItem(int id, Product product, int quantity) {
@@ -29,6 +30,10 @@ public class CartItem {
     // Lấy và cập nhật số lượng đặt mua
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
+
+    // Lấy và cập nhật trạng thái tích chọn mua của sản phẩm
+    public boolean isSelected() { return selected; }
+    public void setSelected(boolean selected) { this.selected = selected; }
 
     // Tính thành tiền của món hàng (đơn giá × số lượng)
     public long getSubtotal() {

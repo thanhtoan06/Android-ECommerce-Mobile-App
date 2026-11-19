@@ -257,7 +257,7 @@ public class FirestoreRepository {
                 .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
     }
 
-    // Xóa sạch toàn bộ giỏ hàng của người dùng trên Firebase (dùng khi bấm Xóa tất cả hoặc Đặt hàng xong)
+    // Xóa sạch toàn bộ giỏ hàng của người dùng trên Firebase (dùng khi bấm Xóa tất cả)
     public void clearCart(String email, BooleanCallback callback) {
         firestore.collection("carts")
                 .whereEqualTo("userEmail", normalizeEmail(email))
@@ -273,6 +273,25 @@ public class FirestoreRepository {
                     });
                 })
                 .addOnFailureListener(e -> callback.onResult(false));
+    }
+
+    // Xóa các món đã đặt mua khỏi giỏ hàng trên Firebase (chỉ xóa những món đã được chọn đặt mua)
+    public void removeOrderedCartItems(String email, List<CartItem> orderedItems, BooleanCallback callback) {
+        if (orderedItems == null || orderedItems.isEmpty()) {
+            if (callback != null) callback.onResult(true);
+            return;
+        }
+        WriteBatch batch = firestore.batch();
+        String normalized = normalizeEmail(email);
+        for (CartItem item : orderedItems) {
+            if (item.getProduct() != null) {
+                String docId = normalized + "_" + item.getProduct().getId();
+                batch.delete(firestore.collection("carts").document(docId));
+            }
+        }
+        batch.commit().addOnCompleteListener(t -> {
+            if (callback != null) callback.onResult(t.isSuccessful());
+        });
     }
 
     // Đếm tổng số lượng sản phẩm đang nằm trong giỏ hàng trên Firebase
@@ -360,13 +379,13 @@ public class FirestoreRepository {
                                     Product p = item.getProduct();
                                     if (p == null) {
                                         if (pendingDecrements.decrementAndGet() == 0) {
-                                            clearCart(normalized, ok -> callback.onResult(ok ? numericId : -1));
+                                            removeOrderedCartItems(normalized, cartItems, ok -> callback.onResult(ok ? numericId : -1));
                                         }
                                         continue;
                                     }
                                     decreaseStock(p.getId(), item.getQuantity(), ok -> {
                                         if (pendingDecrements.decrementAndGet() == 0) {
-                                            clearCart(normalized, done -> callback.onResult(done ? numericId : -1));
+                                            removeOrderedCartItems(normalized, cartItems, done -> callback.onResult(done ? numericId : -1));
                                         }
                                     });
                                 }
