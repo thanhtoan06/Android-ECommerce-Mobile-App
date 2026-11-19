@@ -19,24 +19,22 @@
         android:elevation="2dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="10dp">
+        android:paddingHorizontal="14dp">
 
-        <!-- Nút quay lại màn hình Giỏ hàng -->
+        <!-- Nút quay lại hình tròn tối giản 38dp x 38dp dùng biểu tượng mũi tên vector màu chủ đạo #4F46E5 -->
         <TextView
             android:id="@+id/tvCheckoutBack"
-            android:layout_width="wrap_content"
+            android:layout_width="38dp"
             android:layout_height="38dp"
-            android:background="@drawable/bg_counter_btn"
+            android:background="@drawable/bg_circle_btn"
             android:clickable="true"
             android:focusable="true"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="12dp"
-            android:text="←  Quay lại"
-            android:textColor="@color/primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:gravity="center"
+            android:padding="9dp"
+            app:drawableStartCompat="@drawable/ic_arrow_back"
+            app:drawableTint="@color/primary" />
 
-        <!-- Tiêu đề màn hình -->
+        <!-- Tiêu đề màn hình căn giữa -->
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -44,13 +42,13 @@
             android:gravity="center"
             android:text="Xác nhận thanh toán"
             android:textColor="@color/text_primary"
-            android:textSize="16sp"
+            android:textSize="17sp"
             android:textStyle="bold" />
 
-        <!-- Khoảng trống căn giữa tiêu đề -->
+        <!-- Khoảng trống cân đối căn giữa tiêu đề -->
         <View
-            android:layout_width="80dp"
-            android:layout_height="match_parent" />
+            android:layout_width="38dp"
+            android:layout_height="38dp" />
     </LinearLayout>
 
     <!-- Thanh nút xác nhận đặt hàng cố định phía dưới cùng -->
@@ -92,14 +90,29 @@
             android:padding="14dp">
 
             <!-- Khối 1: Thông tin giao hàng -->
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
-                android:text="📍 THÔNG TIN GIAO HÀNG"
-                android:textColor="@color/primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="Giao hàng"
+                    android:src="@drawable/ic_location"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="THÔNG TIN GIAO HÀNG"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <!-- Thẻ nhập thông tin người nhận -->
             <LinearLayout
@@ -211,15 +224,30 @@
             </LinearLayout>
 
             <!-- Khối 2: Danh sách sản phẩm trong đơn -->
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="6dp"
-                android:text="📦 SẢN PHẨM TRONG ĐƠN HÀNG"
-                android:textColor="@color/primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="Sản phẩm"
+                    android:src="@drawable/ic_orders"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="SẢN PHẨM TRONG ĐƠN HÀNG"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <!-- Vùng chứa danh sách sản phẩm tóm tắt -->
             <LinearLayout
@@ -230,18 +258,42 @@
                 android:elevation="1dp"
                 android:orientation="vertical"
                 android:paddingHorizontal="14dp"
-                android:paddingVertical="8dp" />
+                android:paddingVertical="8dp">
+
+                <!-- Dòng sản phẩm xem trước mẫu cho trình thiết kế (ẩn khi chạy thật) -->
+                <include
+                    android:id="@+id/sampleCheckoutItemPreview"
+                    layout="@layout/item_checkout_summary"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
             <!-- Khối 3: Phương thức thanh toán -->
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="6dp"
-                android:text="💳 PHƯƠNG THỨC THANH TOÁN"
-                android:textColor="@color/primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="Thanh toán"
+                    android:src="@drawable/ic_payment"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="PHƯƠNG THỨC THANH TOÁN"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <!-- Nhóm chọn hình thức thanh toán -->
             <RadioGroup
@@ -258,10 +310,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:paddingVertical="6dp"
-                    android:text="💵 Thanh toán tiền mặt khi nhận hàng (COD)"
+                    android:drawablePadding="10dp"
+                    android:paddingVertical="8dp"
+                    android:text="Thanh toán tiền mặt khi nhận hàng (COD)"
                     android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    app:buttonTint="@color/primary"
+                    app:drawableStartCompat="@drawable/ic_cash"
+                    app:drawableTint="@color/primary" />
 
                 <!-- Đường kẻ phân cách -->
                 <View
@@ -275,10 +331,14 @@
                     android:id="@+id/rbBankTransfer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingVertical="6dp"
-                    android:text="🏦 Chuyển khoản ngân hàng (VietQR 24/7)"
+                    android:drawablePadding="10dp"
+                    android:paddingVertical="8dp"
+                    android:text="Chuyển khoản ngân hàng (VietQR 24/7)"
                     android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    app:buttonTint="@color/primary"
+                    app:drawableStartCompat="@drawable/ic_bank"
+                    app:drawableTint="@color/primary" />
 
                 <!-- Khung thông tin tài khoản ngân hàng (hiện khi chọn chuyển khoản) -->
                 <LinearLayout
@@ -331,23 +391,42 @@
                     android:id="@+id/rbEWallet"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingVertical="6dp"
-                    android:text="📱 Ví điện tử MoMo / ZaloPay / VNPay"
+                    android:drawablePadding="10dp"
+                    android:paddingVertical="8dp"
+                    android:text="Ví điện tử MoMo / ZaloPay / VNPay"
                     android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    app:buttonTint="@color/primary"
+                    app:drawableStartCompat="@drawable/ic_wallet"
+                    app:drawableTint="@color/primary" />
 
             </RadioGroup>
 
             <!-- Khối 4: Tổng kết chi phí -->
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="6dp"
-                android:text="🧾 TỔNG KẾT CHI PHÍ"
-                android:textColor="@color/primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="Tổng kết"
+                    android:src="@drawable/ic_receipt"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="TỔNG KẾT CHI PHÍ"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <!-- Thẻ chi tiết tiền hàng, phí ship và tổng thanh toán -->
             <LinearLayout

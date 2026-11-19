@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Giao diện một dòng thông tin trong phần tóm tắt thanh toán -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingVertical="8dp">
 
-    <!-- Biểu tượng minh họa sản phẩm -->
-    <TextView
-        android:id="@+id/tvSummaryIcon"
+    <!-- Biểu tượng vector minh họa sản phẩm màu tím chàm #4F46E5 -->
+    <ImageView
+        android:id="@+id/ivSummaryIcon"
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:background="@drawable/bg_chip_blue"
-        android:gravity="center"
-        android:text="📦"
-        android:textSize="22sp" />
+        android:contentDescription="Sản phẩm"
+        android:padding="10dp"
+        android:src="@drawable/ic_orders"
+        app:tint="@color/primary" />
 
     <!-- Cụm hiển thị tên và số lượng sản phẩm -->
     <LinearLayout
@@ -32,10 +35,10 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="Tên sản phẩm"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            tools:text="Tên sản phẩm" />
 
         <!-- Số lượng mua của sản phẩm -->
         <TextView
@@ -46,9 +49,9 @@
             android:background="@drawable/bg_counter_btn"
             android:paddingHorizontal="6dp"
             android:paddingVertical="2dp"
-            android:text="Số lượng: x1"
             android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
+            android:textSize="11sp"
+            tools:text="Số lượng: x1" />
     </LinearLayout>
 
     <!-- Thành tiền của dòng sản phẩm này -->
@@ -57,9 +60,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:text="189.000 ₫"
         android:textColor="@color/danger"
         android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        tools:text="189.000 ₫" />
 
 </LinearLayout>

@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -73,6 +74,12 @@ public class CheckoutActivity extends AppCompatActivity {
         // Bấm mũi tên quay lại thì đóng màn hình hiện tại để về lại Giỏ hàng
         tvCheckoutBack.setOnClickListener(v -> finish());
 
+        // Đảm bảo dòng xem trước mẫu ẩn khi chạy ứng dụng thật
+        View samplePreview = findViewById(R.id.sampleCheckoutItemPreview);
+        if (samplePreview != null) {
+            samplePreview.setVisibility(View.GONE);
+        }
+
         // Tự động điền sẵn Tên người nhận nếu tài khoản đã lưu tên trước đó
         String savedUsername = prefManager.getUsername();
         if (savedUsername != null && !savedUsername.isEmpty() && !"Người dùng".equals(savedUsername)) {
@@ -90,6 +97,48 @@ public class CheckoutActivity extends AppCompatActivity {
         if (savedAddress != null && !savedAddress.trim().isEmpty()) {
             etReceiverAddress.setText(savedAddress.trim());
         }
+
+        // Kiểm tra bổ sung thông tin từ kho SQLite nếu SharedPreferences chưa có đủ
+        User localUser = databaseHelper.getUserByEmail(currentUserEmail);
+        if (localUser != null) {
+            if (etReceiverName.getText().toString().trim().isEmpty()
+                    && localUser.getFullName() != null && !localUser.getFullName().trim().isEmpty()
+                    && !"Người dùng".equals(localUser.getFullName())) {
+                etReceiverName.setText(localUser.getFullName().trim());
+            }
+            if (etReceiverPhone.getText().toString().trim().isEmpty()
+                    && localUser.getPhone() != null && !localUser.getPhone().trim().isEmpty()) {
+                etReceiverPhone.setText(localUser.getPhone().trim());
+            }
+            if (etReceiverAddress.getText().toString().trim().isEmpty()
+                    && localUser.getAddress() != null && !localUser.getAddress().trim().isEmpty()) {
+                etReceiverAddress.setText(localUser.getAddress().trim());
+            }
+        }
+
+        // Đồng bộ dữ liệu mới nhất từ Firebase về ô nhập thông tin người nhận
+        repository.getUserByEmail(currentUserEmail, new FirestoreRepository.UserCallback() {
+            @Override
+            public void onResult(User user) {
+                if (user == null) return;
+                if (etReceiverName.getText().toString().trim().isEmpty()
+                        && user.getFullName() != null && !user.getFullName().trim().isEmpty()
+                        && !"Người dùng".equals(user.getFullName())) {
+                    etReceiverName.setText(user.getFullName().trim());
+                }
+                if (etReceiverPhone.getText().toString().trim().isEmpty()
+                        && user.getPhone() != null && !user.getPhone().trim().isEmpty()) {
+                    etReceiverPhone.setText(user.getPhone().trim());
+                }
+                if (etReceiverAddress.getText().toString().trim().isEmpty()
+                        && user.getAddress() != null && !user.getAddress().trim().isEmpty()) {
+                    etReceiverAddress.setText(user.getAddress().trim());
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {}
+        });
 
         // Bắt sự kiện đổi phương thức thanh toán: hiện thông tin số tài khoản nếu chọn Chuyển khoản ngân hàng
         rgPaymentMethods.setOnCheckedChangeListener((group, checkedId) -> {
@@ -138,9 +187,25 @@ public class CheckoutActivity extends AppCompatActivity {
 
             @Override
             public void onError(Exception e) {
-                // Nếu lỗi mạng không tải được giỏ hàng thì báo lỗi và đóng màn hình thanh toán
-                Toast.makeText(CheckoutActivity.this, "Không thể tải giỏ hàng từ Firebase.", Toast.LENGTH_SHORT).show();
-                finish();
+                // Thử đọc bản sao từ SQLite nếu không kết nối được Firebase
+                List<CartItem> localItems = databaseHelper.getCartItems(currentUserEmail);
+                if (localItems != null && !localItems.isEmpty()) {
+                    if (selectedProductIds != null && !selectedProductIds.isEmpty()) {
+                        List<CartItem> filtered = new ArrayList<>();
+                        for (CartItem item : localItems) {
+                            if (item.getProduct() != null && selectedProductIds.contains(item.getProduct().getId())) {
+                                filtered.add(item);
+                            }
+                        }
+                        cartItems = filtered;
+                    } else {
+                        cartItems = localItems;
+                    }
+                    renderCartSummary();
+                } else {
+                    Toast.makeText(CheckoutActivity.this, "Không thể tải giỏ hàng từ Firebase.", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
             }
         });
     }
@@ -166,15 +231,17 @@ public class CheckoutActivity extends AppCompatActivity {
 
             // Nạp giao diện một dòng tóm tắt sản phẩm và ánh xạ các ô chữ bên trong
             View itemView = inflater.inflate(R.layout.item_checkout_summary, llOrderItemsContainer, false);
-            TextView tvIcon = itemView.findViewById(R.id.tvSummaryIcon);
+            ImageView ivIcon = itemView.findViewById(R.id.ivSummaryIcon);
             TextView tvName = itemView.findViewById(R.id.tvSummaryName);
             TextView tvQuantity = itemView.findViewById(R.id.tvSummaryQuantity);
             TextView tvSubtotal = itemView.findViewById(R.id.tvSummarySubtotal);
 
-            // Gán biểu tượng, tên sản phẩm, số lượng mua và thành tiền của món đó
+            // Gán tên sản phẩm, số lượng mua và thành tiền của món đó
             if (item.getProduct() != null) {
-                tvIcon.setText(item.getProduct().getIcon());
                 tvName.setText(item.getProduct().getName());
+            }
+            if (ivIcon != null) {
+                ivIcon.setImageResource(R.drawable.ic_orders);
             }
             tvQuantity.setText("Số lượng: x" + item.getQuantity());
             tvSubtotal.setText(item.getFormattedSubtotal());
