@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -35,7 +36,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.item_product, parent, false);
             holder = new ViewHolder();
-            holder.tvIcon = convertView.findViewById(R.id.tvIcon);
+            holder.ivProductImage = convertView.findViewById(R.id.ivProductImage);
             holder.tvCategory = convertView.findViewById(R.id.tvCategory);
             holder.tvName = convertView.findViewById(R.id.tvName);
             holder.tvProductReviewSummary = convertView.findViewById(R.id.tvProductReviewSummary);
@@ -53,8 +54,10 @@ public class ProductAdapter extends ArrayAdapter<Product> {
 
         Product product = getItem(position);
         if (product != null) {
-            if (holder.tvIcon != null)
-                holder.tvIcon.setText(product.getIcon());
+            if (holder.ivProductImage != null) {
+                ImageBlobLoader.bind(holder.ivProductImage, product.getImageBytes(),
+                        "product-" + product.getId(), R.drawable.ic_product_image_placeholder);
+            }
             if (holder.tvCategory != null)
                 holder.tvCategory.setText(product.getCategory());
             if (holder.tvName != null)
@@ -144,7 +147,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
     }
 
     private static class ViewHolder {
-        TextView tvIcon;
+        ImageView ivProductImage;
         TextView tvCategory;
         TextView tvName;
         TextView tvProductReviewSummary;

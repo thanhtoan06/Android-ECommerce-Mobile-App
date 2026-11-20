@@ -188,13 +188,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
-                    <TextView
-                        android:id="@+id/tvIcon"
+                    <ImageView
+                        android:id="@+id/ivProductImage"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:textSize="88sp"
-                        tools:text="📱" />
+                        android:contentDescription="Ảnh sản phẩm"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_product_image_placeholder" />
                 </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 

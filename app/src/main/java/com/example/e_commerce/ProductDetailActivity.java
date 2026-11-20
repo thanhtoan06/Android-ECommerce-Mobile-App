@@ -9,6 +9,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,7 +44,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_product_detail);
 
         View btnBack = findViewById(R.id.btnBack);
-        TextView tvIcon = findViewById(R.id.tvIcon);
+        ImageView ivProductImage = findViewById(R.id.ivProductImage);
         TextView tvCategory = findViewById(R.id.tvCategory);
         TextView tvStock = findViewById(R.id.tvStock);
         TextView tvName = findViewById(R.id.tvName);
@@ -88,7 +89,8 @@ public class ProductDetailActivity extends AppCompatActivity {
                     return;
                 }
 
-                tvIcon.setText(product.getIcon());
+                ImageBlobLoader.bind(ivProductImage, product.getImageBytes(),
+                        "product-" + product.getId(), R.drawable.ic_product_image_placeholder);
                 tvCategory.setText(product.getCategory());
                 tvName.setText(product.getName());
                 productReviewCount = product.getReviewCount();

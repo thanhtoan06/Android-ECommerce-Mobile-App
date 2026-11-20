@@ -60,6 +60,29 @@
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:textStyle="bold" />
+        <ImageView
+            android:id="@+id/ivRegisterAvatar"
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_avatar_circle"
+            android:clipToOutline="true"
+            android:contentDescription="Ảnh đại diện (không bắt buộc)"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_person" />
+        <TextView
+            android:id="@+id/btnChooseAvatar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="6dp"
+            android:text="Thêm ảnh đại diện (không bắt buộc)"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

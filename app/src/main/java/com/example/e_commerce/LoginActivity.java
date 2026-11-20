@@ -128,7 +128,7 @@ public class LoginActivity extends AppCompatActivity {
                             }
 
                             prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(),
-                                    user.getAddress());
+                                    user.getAddress(), user.getAvatarImageBytes());
                             PushNotificationManager.requestPermissionIfNeeded(LoginActivity.this);
                             PushNotificationManager.registerCurrentToken(LoginActivity.this, user.getEmail());
                             Toast.makeText(LoginActivity.this,

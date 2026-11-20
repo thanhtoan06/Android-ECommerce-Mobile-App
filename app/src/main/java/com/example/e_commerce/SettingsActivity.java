@@ -19,6 +19,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.AuthCredential;
@@ -35,17 +37,42 @@ public class SettingsActivity extends AppCompatActivity {
     private SharedPrefManager prefManager;
     private FirestoreRepository repository;
     private TextView tvAccountName, tvDetailUsername, tvDetailPhone, tvDetailAddress;
+    private ImageView ivAvatar;
+    private ActivityResultLauncher<String> avatarPicker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        avatarPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri == null) {
+                return;
+            }
+            ivAvatar.setEnabled(false);
+            ImageDataUtils.compressUriAsync(this, uri, true, new ImageDataUtils.ImageCallback() {
+                @Override
+                public void onSuccess(byte[] imageBytes) {
+                    saveAvatar(imageBytes);
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    ivAvatar.setEnabled(true);
+                    String message = error.getLocalizedMessage();
+                    Toast.makeText(SettingsActivity.this,
+                            message == null ? "Không thể xử lý ảnh đại diện." : message,
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        });
 
         setContentView(R.layout.activity_settings);
 
         repository = FirestoreRepository.getInstance();
         prefManager = SharedPrefManager.getInstance(this);
 
-        TextView tvAvatar = findViewById(R.id.tvAvatar);
+        ivAvatar = findViewById(R.id.ivAvatar);
+        ivAvatar.setOnClickListener(v -> avatarPicker.launch("image/*"));
         tvAccountName = findViewById(R.id.tvAccountName);
         TextView tvAccountEmail = findViewById(R.id.tvAccountEmail);
         tvDetailUsername = findViewById(R.id.tvDetailUsername);
@@ -63,12 +90,10 @@ public class SettingsActivity extends AppCompatActivity {
 
         String username = prefManager.getUsername();
         String email = prefManager.getEmail();
-        String avatar = prefManager.getAvatar();
-
         String phone = prefManager.getPhone();
         String address = prefManager.getAddress();
 
-        tvAvatar.setText(avatar);
+        bindAvatar(prefManager.getAvatarImageBytes());
         String displayName = !username.isEmpty() ? username : (!email.isEmpty() ? email : "Người dùng");
         tvAccountName.setText(displayName);
         tvAccountEmail.setText(!email.isEmpty() ? email : "Chưa cập nhật email");
@@ -85,9 +110,9 @@ public class SettingsActivity extends AppCompatActivity {
                     return;
 
                 prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(),
-                        user.getAddress());
+                        user.getAddress(), user.getAvatarImageBytes());
 
-                tvAvatar.setText(user.getAvatar());
+                bindAvatar(user.getAvatarImageBytes());
                 tvAccountName.setText(!user.getFullName().isEmpty() ? user.getFullName() : user.getEmail());
                 tvDetailUsername.setText(!user.getFullName().isEmpty() ? user.getFullName() : "Chưa thiết lập");
                 tvDetailPhone.setText(!user.getPhone().isEmpty() ? user.getPhone() : "Chưa thiết lập");
@@ -96,7 +121,7 @@ public class SettingsActivity extends AppCompatActivity {
 
             @Override
             public void onError(Exception e) {
-
+                Toast.makeText(SettingsActivity.this, "Không thể tải ảnh đại diện.", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -131,6 +156,26 @@ public class SettingsActivity extends AppCompatActivity {
         });
 
         setupBottomMenu();
+    }
+
+    private void saveAvatar(byte[] imageBytes) {
+        ivAvatar.setEnabled(false);
+        repository.updateUserAvatar(prefManager.getEmail(), imageBytes, success -> {
+            ivAvatar.setEnabled(true);
+            if (!success) {
+                bindAvatar(prefManager.getAvatarImageBytes());
+                Toast.makeText(this, "Không thể lưu ảnh đại diện lên Firestore.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            prefManager.saveUser(prefManager.getEmail(), prefManager.getUsername(), prefManager.getAvatar(),
+                    prefManager.getPhone(), prefManager.getAddress(), imageBytes);
+            bindAvatar(imageBytes);
+            Toast.makeText(this, "Đã cập nhật ảnh đại diện.", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void bindAvatar(byte[] imageBytes) {
+        ImageBlobLoader.bind(ivAvatar, imageBytes, "avatar-" + prefManager.getEmail(), R.drawable.ic_person);
     }
 
     private void showChangeUsernameDialog() {

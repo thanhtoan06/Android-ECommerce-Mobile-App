@@ -19,6 +19,7 @@ public class AccountActivity extends AppCompatActivity {
     private FirestoreRepository repository;
     private TextView tvAccountName;
     private TextView tvAccountEmail;
+    private ImageView ivAvatar;
     private TextView tvWaitingCount;
     private TextView tvShippingCount;
     private TextView tvDeliveredCount;
@@ -34,6 +35,9 @@ public class AccountActivity extends AppCompatActivity {
         repository = FirestoreRepository.getInstance();
         tvAccountName = findViewById(R.id.tvAccountName);
         tvAccountEmail = findViewById(R.id.tvAccountEmail);
+        ivAvatar = findViewById(R.id.ivAvatar);
+        ImageBlobLoader.bind(ivAvatar, prefManager.getAvatarImageBytes(),
+                "avatar-" + prefManager.getEmail(), R.drawable.ic_person);
         tvWaitingCount = findViewById(R.id.tvOrderWaitingCount);
         tvShippingCount = findViewById(R.id.tvOrderShippingCount);
         tvDeliveredCount = findViewById(R.id.tvOrderDeliveredCount);
@@ -93,7 +97,9 @@ public class AccountActivity extends AppCompatActivity {
                     return;
                 }
                 prefManager.saveUser(user.getEmail(), user.getFullName(), user.getAvatar(), user.getPhone(),
-                        user.getAddress());
+                        user.getAddress(), user.getAvatarImageBytes());
+                ImageBlobLoader.bind(ivAvatar, user.getAvatarImageBytes(),
+                        "avatar-" + user.getEmail(), R.drawable.ic_person);
                 tvAccountName.setText(!user.getFullName().isEmpty() ? user.getFullName() : user.getEmail());
                 tvAccountEmail.setText(user.getEmail());
             }

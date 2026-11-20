@@ -15,7 +15,7 @@ public class Product {
     private final String category;
     private final long price;
     private final String description;
-    private final String icon;
+    private final byte[] imageBytes;
     private final int stock;
     private final int soldCount;
     private final double averageRating;
@@ -23,24 +23,30 @@ public class Product {
     private final Map<String, String> specifications;
     private final Date createdAt;
 
-    public Product(int id, String name, String category, long price, String description, String icon, int stock) {
-        this(id, name, category, price, description, icon, stock, 0, 0, 0, Collections.emptyMap());
+    public Product(int id, String name, String category, long price, String description, int stock) {
+        this(id, name, category, price, description, stock, 0, 0, 0, Collections.emptyMap(), null, null);
     }
 
-    public Product(int id, String name, String category, long price, String description, String icon, int stock,
+    public Product(int id, String name, String category, long price, String description, int stock,
             int soldCount, double averageRating, int reviewCount, Map<String, String> specifications) {
-        this(id, name, category, price, description, icon, stock, soldCount, averageRating, reviewCount,
-                specifications, null);
+        this(id, name, category, price, description, stock, soldCount, averageRating, reviewCount,
+                specifications, null, null);
     }
 
-    public Product(int id, String name, String category, long price, String description, String icon, int stock,
+    public Product(int id, String name, String category, long price, String description, int stock,
             int soldCount, double averageRating, int reviewCount, Map<String, String> specifications, Date createdAt) {
+        this(id, name, category, price, description, stock, soldCount, averageRating, reviewCount,
+                specifications, createdAt, null);
+    }
+
+    public Product(int id, String name, String category, long price, String description, int stock,
+            int soldCount, double averageRating, int reviewCount, Map<String, String> specifications, Date createdAt,
+            byte[] imageBytes) {
         this.id = id;
         this.name = name;
         this.category = category;
         this.price = price;
         this.description = description;
-        this.icon = icon;
         this.stock = stock;
         this.soldCount = soldCount;
         this.averageRating = averageRating;
@@ -48,10 +54,11 @@ public class Product {
         this.specifications = Collections.unmodifiableMap(
                 new HashMap<>(specifications == null ? Collections.emptyMap() : specifications));
         this.createdAt = createdAt == null ? null : new Date(createdAt.getTime());
+        this.imageBytes = imageBytes == null ? null : imageBytes.clone();
     }
 
-    public Product(int id, String name, String category, long price, String description, String icon) {
-        this(id, name, category, price, description, icon, 0);
+    public Product(int id, String name, String category, long price, String description) {
+        this(id, name, category, price, description, 0);
     }
 
     public int getId() {
@@ -78,8 +85,8 @@ public class Product {
         return description;
     }
 
-    public String getIcon() {
-        return icon;
+    public byte[] getImageBytes() {
+        return imageBytes == null ? null : imageBytes.clone();
     }
 
     public int getStock() {

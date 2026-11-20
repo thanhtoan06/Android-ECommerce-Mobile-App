@@ -14,6 +14,8 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
@@ -24,10 +26,42 @@ public class RegisterActivity extends AppCompatActivity {
     private Button btnSubmitRegister, btnBackToLogin;
     private ImageView btnToggleRegisterPassword, btnToggleConfirmPassword;
     private ProgressBar progressBarRegister;
+    private ImageView ivRegisterAvatar;
+    private ActivityResultLauncher<String> avatarPicker;
+    private byte[] selectedAvatarBytes;
+    private boolean isCompressingAvatar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        avatarPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri == null) {
+                return;
+            }
+            isCompressingAvatar = true;
+            btnSubmitRegister.setEnabled(false);
+            ImageDataUtils.compressUriAsync(this, uri, true, new ImageDataUtils.ImageCallback() {
+                @Override
+                public void onSuccess(byte[] imageBytes) {
+                    isCompressingAvatar = false;
+                    btnSubmitRegister.setEnabled(true);
+                    selectedAvatarBytes = imageBytes;
+                    ImageBlobLoader.bind(ivRegisterAvatar, imageBytes, "register-avatar",
+                            R.drawable.ic_person);
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    isCompressingAvatar = false;
+                    btnSubmitRegister.setEnabled(true);
+                    String message = error.getLocalizedMessage();
+                    Toast.makeText(RegisterActivity.this,
+                            message == null ? "Không thể xử lý ảnh đại diện." : message,
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        });
 
         setContentView(R.layout.activity_register);
 
@@ -41,8 +75,12 @@ public class RegisterActivity extends AppCompatActivity {
         btnToggleRegisterPassword = findViewById(R.id.btnToggleRegisterPassword);
         btnToggleConfirmPassword = findViewById(R.id.btnToggleConfirmPassword);
         progressBarRegister = findViewById(R.id.progressBarRegister);
+        ivRegisterAvatar = findViewById(R.id.ivRegisterAvatar);
+        View btnChooseAvatar = findViewById(R.id.btnChooseAvatar);
         findViewById(R.id.btnBackToHome).setOnClickListener(v -> AuthGate.returnToHome(this));
 
+        ivRegisterAvatar.setOnClickListener(v -> avatarPicker.launch("image/*"));
+        btnChooseAvatar.setOnClickListener(v -> avatarPicker.launch("image/*"));
         setupPasswordToggle(edtRegisterPassword, btnToggleRegisterPassword);
         setupPasswordToggle(edtConfirmPassword, btnToggleConfirmPassword);
 
@@ -89,6 +127,10 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void handleRegister() {
+        if (isCompressingAvatar) {
+            Toast.makeText(this, "Vui lòng đợi ảnh đại diện xử lý xong.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         String name = edtFullName.getText().toString().trim();
         String email = edtRegisterEmail.getText().toString().trim().toLowerCase();
@@ -136,7 +178,7 @@ public class RegisterActivity extends AppCompatActivity {
                 return;
             }
 
-            FirestoreRepository.getInstance().registerUser(name, email, phone, success -> {
+            FirestoreRepository.getInstance().registerUser(name, email, phone, selectedAvatarBytes, success -> {
                 if (!success) {
                     if (auth.getCurrentUser() != null) {
                         auth.getCurrentUser().delete().addOnCompleteListener(this, deleteTask -> {

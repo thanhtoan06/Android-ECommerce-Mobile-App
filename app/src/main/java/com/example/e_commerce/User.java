@@ -7,6 +7,7 @@ public class User {
     private String fullName;
     private String email;
     private String avatar;
+    private byte[] avatarImageBytes;
     private String phone;
     private String address;
 
@@ -21,12 +22,18 @@ public class User {
     }
 
     public User(int id, String fullName, String email, String avatar, String phone, String address) {
+        this(id, fullName, email, avatar, phone, address, null);
+    }
+
+    public User(int id, String fullName, String email, String avatar, String phone, String address,
+            byte[] avatarImageBytes) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.avatar = (avatar != null && !avatar.isEmpty()) ? avatar : "👤";
         this.phone = (phone != null) ? phone : "";
         this.address = (address != null) ? address : "";
+        this.avatarImageBytes = avatarImageBytes == null ? null : avatarImageBytes.clone();
     }
 
     public int getId() {
@@ -59,6 +66,14 @@ public class User {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public byte[] getAvatarImageBytes() {
+        return avatarImageBytes == null ? null : avatarImageBytes.clone();
+    }
+
+    public void setAvatarImageBytes(byte[] avatarImageBytes) {
+        this.avatarImageBytes = avatarImageBytes == null ? null : avatarImageBytes.clone();
     }
 
     public String getPhone() {

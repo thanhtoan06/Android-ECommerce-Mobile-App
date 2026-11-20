@@ -12,7 +12,6 @@ public final class Review implements Serializable {
     private final String reviewerId;
     private final String reviewerName;
     private final String productName;
-    private final String productIcon;
     private final String comment;
     private final int orderId;
     private final int orderItemId;
@@ -24,14 +23,13 @@ public final class Review implements Serializable {
     private final Date createdAt;
     private final Date updatedAt;
 
-    private Review(String id, String reviewerId, String reviewerName, String productName, String productIcon,
+    private Review(String id, String reviewerId, String reviewerName, String productName,
             String comment, int orderId, int orderItemId, int productId, int rating, long likesCount, long viewsCount,
             boolean anonymous, Date createdAt, Date updatedAt) {
         this.id = id;
         this.reviewerId = reviewerId;
         this.reviewerName = reviewerName;
         this.productName = productName;
-        this.productIcon = productIcon;
         this.comment = comment;
         this.orderId = orderId;
         this.orderItemId = orderItemId;
@@ -50,7 +48,6 @@ public final class Review implements Serializable {
                 stringValue(document, "reviewerId"),
                 stringValue(document, "reviewerName"),
                 stringValue(document, "productName"),
-                stringValue(document, "productIcon"),
                 stringValue(document, "comment"),
                 intValue(document, "orderId"),
                 intValue(document, "orderItemId"),
@@ -101,10 +98,6 @@ public final class Review implements Serializable {
 
     public String getProductName() {
         return productName;
-    }
-
-    public String getProductIcon() {
-        return productIcon;
     }
 
     public String getComment() {

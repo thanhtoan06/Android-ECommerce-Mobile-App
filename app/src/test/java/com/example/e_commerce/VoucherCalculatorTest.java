@@ -14,7 +14,7 @@ public class VoucherCalculatorTest {
     @Test
     public void productPercentageAppliesToEachEligibleProduct() {
         Product headphones = product(1, "Tai nghe", 100_000);
-        Product phone = new Product(2, "Điện thoại", "Điện thoại", 200_000, "", "", 10);
+        Product phone = new Product(2, "Điện thoại", "Điện thoại", 200_000, "", 10);
         Voucher voucher = voucher("product", "percentage_per_item", 10, "category", "Tai nghe", 0, 0);
 
         VoucherCalculator.ProductDiscount result = VoucherCalculator.calculateProductDiscount(
@@ -75,7 +75,7 @@ public class VoucherCalculatorTest {
     }
 
     private static Product product(int id, String name, long price) {
-        return new Product(id, name, "Tai nghe", price, "", "", 10);
+        return new Product(id, name, "Tai nghe", price, "", 10);
     }
 
     private static Voucher voucher(String type, String discountType, long value, String appliesTo,

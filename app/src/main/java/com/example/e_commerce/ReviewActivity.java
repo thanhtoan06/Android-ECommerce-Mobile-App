@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
@@ -163,7 +164,7 @@ public class ReviewActivity extends AppCompatActivity {
         for (Review review : writtenReviews) {
             if (review.getOrderId() == orderId && review.getProductId() == productId) {
                 showReviewDialog(review.getOrderId(), review.getOrderItemId(), review.getProductId(),
-                        review.getProductName(), review.getProductIcon(), review);
+                        review.getProductName(), review);
                 return;
             }
         }
@@ -172,7 +173,7 @@ public class ReviewActivity extends AppCompatActivity {
             if (item.getOrderId() == orderId && item.getProductId() == productId
                     && item.getOrderItemId() == itemId) {
                 showReviewDialog(item.getOrderId(), item.getOrderItemId(), item.getProductId(),
-                        item.getProductName(), item.getProductIcon(), null);
+                        item.getProductName(), null);
                 return;
             }
         }
@@ -230,9 +231,7 @@ public class ReviewActivity extends AppCompatActivity {
 
     private View createPendingCard(ReviewRepository.ReviewableItem item) {
         LinearLayout card = createCard();
-        TextView title = createText(item.getProductIcon() + "  " + item.getProductName(),
-                R.color.text_primary, 15, true);
-        card.addView(title);
+        addProductHeading(card, item.getProductId(), item.getProductName());
         TextView details = createText("Đơn #DH" + String.format(Locale.getDefault(), "%05d", item.getOrderId())
                 + " · " + item.getOrderDate() + " · Đã giao", R.color.text_secondary, 12, false);
         details.setPadding(0, dp(6), 0, dp(10));
@@ -240,17 +239,15 @@ public class ReviewActivity extends AppCompatActivity {
         Button action = createActionButton("Viết đánh giá");
         card.addView(action);
         card.setOnClickListener(v -> showReviewDialog(item.getOrderId(), item.getOrderItemId(), item.getProductId(),
-                item.getProductName(), item.getProductIcon(), null));
+                item.getProductName(), null));
         action.setOnClickListener(v -> showReviewDialog(item.getOrderId(), item.getOrderItemId(),
-                item.getProductId(), item.getProductName(), item.getProductIcon(), null));
+                item.getProductId(), item.getProductName(), null));
         return card;
     }
 
     private View createReviewCard(Review review) {
         LinearLayout card = createCard();
-        TextView title = createText(review.getProductIcon() + "  " + review.getProductName(),
-                R.color.text_primary, 15, true);
-        card.addView(title);
+        addProductHeading(card, review.getProductId(), review.getProductName());
         TextView rating = createText(stars(review.getRating()) + "  ·  Đơn #DH"
                 + String.format(Locale.getDefault(), "%05d", review.getOrderId()),
                 R.color.text_secondary, 12, false);
@@ -278,13 +275,47 @@ public class ReviewActivity extends AppCompatActivity {
         card.addView(actions);
         card.setOnClickListener(v -> openProductReview(review));
         edit.setOnClickListener(v -> showReviewDialog(review.getOrderId(), review.getOrderItemId(),
-                review.getProductId(), review.getProductName(), review.getProductIcon(), review));
+                review.getProductId(), review.getProductName(), review));
         open.setOnClickListener(v -> openProductReview(review));
         return card;
     }
 
+    private void addProductHeading(LinearLayout card, int productId, String productName) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+
+        ImageView image = new ImageView(this);
+        image.setContentDescription("Ảnh sản phẩm");
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        image.setImageResource(R.drawable.ic_product_image_placeholder);
+        row.addView(image, new LinearLayout.LayoutParams(dp(48), dp(48)));
+
+        TextView title = createText(productName, R.color.text_primary, 15, true);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        titleParams.setMarginStart(dp(10));
+        row.addView(title, titleParams);
+        card.addView(row);
+
+        ProductRepository.findById(productId, new ProductRepository.ProductCallback() {
+            @Override
+            public void onResult(Product product) {
+                if (product != null) {
+                    ImageBlobLoader.bind(image, product.getImageBytes(),
+                            "product-" + product.getId(), R.drawable.ic_product_image_placeholder);
+                }
+            }
+
+            @Override
+            public void onError(Exception error) {
+                android.util.Log.w("ReviewActivity", "Unable to load review product image.", error);
+            }
+        });
+    }
+
     private void showReviewDialog(int orderId, int orderItemId, int productId, String productName,
-            String productIcon, Review existingReview) {
+            Review existingReview) {
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_write_review, null, false);
         RatingBar rating = content.findViewById(R.id.ratingReview);
         EditText comment = content.findViewById(R.id.etReviewComment);
@@ -297,7 +328,7 @@ public class ReviewActivity extends AppCompatActivity {
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(existingReview == null ? "Đánh giá sản phẩm" : "Sửa đánh giá")
-                .setMessage(productIcon + "  " + productName)
+                .setMessage(productName)
                 .setView(content)
                 .setNegativeButton("Hủy", null)
                 .setPositiveButton(existingReview == null ? "Gửi đánh giá" : "Lưu thay đổi", null)
@@ -311,7 +342,7 @@ public class ReviewActivity extends AppCompatActivity {
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setEnabled(false);
             String reviewerName = SharedPrefManager.getInstance(this).getUsername();
-            repository.saveReview(email, reviewerName, orderId, orderItemId, productId, productName, productIcon,
+            repository.saveReview(email, reviewerName, orderId, orderItemId, productId, productName,
                     Math.round(rating.getRating()), text, anonymous.isChecked(), new ReviewRepository.SaveCallback() {
                         @Override
                         public void onResult(ReviewRepository.SaveResult result) {

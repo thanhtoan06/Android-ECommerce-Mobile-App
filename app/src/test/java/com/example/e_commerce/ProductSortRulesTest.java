@@ -66,7 +66,7 @@ public class ProductSortRulesTest {
 
     private static Product product(int id, String name, long price, int soldCount, double rating,
             int reviewCount, Date createdAt) {
-        return new Product(id, name, "Test", price, "", "", 1, soldCount, rating,
+        return new Product(id, name, "Test", price, "", 1, soldCount, rating,
                 reviewCount, Collections.emptyMap(), createdAt);
     }
 }

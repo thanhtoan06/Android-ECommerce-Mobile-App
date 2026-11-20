@@ -11,7 +11,6 @@ public class OrderItem implements Serializable {
     private int orderId;
     private int productId;
     private String productName;
-    private String productIcon;
     private long price;
     private int quantity;
     private long subtotal;
@@ -19,13 +18,12 @@ public class OrderItem implements Serializable {
     public OrderItem() {
     }
 
-    public OrderItem(int id, int orderId, int productId, String productName, String productIcon, long price,
+    public OrderItem(int id, int orderId, int productId, String productName, long price,
             int quantity, long subtotal) {
         this.id = id;
         this.orderId = orderId;
         this.productId = productId;
         this.productName = productName;
-        this.productIcon = productIcon;
         this.price = price;
         this.quantity = quantity;
         this.subtotal = subtotal;
@@ -61,14 +59,6 @@ public class OrderItem implements Serializable {
 
     public void setProductName(String productName) {
         this.productName = productName;
-    }
-
-    public String getProductIcon() {
-        return productIcon;
-    }
-
-    public void setProductIcon(String productIcon) {
-        this.productIcon = productIcon;
     }
 
     public long getPrice() {

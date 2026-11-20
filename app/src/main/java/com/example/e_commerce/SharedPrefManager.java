@@ -3,6 +3,7 @@ package com.example.e_commerce;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
 public class SharedPrefManager {
 
@@ -11,6 +12,7 @@ public class SharedPrefManager {
     private static final String KEY_EMAIL = "email";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_AVATAR = "avatar";
+    private static final String KEY_AVATAR_IMAGE = "avatar_image";
     private static final String KEY_PHONE = "phone";
     private static final String KEY_ADDRESS = "address";
 
@@ -31,10 +33,20 @@ public class SharedPrefManager {
     }
 
     public void saveUser(String email, String username, String avatar, String phone, String address) {
+        saveUser(email, username, avatar, phone, address, null);
+    }
+
+    public void saveUser(String email, String username, String avatar, String phone, String address,
+            byte[] avatarImageBytes) {
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
         editor.putString(KEY_EMAIL, email);
         editor.putString(KEY_USERNAME, username);
         editor.putString(KEY_AVATAR, (avatar != null && !avatar.isEmpty()) ? avatar : "👤");
+        if (avatarImageBytes == null || avatarImageBytes.length == 0) {
+            editor.remove(KEY_AVATAR_IMAGE);
+        } else {
+            editor.putString(KEY_AVATAR_IMAGE, Base64.encodeToString(avatarImageBytes, Base64.NO_WRAP));
+        }
         editor.putString(KEY_PHONE, phone != null ? phone : "");
         editor.putString(KEY_ADDRESS, address != null ? address : "");
         editor.apply();
@@ -73,6 +85,11 @@ public class SharedPrefManager {
 
     public String getAvatar() {
         return sharedPreferences.getString(KEY_AVATAR, "👤");
+    }
+
+    public byte[] getAvatarImageBytes() {
+        String encoded = sharedPreferences.getString(KEY_AVATAR_IMAGE, null);
+        return encoded == null ? null : Base64.decode(encoded, Base64.NO_WRAP);
     }
 
     public String getPhone() {

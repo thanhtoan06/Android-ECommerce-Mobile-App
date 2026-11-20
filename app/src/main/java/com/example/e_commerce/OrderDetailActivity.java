@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -230,14 +231,28 @@ public class OrderDetailActivity extends AppCompatActivity {
             itemRow.setGravity(Gravity.CENTER_VERTICAL);
             itemRow.setPadding(0, paddingVertical, 0, paddingVertical);
 
-            TextView tvIcon = new TextView(this);
-            tvIcon.setText(item.getProductIcon());
-            tvIcon.setTextSize(20f);
-            tvIcon.setGravity(Gravity.CENTER);
-            tvIcon.setBackgroundResource(R.drawable.bg_counter_btn);
+            ImageView ivProductImage = new ImageView(this);
+            ivProductImage.setContentDescription("Ảnh sản phẩm");
+            ivProductImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            ivProductImage.setImageResource(R.drawable.ic_product_image_placeholder);
+            ivProductImage.setBackgroundResource(R.drawable.bg_counter_btn);
             LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(iconSize, iconSize);
-            tvIcon.setLayoutParams(iconParams);
-            itemRow.addView(tvIcon);
+            ivProductImage.setLayoutParams(iconParams);
+            itemRow.addView(ivProductImage);
+            ProductRepository.findById(item.getProductId(), new ProductRepository.ProductCallback() {
+                @Override
+                public void onResult(Product product) {
+                    if (product != null) {
+                        ImageBlobLoader.bind(ivProductImage, product.getImageBytes(),
+                                "product-" + product.getId(), R.drawable.ic_product_image_placeholder);
+                    }
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    android.util.Log.w("OrderDetailActivity", "Unable to load order product image.", error);
+                }
+            });
 
             LinearLayout infoCol = new LinearLayout(this);
             infoCol.setOrientation(LinearLayout.VERTICAL);

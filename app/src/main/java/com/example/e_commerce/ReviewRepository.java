@@ -134,7 +134,7 @@ public final class ReviewRepository {
     }
 
     public void saveReview(String email, String reviewerName, int orderId, int orderItemId, int productId,
-            String productName, String productIcon, int rating, String comment, boolean anonymous,
+            String productName, int rating, String comment, boolean anonymous,
             SaveCallback callback) {
         String normalizedEmail;
         String reviewerId;
@@ -192,7 +192,6 @@ public final class ReviewRepository {
             reviewData.put("orderItemId", orderItemId);
             reviewData.put("productId", productId);
             reviewData.put("productName", productName);
-            reviewData.put("productIcon", productIcon);
             reviewData.put("reviewerId", reviewerId);
             reviewData.put("reviewerEmail", normalizedEmail);
             reviewData.put("reviewerName", anonymous ? "" : reviewerName);
@@ -392,7 +391,6 @@ public final class ReviewRepository {
         private final int productId;
         private final String orderDate;
         private final String productName;
-        private final String productIcon;
         private final String orderStatus;
 
         private ReviewableItem(Order order, OrderItem item) {
@@ -401,7 +399,6 @@ public final class ReviewRepository {
             this.productId = item.getProductId();
             this.orderDate = order.getOrderDate();
             this.productName = item.getProductName();
-            this.productIcon = item.getProductIcon();
             this.orderStatus = order.getStatus();
         }
 
@@ -423,10 +420,6 @@ public final class ReviewRepository {
 
         public String getProductName() {
             return productName;
-        }
-
-        public String getProductIcon() {
-            return productIcon;
         }
 
         public String getOrderStatus() {

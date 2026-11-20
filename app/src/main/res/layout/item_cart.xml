@@ -28,13 +28,13 @@
         android:layout_width="76dp"
         android:layout_height="76dp"
         android:background="@drawable/bg_chip_blue">
-<TextView
-            android:id="@+id/tvCartIcon"
+<ImageView
+            android:id="@+id/ivCartProductImage"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center"
-            android:textSize="36sp"
-            tools:text="📱" />
+            android:contentDescription="Ảnh sản phẩm trong giỏ hàng"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_product_image_placeholder" />
     </FrameLayout>
 <LinearLayout
         android:layout_width="0dp"

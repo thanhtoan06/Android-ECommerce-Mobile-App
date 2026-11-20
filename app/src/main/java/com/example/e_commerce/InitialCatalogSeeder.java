@@ -1,16 +1,22 @@
 package com.example.e_commerce;
 
+import android.content.Context;
+
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
 import com.google.firebase.Timestamp;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Blob;
 import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.firestore.SetOptions;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -21,11 +27,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class InitialCatalogSeeder {
 
     private static final String SEED_MARKER = "demoSeed";
     private static final long REVIEW_STATS_VERSION = 1L;
+    private static final long PRODUCT_IMAGE_VERSION = 1L;
+    private static final ExecutorService SEED_EXECUTOR = Executors.newSingleThreadExecutor();
     private static Task<Boolean> seedTask;
 
     private InitialCatalogSeeder() {
@@ -44,7 +54,7 @@ public final class InitialCatalogSeeder {
                     if (marker.exists()) {
                         Long version = marker.getLong("reviewStatsVersion");
                         if (version != null && version >= REVIEW_STATS_VERSION) {
-                            completion.setResult(false);
+                            seedProductImagesIfNeeded(firestore, completion);
                         } else {
                             migrateSeedReviewStatsIfNeeded(firestore, completion);
                         }
@@ -66,14 +76,22 @@ public final class InitialCatalogSeeder {
 
     private static void seedAll(FirebaseFirestore firestore,
             TaskCompletionSource<Boolean> completion) {
-        List<Map<String, Object>> operations = new ArrayList<>();
-        Map<String, SeedReviewStats> reviewStats = randomizedSeedReviewStats();
-        Map<Integer, ProductRatingStats> productRatingStats = productRatingStats(reviewStats);
+        SEED_EXECUTOR.execute(() -> {
+            try {
+                Context context = FirebaseApp.getInstance().getApplicationContext();
+                Map<Integer, byte[]> productImages = SeedProductImages.load(context);
+                List<Map<String, Object>> operations = new ArrayList<>();
+                Map<String, SeedReviewStats> reviewStats = randomizedSeedReviewStats();
+                Map<Integer, ProductRatingStats> productRatingStats = productRatingStats(reviewStats);
 
-        addCatalogData(operations, productRatingStats);
-        addAccountsData(operations, reviewStats);
+                addCatalogData(operations, productRatingStats, productImages);
+                addAccountsData(operations, reviewStats);
 
-        commitOperations(firestore, operations, 0, completion);
+                commitOperations(firestore, operations, 0, completion);
+            } catch (IOException | RuntimeException error) {
+                completion.setException(error);
+            }
+        });
     }
 
     private static Map<String, SeedReviewStats> randomizedSeedReviewStats() {
@@ -193,15 +211,52 @@ public final class InitialCatalogSeeder {
             markerUpdate.put("reviewStatsUpdatedAt", FieldValue.serverTimestamp());
             transaction.update(markerRef, markerUpdate);
             return true;
-        }).addOnSuccessListener(completion::setResult)
+        }).addOnSuccessListener(ignored -> seedProductImagesIfNeeded(firestore, completion))
                 .addOnFailureListener(completion::setException);
     }
 
+    private static void seedProductImagesIfNeeded(FirebaseFirestore firestore,
+            TaskCompletionSource<Boolean> completion) {
+        DocumentReference markerRef = firestore.collection("appMetadata").document(SEED_MARKER);
+        markerRef.get().addOnSuccessListener(marker -> {
+            Long version = marker.getLong("productImageVersion");
+            if (version != null && version >= PRODUCT_IMAGE_VERSION) {
+                completion.setResult(false);
+                return;
+            }
+
+            SEED_EXECUTOR.execute(() -> {
+                try {
+                    Context context = FirebaseApp.getInstance().getApplicationContext();
+                    Map<Integer, byte[]> productImages = SeedProductImages.load(context);
+                    WriteBatch batch = firestore.batch();
+                    for (Map.Entry<Integer, byte[]> entry : productImages.entrySet()) {
+                        batch.update(firestore.collection("products")
+                                        .document(String.valueOf(entry.getKey())),
+                                "imageBlob", Blob.fromBytes(entry.getValue()),
+                                "icon", FieldValue.delete());
+                    }
+
+                    Map<String, Object> markerUpdate = new HashMap<>();
+                    markerUpdate.put("productImageVersion", PRODUCT_IMAGE_VERSION);
+                    markerUpdate.put("productImagesUpdatedAt", FieldValue.serverTimestamp());
+                    batch.set(markerRef, markerUpdate, SetOptions.merge());
+                    batch.commit()
+                            .addOnSuccessListener(ignored -> completion.setResult(true))
+                            .addOnFailureListener(completion::setException);
+                } catch (IOException | RuntimeException error) {
+                    completion.setException(error);
+                }
+            });
+        }).addOnFailureListener(completion::setException);
+    }
+
     private static void addCatalogData(List<Map<String, Object>> operations,
-            Map<Integer, ProductRatingStats> productRatingStats) {
+            Map<Integer, ProductRatingStats> productRatingStats, Map<Integer, byte[]> productImages) {
         for (Product product : catalogProducts()) {
             operations.add(document(firestoreDocumentKey("products", product.getId()),
-                    productData(product, productRatingStats.get(product.getId())), false));
+                    productData(product, productRatingStats.get(product.getId()),
+                            productImages.get(product.getId())), false));
         }
 
         for (Map<String, Object> category : catalogCategories()) {
@@ -229,7 +284,6 @@ public final class InitialCatalogSeeder {
             user.put("fullName", account.name);
             user.put("username", account.name);
             user.put("email", account.email);
-            user.put("avatar", "👤");
             user.put("phone", account.phone);
             user.put("address", account.address);
             user.put("pointsBalance", account.points);
@@ -766,86 +820,86 @@ public final class InitialCatalogSeeder {
         List<Product> products = new ArrayList<>();
         products.add(product(1, "Samsung Galaxy A16 5G 128GB", "Điện thoại", 5990000,
                 "Điện thoại 5G màn hình Super AMOLED 6,7 inch 90Hz, camera chính 50MP và pin 5.000mAh.",
-                "📱", 38, 6, 5.0, 5,
+                38, 6, 5.0, 5,
                 specs("Màn hình", "Super AMOLED 6,7 inch 90Hz", "RAM", "8GB",
                         "Bộ nhớ", "128GB", "Camera chính", "50MP", "Pin", "5.000mAh")));
         products.add(product(2, "Samsung Galaxy A55 5G 256GB", "Điện thoại", 12990000,
                 "Điện thoại 5G với màn hình Super AMOLED 120Hz, camera chính 50MP chống rung quang học.",
-                "📱", 21, 5, 5.0, 5,
+                21, 5, 5.0, 5,
                 specs("Màn hình", "Super AMOLED 6,6 inch 120Hz", "Chip", "Exynos 1480",
                         "RAM", "8GB", "Bộ nhớ", "256GB", "Camera chính", "50MP OIS")));
         products.add(product(3, "Xiaomi 14T 512GB", "Điện thoại", 19990000,
                 "Điện thoại Xiaomi 14T camera Leica, màn hình AMOLED 144Hz và chip Dimensity 8300-Ultra.",
-                "📱", 12, 5, 4.0, 5,
+                12, 5, 4.0, 5,
                 specs("Màn hình", "AMOLED 6,67 inch 144Hz", "Chip", "Dimensity 8300-Ultra",
                         "RAM", "12GB", "Bộ nhớ", "512GB", "Camera chính", "Leica 50MP OIS")));
         products.add(product(4, "ASUS Vivobook 15 X1504VA Core i5 16GB 512GB", "Laptop", 14990000,
                 "Laptop 15,6 inch Full HD dùng Intel Core i5-1335U, RAM 16GB và SSD 512GB.",
-                "💻", 17, 5, 5.0, 5,
+                17, 5, 5.0, 5,
                 specs("Màn hình", "15,6 inch Full HD", "CPU", "Intel Core i5-1335U",
                         "RAM", "16GB", "Ổ cứng", "512GB SSD")));
         products.add(product(5, "Apple MacBook Air 13-inch M3 16GB 256GB", "Laptop", 22990000,
                 "MacBook Air 13,6 inch Liquid Retina dùng chip Apple M3.",
-                "💻", 10, 5, 5.0, 5,
+                10, 5, 5.0, 5,
                 specs("Màn hình", "Liquid Retina 13,6 inch", "Chip", "Apple M3",
                         "Bộ nhớ thống nhất", "16GB", "Ổ cứng", "256GB SSD")));
         products.add(product(6, "Lenovo LOQ 15IRX9 Core i5 RTX 4050", "Laptop", 31990000,
                 "Laptop gaming màn hình 144Hz, Intel Core i5-13450HX và RTX 4050.",
-                "💻", 7, 5, 4.0, 5,
+                7, 5, 4.0, 5,
                 specs("Màn hình", "15,6 inch Full HD 144Hz", "CPU", "Intel Core i5-13450HX",
                         "RAM", "16GB", "Đồ họa", "GeForce RTX 4050 6GB", "Ổ cứng", "512GB SSD")));
         products.add(product(7, "Samsung Galaxy Buds FE", "Tai nghe", 1290000,
                 "Tai nghe true wireless có chống ồn chủ động.",
-                "🎧", 52, 5, 5.0, 5,
+                52, 5, 5.0, 5,
                 specs("Kết nối", "Bluetooth", "Chống ồn", "ANC",
                         "Thời lượng nghe", "Tối đa 6 giờ", "Chống nước", "IPX2")));
         products.add(product(8, "Samsung Galaxy Buds3", "Tai nghe", 2490000,
                 "Tai nghe true wireless hỗ trợ chống ồn chủ động.",
-                "🎧", 29, 5, 4.0, 5,
+                29, 5, 4.0, 5,
                 specs("Kết nối", "Bluetooth 5.4", "Chống ồn", "ANC",
                         "Thời lượng nghe", "Tối đa 5 giờ", "Chống nước", "IP57")));
         products.add(product(9, "Sony WH-1000XM5", "Tai nghe", 6990000,
                 "Tai nghe chụp tai chống ồn chủ động và kết nối đa điểm.",
-                "🎧", 14, 5, 5.0, 5,
+                14, 5, 5.0, 5,
                 specs("Kiểu tai nghe", "Chụp tai không dây", "Chống ồn", "ANC",
                         "Thời lượng pin", "Tối đa 30 giờ", "Kết nối", "Bluetooth")));
         products.add(product(10, "Xiaomi Smart Band 9 Pro", "Đồng hồ thông minh", 1990000,
                 "Vòng đeo thông minh màn hình AMOLED 1,74 inch.",
-                "⌚", 34, 5, 4.0, 5,
+                34, 5, 4.0, 5,
                 specs("Màn hình", "AMOLED 1,74 inch", "GPS", "Tích hợp",
                         "Chống nước", "5 ATM", "Thời lượng pin", "Tối đa 21 ngày")));
         products.add(product(11, "Samsung Galaxy Watch7 44mm Bluetooth", "Đồng hồ thông minh", 4590000,
                 "Đồng hồ thông minh màn hình Super AMOLED.",
-                "⌚", 19, 5, 5.0, 5,
+                19, 5, 5.0, 5,
                 specs("Màn hình", "Super AMOLED 1,5 inch", "Chip", "Exynos W1000",
                         "Kết nối", "Bluetooth", "Chống nước", "5 ATM")));
         products.add(product(12, "Garmin Forerunner 265", "Đồng hồ thông minh", 8990000,
                 "Đồng hồ chạy bộ GPS với màn hình AMOLED.",
-                "⌚", 8, 5, 5.0, 5,
+                8, 5, 5.0, 5,
                 specs("Màn hình", "AMOLED 1,3 inch", "GPS", "Đa băng tần",
                         "Chống nước", "5 ATM", "Thời lượng pin", "Tối đa 13 ngày")));
         products.add(product(13, "Anker 735 Charger GaNPrime 65W", "Phụ kiện & Sạc", 790000,
                 "Củ sạc GaN 65W nhỏ gọn.",
-                "🔌", 64, 5, 4.0, 5,
+                64, 5, 4.0, 5,
                 specs("Công suất", "Tối đa 65W", "Cổng", "2 USB-C, 1 USB-A",
                         "Công nghệ", "GaNPrime")));
         products.add(product(14, "Anker 325 Power Bank PowerCore 20K", "Phụ kiện & Sạc", 1190000,
                 "Pin dự phòng dung lượng 20.000mAh.",
-                "🔋", 47, 5, 5.0, 5,
+                47, 5, 5.0, 5,
                 specs("Dung lượng", "20.000mAh", "Cổng ra", "2 USB-A",
                         "Cổng vào", "USB-C")));
         products.add(product(15, "UGREEN Revodok 8-in-1 USB-C Hub", "Phụ kiện & Sạc", 1490000,
                 "Bộ chuyển đổi USB-C đa cổng với HDMI 4K.",
-                "🧩", 25, 5, 4.0, 5,
+                25, 5, 4.0, 5,
                 specs("Cổng", "HDMI, USB-A, USB-C, SD/microSD",
                         "HDMI", "Tối đa 4K", "Sạc PD", "Tối đa 100W")));
         return products;
     }
 
     private static Product product(int id, String name, String category, long price,
-            String description, String icon, int stock, int soldCount, double averageRating,
+            String description, int stock, int soldCount, double averageRating,
             int reviewCount, Map<String, String> specifications) {
-        return new Product(id, name, category, price, description, icon, stock,
+        return new Product(id, name, category, price, description, stock,
                 soldCount, averageRating, reviewCount, specifications);
     }
 
@@ -943,10 +997,15 @@ public final class InitialCatalogSeeder {
         throw new IllegalArgumentException("Unknown seeded voucher: " + voucherId);
     }
 
-    private static Map<String, Object> productData(Product product, ProductRatingStats ratingStats) {
+    private static Map<String, Object> productData(Product product, ProductRatingStats ratingStats,
+            byte[] imageBytes) {
         if (ratingStats == null || ratingStats.reviewCount != product.getReviewCount()) {
             throw new IllegalStateException(
                     "Seed review totals do not match product " + product.getId());
+        }
+        if (imageBytes == null || imageBytes.length == 0
+                || imageBytes.length > ImageDataUtils.MAX_IMAGE_BYTES) {
+            throw new IllegalStateException("Missing or oversized seed image for product " + product.getId());
         }
         Map<String, Object> data = new HashMap<>();
         data.put("id", product.getId());
@@ -954,7 +1013,7 @@ public final class InitialCatalogSeeder {
         data.put("category", product.getCategory());
         data.put("price", product.getPrice());
         data.put("description", product.getDescription());
-        data.put("icon", product.getIcon());
+        data.put("imageBlob", Blob.fromBytes(imageBytes));
         data.put("stock", product.getStock());
         data.put("soldCount", product.getSoldCount());
         data.put("averageRating", (double) ratingStats.ratingSum / ratingStats.reviewCount);
@@ -972,7 +1031,6 @@ public final class InitialCatalogSeeder {
         item.put("orderId", orderId);
         item.put("productId", product.getId());
         item.put("productName", product.getName());
-        item.put("productIcon", product.getIcon());
         item.put("price", product.getPrice());
         item.put("quantity", quantity);
         item.put("originalSubtotal", subtotal);
@@ -1010,7 +1068,6 @@ public final class InitialCatalogSeeder {
         review.put("orderItemId", 1);
         review.put("productId", product.getId());
         review.put("productName", product.getName());
-        review.put("productIcon", product.getIcon());
         review.put("reviewerId", reviewerUid(account));
         review.put("reviewerEmail", account.email);
         review.put("reviewerName", account.name);
@@ -1028,6 +1085,7 @@ public final class InitialCatalogSeeder {
         Map<String, Object> marker = new HashMap<>();
         marker.put("version", 1);
         marker.put("reviewStatsVersion", REVIEW_STATS_VERSION);
+        marker.put("productImageVersion", PRODUCT_IMAGE_VERSION);
         marker.put("seededAt", FieldValue.serverTimestamp());
         List<String> emails = new ArrayList<>();
         for (DemoAccount account : demoAccounts()) {

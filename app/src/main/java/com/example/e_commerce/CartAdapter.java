@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,7 +45,7 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
             convertView = inflater.inflate(R.layout.item_cart, parent, false);
             holder = new ViewHolder();
             holder.cbItem = convertView.findViewById(R.id.cbCartItem);
-            holder.tvIcon = convertView.findViewById(R.id.tvCartIcon);
+            holder.ivProductImage = convertView.findViewById(R.id.ivCartProductImage);
             holder.tvCategory = convertView.findViewById(R.id.tvCartCategory);
             holder.tvName = convertView.findViewById(R.id.tvCartName);
             holder.tvUnitPrice = convertView.findViewById(R.id.tvCartUnitPrice);
@@ -77,7 +78,8 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
 
             if (product != null) {
 
-                holder.tvIcon.setText(product.getIcon());
+                ImageBlobLoader.bind(holder.ivProductImage, product.getImageBytes(),
+                        "product-" + product.getId(), R.drawable.ic_product_image_placeholder);
                 holder.tvCategory.setText(product.getCategory());
                 holder.tvName.setText(product.getName());
 
@@ -137,7 +139,7 @@ public class CartAdapter extends ArrayAdapter<CartItem> {
 
     private static class ViewHolder {
         CheckBox cbItem;
-        TextView tvIcon;
+        ImageView ivProductImage;
         TextView tvCategory;
         TextView tvName;
         TextView tvUnitPrice;

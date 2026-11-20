@@ -8,6 +8,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Blob;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
@@ -135,6 +136,32 @@ public class FirestoreRepository {
         firestore.collection("products").document(String.valueOf(id)).get()
                 .addOnSuccessListener(d -> callback.onResult(d.exists() ? toProduct(d) : null))
                 .addOnFailureListener(callback::onError);
+    }
+
+    public void updateProductImage(int productId, byte[] imageBytes, BooleanCallback callback) {
+        if (productId <= 0 || imageBytes == null || imageBytes.length == 0
+                || imageBytes.length > ImageDataUtils.MAX_IMAGE_BYTES) {
+            callback.onResult(false);
+            return;
+        }
+        Map<String, Object> values = new HashMap<>();
+        values.put("imageBlob", Blob.fromBytes(imageBytes));
+        values.put("icon", FieldValue.delete());
+        firestore.collection("products").document(String.valueOf(productId)).update(values)
+                .addOnCompleteListener(task -> callback.onResult(task.isSuccessful()));
+    }
+
+    public void updateUserAvatar(String email, byte[] imageBytes, BooleanCallback callback) {
+        if (imageBytes == null || imageBytes.length == 0
+                || imageBytes.length > ImageDataUtils.MAX_IMAGE_BYTES) {
+            callback.onResult(false);
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("imageBlob", Blob.fromBytes(imageBytes));
+        firestore.collection("users").document(normalizeEmail(email))
+                .collection("images").document("avatar").set(data)
+                .addOnCompleteListener(task -> callback.onResult(task.isSuccessful()));
     }
 
     public void decreaseStock(int productId, int quantity, BooleanCallback callback) {
@@ -536,7 +563,6 @@ public class FirestoreRepository {
                 data.put("orderId", numericId);
                 data.put("productId", product == null ? 0 : product.getId());
                 data.put("productName", product == null ? "Sản phẩm" : product.getName());
-                data.put("productIcon", product == null ? "📦" : product.getIcon());
                 data.put("price", product == null ? 0 : product.getPrice());
                 data.put("quantity", item.getQuantity());
                 data.put("originalSubtotal", originalSubtotal);
@@ -668,7 +694,6 @@ public class FirestoreRepository {
                 data.put("orderId", item.getOrderId());
                 data.put("productId", item.getProductId());
                 data.put("productName", item.getProductName());
-                data.put("productIcon", item.getProductIcon());
                 data.put("price", item.getPrice());
                 data.put("quantity", item.getQuantity());
                 data.put("subtotal", item.getSubtotal());
@@ -1216,17 +1241,32 @@ public class FirestoreRepository {
     }
 
     public void registerUser(String fullName, String email, String phone, BooleanCallback callback) {
+        registerUser(fullName, email, phone, null, callback);
+    }
+
+    public void registerUser(String fullName, String email, String phone, byte[] avatarImageBytes,
+            BooleanCallback callback) {
         String normalized = normalizeEmail(email);
         Map<String, Object> data = new HashMap<>();
         data.put("id", normalized.hashCode());
         data.put("fullName", fullName.trim());
         data.put("email", normalized);
-        data.put("avatar", "👤");
         data.put("phone", phone == null ? "" : phone.trim());
         data.put("address", "");
 
-        firestore.collection("users").document(normalized).set(data)
-                .addOnCompleteListener(t -> callback.onResult(t.isSuccessful()));
+        WriteBatch batch = firestore.batch();
+        batch.set(firestore.collection("users").document(normalized), data);
+        if (avatarImageBytes != null && avatarImageBytes.length > 0) {
+            if (avatarImageBytes.length > ImageDataUtils.MAX_IMAGE_BYTES) {
+                callback.onResult(false);
+                return;
+            }
+            Map<String, Object> avatarData = new HashMap<>();
+            avatarData.put("imageBlob", Blob.fromBytes(avatarImageBytes));
+            batch.set(firestore.collection("users").document(normalized)
+                    .collection("images").document("avatar"), avatarData);
+        }
+        batch.commit().addOnCompleteListener(task -> callback.onResult(task.isSuccessful()));
     }
 
     public void getUserByAccount(String account, UserCallback callback) {
@@ -1253,7 +1293,11 @@ public class FirestoreRepository {
                     break;
                 }
             }
-            callback.onResult(found);
+            if (found == null) {
+                callback.onResult(null);
+            } else {
+                loadUserAvatar(found, callback);
+            }
         }).addOnFailureListener(callback::onError);
     }
 
@@ -1285,8 +1329,30 @@ public class FirestoreRepository {
 
     public void getUserByEmail(String email, UserCallback callback) {
         firestore.collection("users").document(normalizeEmail(email)).get()
-                .addOnSuccessListener(d -> callback.onResult(d.exists() ? toUser(d) : null))
+                .addOnSuccessListener(d -> {
+                    if (!d.exists()) {
+                        callback.onResult(null);
+                    } else {
+                        loadUserAvatar(toUser(d), callback);
+                    }
+                })
                 .addOnFailureListener(callback::onError);
+    }
+
+    private void loadUserAvatar(User user, UserCallback callback) {
+        firestore.collection("users").document(normalizeEmail(user.getEmail()))
+                .collection("images").document("avatar").get()
+                .addOnSuccessListener(document -> {
+                    Blob image = document.getBlob("imageBlob");
+                    if (image != null) {
+                        user.setAvatarImageBytes(image.toBytes());
+                    }
+                    callback.onResult(user);
+                })
+                .addOnFailureListener(error -> {
+                    android.util.Log.w("FirestoreRepository", "Unable to load user avatar image.", error);
+                    callback.onResult(user);
+                });
     }
 
     public void checkUsernameExists(String username, String currentEmail, UsernameCallback callback) {
@@ -1349,9 +1415,11 @@ public class FirestoreRepository {
                 ? ((Number) d.get("averageRating")).doubleValue()
                 : 0.0;
         Timestamp createdAt = d.getTimestamp("createdAt");
+        Blob image = d.getBlob("imageBlob");
         return new Product(value(d, "id"), d.getString("name"), d.getString("category"), longValue(d, "price"),
-                d.getString("description"), d.getString("icon"), stock, value(d, "soldCount"), averageRating,
-                value(d, "reviewCount"), specifications, createdAt == null ? null : createdAt.toDate());
+                d.getString("description"), stock, value(d, "soldCount"), averageRating,
+                value(d, "reviewCount"), specifications, createdAt == null ? null : createdAt.toDate(),
+                image == null ? null : image.toBytes());
     }
 
     private Order toOrder(DocumentSnapshot d) {
@@ -1374,7 +1442,7 @@ public class FirestoreRepository {
 
     private OrderItem toOrderItem(DocumentSnapshot d) {
         return new OrderItem(value(d, "id"), value(d, "orderId"), value(d, "productId"), d.getString("productName"),
-                d.getString("productIcon"), longValue(d, "price"), value(d, "quantity"), longValue(d, "subtotal"));
+                longValue(d, "price"), value(d, "quantity"), longValue(d, "subtotal"));
     }
 
     private User toUser(DocumentSnapshot d) {
