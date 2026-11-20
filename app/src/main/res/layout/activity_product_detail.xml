@@ -264,7 +264,7 @@
                         android:id="@+id/tvAvgStar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="★ 4,8"
+                        android:text="★ 5,0"
                         android:textColor="#F59E0B"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -277,7 +277,7 @@
                         android:layout_weight="1"
                         android:textColor="#6B7280"
                         android:textSize="13sp"
-                        tools:text="(24 đánh giá) · Đã bán 120" />
+                        tools:text="(5 đánh giá) · Đã bán 6" />
                 </LinearLayout>
 
                 <View
@@ -295,7 +295,7 @@
                     android:textSize="13sp"
                     android:visibility="gone"
                     tools:text="5.990.000 ₫"
-                    tools:visibility="visible" />
+                    tools:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvPrice"
@@ -305,7 +305,7 @@
                     android:textColor="#EF4444"
                     android:textSize="23sp"
                     android:textStyle="bold"
-                    tools:text="4.792.000 ₫" />
+                    tools:text="5.990.000 ₫" />
 
                 <!-- Nhãn Voucher SP & Miễn phí vận chuyển -->
                 <LinearLayout
@@ -493,7 +493,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:orientation="vertical" />
+                    android:orientation="vertical">
+
+                    <include
+                        layout="@layout/item_review_preview"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

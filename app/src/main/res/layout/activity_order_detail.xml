@@ -98,7 +98,7 @@
                         android:textColor="#4F46E5"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        tools:text="#DH00001" />
+                        tools:text="#DH200001" />
 
                     <TextView
                         android:id="@+id/tvOrderDetailStatus"
@@ -113,7 +113,7 @@
                         android:textStyle="bold"
                         app:drawableStartCompat="@drawable/ic_check_circle"
                         app:drawableTint="@color/success_dark"
-                        tools:text="Đã giao" />
+                        tools:text="Chờ xác nhận" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -137,8 +137,26 @@
                         android:layout_marginStart="6dp"
                         android:textColor="#6B7280"
                         android:textSize="12sp"
-                        tools:text="12/11/2026 10:00" />
+                        tools:text="20/11/2026 08:00" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelOrder"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="10dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Hủy đơn hàng"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="#DC2626"
+                    app:cornerRadius="8dp"
+                    tools:visibility="visible" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnReturnOrder"
@@ -155,7 +173,21 @@
                     android:textStyle="bold"
                     android:visibility="gone"
                     app:backgroundTint="#D97706"
-                    app:cornerRadius="8dp" />
+                    app:cornerRadius="8dp"
+                    tools:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvOrderCancellationInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="#FEF2F2"
+                    android:padding="10dp"
+                    android:textColor="#991B1B"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="Đơn hàng đang chờ xác nhận và có thể hủy."
+                    tools:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvOrderReturnInfo"
@@ -168,7 +200,7 @@
                     android:textSize="12sp"
                     android:visibility="gone"
                     tools:text="Đã hoàn trả · Lý do: Thiếu sản phẩm"
-                    tools:visibility="visible" />
+                    tools:visibility="gone" />
             </LinearLayout>
 
             <!-- Card Danh sách sản phẩm -->
@@ -302,7 +334,7 @@
                         android:textColor="#111827"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        tools:text="Name Test (0912345678)" />
+                        tools:text="Nguyen Van A (0912345001)" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -329,7 +361,7 @@
                         android:lineSpacingExtra="2dp"
                         android:textColor="#4B5563"
                         android:textSize="13sp"
-                        tools:text="123 Đường ABC, Phường X, Quận Y, TP.HCM" />
+                        tools:text="12 Nguyen Hue, Quan 1, TP. Ho Chi Minh" />
                 </LinearLayout>
 
                 <TextView
@@ -345,7 +377,7 @@
                     android:textStyle="italic"
                     android:visibility="gone"
                     tools:text="Ghi chú: Giao hàng vào giờ hành chính"
-                    tools:visibility="visible" />
+                    tools:visibility="gone" />
             </LinearLayout>
 
             <!-- Card Chi tiết thanh toán -->
@@ -425,7 +457,8 @@
                     android:id="@+id/layoutProductDiscountRow"
                     android:layout_marginTop="8dp"
                     android:orientation="horizontal"
-                    android:visibility="gone">
+                    android:visibility="gone"
+                    tools:visibility="visible">
 
                     <TextView
                         android:layout_width="0dp"
@@ -440,7 +473,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="@color/success_dark"
-                        android:textSize="13sp" />
+                        android:textSize="13sp"
+                        tools:text="-5.000 ₫" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -463,7 +497,8 @@
                         android:id="@+id/tvShippingFeeAmount"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="30.000 ₫" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -472,7 +507,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:orientation="horizontal"
-                    android:visibility="gone">
+                    android:visibility="gone"
+                    tools:visibility="visible">
 
                     <TextView
                         android:layout_width="0dp"
@@ -487,7 +523,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="@color/success_dark"
-                        android:textSize="13sp" />
+                        android:textSize="13sp"
+                        tools:text="-30.000 ₫" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -496,7 +533,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:orientation="horizontal"
-                    android:visibility="gone">
+                    android:visibility="gone"
+                    tools:visibility="gone">
 
                     <TextView
                         android:layout_width="0dp"
@@ -542,7 +580,7 @@
                         android:textColor="@color/danger"
                         android:textSize="17sp"
                         android:textStyle="bold"
-                        tools:text="5.990.000 ₫" />
+                        tools:text="5.985.000 ₫" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

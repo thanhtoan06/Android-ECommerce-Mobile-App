@@ -22,8 +22,7 @@
         android:buttonTint="@null"
         app:buttonTint="@null"
         android:checked="true"
-        android:text=""
-        tools:text="" />
+        android:text="" />
 <FrameLayout
         android:id="@+id/flIconContainer"
         android:layout_width="76dp"

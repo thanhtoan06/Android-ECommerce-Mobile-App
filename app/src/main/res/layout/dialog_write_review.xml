@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="#FFFFFF"
     android:orientation="vertical"
     android:paddingHorizontal="20dp"
     android:paddingTop="18dp"
-    android:paddingBottom="12dp">
+    android:paddingBottom="12dp"
+    tools:context=".ReviewActivity">
 
     <TextView
         android:layout_width="match_parent"
@@ -44,7 +46,8 @@
         android:padding="12dp"
         android:textColor="#111827"
         android:textColorHint="#9CA3AF"
-        android:textSize="13sp" />
+        android:textSize="13sp"
+        tools:text="Máy chạy mượt, pin dùng ổn định." />
 
     <CheckBox
         android:id="@+id/cbReviewAnonymous"

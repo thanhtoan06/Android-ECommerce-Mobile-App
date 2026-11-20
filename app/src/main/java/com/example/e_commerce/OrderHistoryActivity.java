@@ -193,6 +193,8 @@ public class OrderHistoryActivity extends AppCompatActivity {
                 .setOnClickListener(v -> selectStatusFilter(ReviewRules.FILTER_DELIVERED));
         findViewById(R.id.filterOrdersReturned)
                 .setOnClickListener(v -> selectStatusFilter(ReviewRules.FILTER_RETURNED));
+        findViewById(R.id.filterOrdersCancelled)
+                .setOnClickListener(v -> selectStatusFilter(ReviewRules.FILTER_CANCELLED));
         updateStatusFilterStyle();
     }
 
@@ -221,6 +223,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
         setFilterStyle(R.id.filterOrdersShipping, ReviewRules.FILTER_SHIPPING);
         setFilterStyle(R.id.filterOrdersDelivered, ReviewRules.FILTER_DELIVERED);
         setFilterStyle(R.id.filterOrdersReturned, ReviewRules.FILTER_RETURNED);
+        setFilterStyle(R.id.filterOrdersCancelled, ReviewRules.FILTER_CANCELLED);
     }
 
     private void setFilterStyle(int viewId, String filter) {

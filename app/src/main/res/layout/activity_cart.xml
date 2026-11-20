@@ -111,7 +111,9 @@
             android:paddingHorizontal="12dp"
             android:paddingTop="6dp"
             android:paddingBottom="10dp"
-            tools:listitem="@layout/item_cart" />
+            tools:itemCount="3"
+            tools:listitem="@layout/item_cart"
+            tools:visibility="visible" />
     </FrameLayout>
 <LinearLayout
         android:id="@+id/layoutCheckoutBar"
@@ -158,7 +160,7 @@
                 android:textColor="@color/danger"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                tools:text="5.990.000 ₫" />
+                tools:text="9.360.000 ₫" />
         </LinearLayout>
 <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCheckout"
@@ -172,7 +174,7 @@
             app:backgroundTint="@color/primary"
             app:cornerRadius="10dp"
             app:elevation="0dp"
-            tools:text="THANH TOÁN (1)" />
+            tools:text="THANH TOÁN (3)" />
     </LinearLayout>
 <include
         android:id="@+id/bottomMenu"

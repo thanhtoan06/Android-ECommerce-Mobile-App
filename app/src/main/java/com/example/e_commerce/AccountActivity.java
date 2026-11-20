@@ -23,6 +23,7 @@ public class AccountActivity extends AppCompatActivity {
     private TextView tvShippingCount;
     private TextView tvDeliveredCount;
     private TextView tvReturnedCount;
+    private TextView tvCancelledCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +38,7 @@ public class AccountActivity extends AppCompatActivity {
         tvShippingCount = findViewById(R.id.tvOrderShippingCount);
         tvDeliveredCount = findViewById(R.id.tvOrderDeliveredCount);
         tvReturnedCount = findViewById(R.id.tvOrderReturnedCount);
+        tvCancelledCount = findViewById(R.id.tvOrderCancelledCount);
 
         findViewById(R.id.btnSettings).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
@@ -47,6 +49,7 @@ public class AccountActivity extends AppCompatActivity {
         findViewById(R.id.layoutOrderShipping).setOnClickListener(v -> openOrders(ReviewRules.FILTER_SHIPPING));
         findViewById(R.id.layoutOrderDelivered).setOnClickListener(v -> openOrders(ReviewRules.FILTER_DELIVERED));
         findViewById(R.id.layoutOrderReturned).setOnClickListener(v -> openOrders(ReviewRules.FILTER_RETURNED));
+        findViewById(R.id.layoutOrderCancelled).setOnClickListener(v -> openOrders(ReviewRules.FILTER_CANCELLED));
         findViewById(R.id.layoutPointsShortcut).setOnClickListener(v -> {
             if (AuthGate.requireLogin(this)) {
                 startActivity(new Intent(this, PointsActivity.class));
@@ -121,6 +124,7 @@ public class AccountActivity extends AppCompatActivity {
         tvShippingCount.setText(orderCount(orders, ReviewRules.FILTER_SHIPPING));
         tvDeliveredCount.setText(orderCount(orders, ReviewRules.FILTER_DELIVERED));
         tvReturnedCount.setText(orderCount(orders, ReviewRules.FILTER_RETURNED));
+        tvCancelledCount.setText(orderCount(orders, ReviewRules.FILTER_CANCELLED));
     }
 
     private String orderCount(List<Order> orders, String filter) {

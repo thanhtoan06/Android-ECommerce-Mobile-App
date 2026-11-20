@@ -1,5 +1,6 @@
 package com.example.e_commerce;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -16,21 +17,26 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 public class ProductListActivity extends AppCompatActivity {
 
-    private static final int SORT_DEFAULT = 0;
-    private static final int SORT_PRICE_ASC = 1;
-    private static final int SORT_PRICE_DESC = 2;
+    private static final ProductSortRules.Criterion[] SORT_OPTIONS = {
+            ProductSortRules.Criterion.PRICE_ASC,
+            ProductSortRules.Criterion.PRICE_DESC,
+            ProductSortRules.Criterion.BEST_SELLING,
+            ProductSortRules.Criterion.TOP_RATED,
+            ProductSortRules.Criterion.NAME_A_TO_Z,
+            ProductSortRules.Criterion.NEWEST
+    };
 
     private TextView tvUserGreeting;
     private TextView tvUserEmail;
@@ -51,7 +57,7 @@ public class ProductListActivity extends AppCompatActivity {
     private Product[] filteredProducts = new Product[0];
     private List<Voucher> savedVouchers = new ArrayList<>();
     private String selectedCategory = "Tất cả";
-    private int currentSortMode = SORT_DEFAULT;
+    private List<ProductSortRules.Criterion> currentSortCriteria = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +95,7 @@ public class ProductListActivity extends AppCompatActivity {
         updateUserHeader();
         setupSearch();
         btnSort.setOnClickListener(this::showSortMenu);
+        updateSortLabel();
         btnResetFilter.setOnClickListener(v -> resetAllFilters());
         gridView.setOnItemClickListener((parent, view, position, id) -> {
             if (filteredProducts != null && position < filteredProducts.length) {
@@ -99,7 +106,14 @@ public class ProductListActivity extends AppCompatActivity {
         });
         setupNavigationMenu();
         openOrderFromPushIfPresent();
-        loadProductsFromFirebase(false);
+        progressBarLoading.setVisibility(View.VISIBLE);
+        InitialCatalogSeeder.seedCatalogAndVouchersIfNeeded(FirebaseFirestore.getInstance())
+                .addOnSuccessListener(ignored -> loadProductsFromFirebase(false))
+                .addOnFailureListener(error -> {
+                    progressBarLoading.setVisibility(View.GONE);
+                    Toast.makeText(this, "Không thể tạo dữ liệu mẫu: "
+                            + error.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 
     @Override
@@ -178,38 +192,103 @@ public class ProductListActivity extends AppCompatActivity {
     }
 
     private void showSortMenu(View anchor) {
-        PopupMenu popup = new PopupMenu(this, anchor);
-        popup.getMenu().add(0, SORT_DEFAULT, 0, "Mặc định");
-        popup.getMenu().add(0, SORT_PRICE_ASC, 1, "Giá tăng dần (Thấp → Cao)");
-        popup.getMenu().add(0, SORT_PRICE_DESC, 2, "Giá giảm dần (Cao → Thấp)");
+        List<ProductSortRules.Criterion> pendingCriteria = new ArrayList<>(currentSortCriteria);
+        CharSequence[] labels = new CharSequence[SORT_OPTIONS.length];
+        boolean[] checked = new boolean[SORT_OPTIONS.length];
+        for (int index = 0; index < SORT_OPTIONS.length; index++) {
+            ProductSortRules.Criterion criterion = SORT_OPTIONS[index];
+            labels[index] = criterion.getLabel();
+            checked[index] = pendingCriteria.contains(criterion);
+        }
 
-        popup.setOnMenuItemClickListener(item -> {
-            currentSortMode = item.getItemId();
-            updateSortLabel();
-            applyFilterAndSort();
-            return true;
-        });
-        popup.show();
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Sắp xếp sản phẩm")
+                .setMessage(sortPriorityMessage(pendingCriteria))
+                .setMultiChoiceItems(labels, checked, (shownDialog, which, isChecked) -> {
+                    ProductSortRules.Criterion selected = SORT_OPTIONS[which];
+                    if (isChecked) {
+                        ProductSortRules.Criterion oppositePrice = oppositePriceCriterion(selected);
+                        if (oppositePrice != null && pendingCriteria.remove(oppositePrice)) {
+                            int oppositeIndex = indexOfSortCriterion(oppositePrice);
+                            AlertDialog sortDialog = (AlertDialog) shownDialog;
+                            sortDialog.getListView().setItemChecked(oppositeIndex, false);
+                        }
+                        pendingCriteria.remove(selected);
+                        pendingCriteria.add(selected);
+                    } else {
+                        pendingCriteria.remove(selected);
+                    }
+                    ((AlertDialog) shownDialog).setMessage(sortPriorityMessage(pendingCriteria));
+                })
+                .setPositiveButton("Áp dụng", (shownDialog, which) -> {
+                    currentSortCriteria = new ArrayList<>(pendingCriteria);
+                    updateSortLabel();
+                    applyFilterAndSort();
+                })
+                .setNeutralButton("Mặc định", (shownDialog, which) -> {
+                    currentSortCriteria.clear();
+                    updateSortLabel();
+                    applyFilterAndSort();
+                })
+                .setNegativeButton("Hủy", null)
+                .create();
+        dialog.show();
     }
 
     private void updateSortLabel() {
-        switch (currentSortMode) {
-        case SORT_PRICE_ASC:
-            tvSortLabel.setText("Giá ↑");
-            break;
-        case SORT_PRICE_DESC:
-            tvSortLabel.setText("Giá ↓");
-            break;
-        default:
-            tvSortLabel.setText("Giá");
-            break;
+        if (currentSortCriteria.isEmpty()) {
+            tvSortLabel.setText("Sắp xếp");
+            btnSort.setContentDescription("Sắp xếp sản phẩm");
+            return;
         }
+
+        ProductSortRules.Criterion primary = currentSortCriteria.get(0);
+        String label = primary.getShortLabel();
+        if (currentSortCriteria.size() > 1) {
+            label += " +" + (currentSortCriteria.size() - 1);
+        }
+        tvSortLabel.setText(label);
+        btnSort.setContentDescription("Sắp xếp sản phẩm: " + sortPriorityMessage(currentSortCriteria));
+    }
+
+    private String sortPriorityMessage(List<ProductSortRules.Criterion> criteria) {
+        if (criteria.isEmpty()) {
+            return "Tích một hoặc nhiều tiêu chí. Tiêu chí tích trước được ưu tiên cao hơn.";
+        }
+
+        StringBuilder message = new StringBuilder("Ưu tiên: ");
+        for (ProductSortRules.Criterion criterion : criteria) {
+            if (message.length() > "Ưu tiên: ".length()) {
+                message.append(" → ");
+            }
+            message.append(criterion.getLabel());
+        }
+        return message.toString();
+    }
+
+    private ProductSortRules.Criterion oppositePriceCriterion(ProductSortRules.Criterion criterion) {
+        if (criterion == ProductSortRules.Criterion.PRICE_ASC) {
+            return ProductSortRules.Criterion.PRICE_DESC;
+        }
+        if (criterion == ProductSortRules.Criterion.PRICE_DESC) {
+            return ProductSortRules.Criterion.PRICE_ASC;
+        }
+        return null;
+    }
+
+    private int indexOfSortCriterion(ProductSortRules.Criterion criterion) {
+        for (int index = 0; index < SORT_OPTIONS.length; index++) {
+            if (SORT_OPTIONS[index] == criterion) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private void resetAllFilters() {
         edtSearch.setText("");
         selectedCategory = "Tất cả";
-        currentSortMode = SORT_DEFAULT;
+        currentSortCriteria.clear();
         updateSortLabel();
         buildCategoryTabs();
         applyFilterAndSort();
@@ -311,10 +390,8 @@ public class ProductListActivity extends AppCompatActivity {
             }
         }
 
-        if (currentSortMode == SORT_PRICE_ASC) {
-            matched.sort(Comparator.comparingLong(Product::getPrice));
-        } else if (currentSortMode == SORT_PRICE_DESC) {
-            matched.sort((p1, p2) -> Long.compare(p2.getPrice(), p1.getPrice()));
+        if (!currentSortCriteria.isEmpty()) {
+            matched.sort(ProductSortRules.comparatorFor(currentSortCriteria));
         }
 
         filteredProducts = matched.toArray(new Product[0]);

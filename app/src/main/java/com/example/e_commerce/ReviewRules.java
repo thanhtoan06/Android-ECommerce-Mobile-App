@@ -7,6 +7,7 @@ public final class ReviewRules {
     public static final String FILTER_SHIPPING = "shipping";
     public static final String FILTER_DELIVERED = "delivered";
     public static final String FILTER_RETURNED = "returned";
+    public static final String FILTER_CANCELLED = "cancelled";
 
     private ReviewRules() {
     }
@@ -55,8 +56,10 @@ public final class ReviewRules {
         if (FILTER_RETURNED.equals(filter)) {
             return OrderReturnRules.STATUS_RETURNED.equals(status)
                     || "Hoàn trả".equals(status)
-                    || "Đã trả hàng".equals(status)
-                    || "Đã hủy".equals(status);
+                    || "Đã trả hàng".equals(status);
+        }
+        if (FILTER_CANCELLED.equals(filter)) {
+            return OrderCancellationRules.STATUS_CANCELLED.equals(status);
         }
         return false;
     }

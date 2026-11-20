@@ -90,7 +90,7 @@
                             android:textColor="@color/white"
                             android:textSize="28sp"
                             android:textStyle="bold"
-                            tools:text="6.200" />
+                            tools:text="2.000" />
                     </LinearLayout>
 
                     <TextView
@@ -100,7 +100,7 @@
                         android:layout_marginTop="8dp"
                         android:textColor="#E0E7FF"
                         android:textSize="12sp"
-                        tools:text="4.500 Xu sẽ hết hạn ngày 31/12/2026" />
+                        tools:text="2.000 Xu sẽ hết hạn ngày 20/12/2026" />
 
                 </LinearLayout>
 
@@ -258,14 +258,20 @@
                         android:textColor="#6B7280"
                         android:textSize="13sp"
                         android:visibility="gone"
-                        tools:visibility="visible" />
+                        tools:visibility="gone" />
 
                     <LinearLayout
                         android:id="@+id/layoutPointHistory"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        tools:listitem="@layout/item_points_transaction" />
+                        tools:listitem="@layout/item_points_transaction">
+
+                        <include
+                            layout="@layout/item_points_transaction"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>

@@ -3,6 +3,7 @@ package com.example.e_commerce;
 
 import java.text.NumberFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class Product {
     private final double averageRating;
     private final int reviewCount;
     private final Map<String, String> specifications;
+    private final Date createdAt;
 
     public Product(int id, String name, String category, long price, String description, String icon, int stock) {
         this(id, name, category, price, description, icon, stock, 0, 0, 0, Collections.emptyMap());
@@ -27,6 +29,12 @@ public class Product {
 
     public Product(int id, String name, String category, long price, String description, String icon, int stock,
             int soldCount, double averageRating, int reviewCount, Map<String, String> specifications) {
+        this(id, name, category, price, description, icon, stock, soldCount, averageRating, reviewCount,
+                specifications, null);
+    }
+
+    public Product(int id, String name, String category, long price, String description, String icon, int stock,
+            int soldCount, double averageRating, int reviewCount, Map<String, String> specifications, Date createdAt) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -39,6 +47,7 @@ public class Product {
         this.reviewCount = reviewCount;
         this.specifications = Collections.unmodifiableMap(
                 new HashMap<>(specifications == null ? Collections.emptyMap() : specifications));
+        this.createdAt = createdAt == null ? null : new Date(createdAt.getTime());
     }
 
     public Product(int id, String name, String category, long price, String description, String icon) {
@@ -91,6 +100,10 @@ public class Product {
 
     public Map<String, String> getSpecifications() {
         return specifications;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt == null ? null : new Date(createdAt.getTime());
     }
 
     public boolean isInStock() {

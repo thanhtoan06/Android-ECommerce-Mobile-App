@@ -32,7 +32,7 @@
                 android:textColor="@color/primary"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                tools:text="#DH00001" />
+                tools:text="#DH200001" />
 <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -52,7 +52,7 @@
                     android:layout_marginStart="4dp"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
-                    tools:text="12/11/2026 10:00" />
+                    tools:text="20/11/2026 08:00" />
             </LinearLayout>
         </LinearLayout>
 <TextView
@@ -84,7 +84,7 @@
         android:maxLines="2"
         android:textColor="@color/text_primary"
         android:textSize="13sp"
-        tools:text="Samsung Galaxy A16 5G 128GB ×1, Samsung Galaxy Buds FE ×2" />
+        tools:text="Samsung Galaxy A16 5G 128GB ×1" />
 <LinearLayout
         android:id="@+id/llOrderItems"
         android:layout_width="match_parent"
@@ -113,7 +113,7 @@
                 android:text="Tổng thanh toán"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp"
-                tools:text="Tổng thanh toán (2 món):" />
+                tools:text="Tổng thanh toán (1 món):" />
             <TextView
                 android:id="@+id/tvOrderTotal"
                 android:layout_width="wrap_content"
@@ -122,7 +122,7 @@
                 android:textColor="@color/danger"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                tools:text="8.570.000 ₫" />
+                tools:text="5.985.000 ₫" />
         </LinearLayout>
 <LinearLayout
             android:id="@+id/btnOrderDetail"

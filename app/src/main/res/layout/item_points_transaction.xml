@@ -36,7 +36,7 @@
             android:textColor="#111827"
             android:textSize="13sp"
             android:textStyle="bold"
-            tools:text="Điểm danh ngày 1" />
+            tools:text="Xu demo khởi tạo" />
 
         <TextView
             android:id="@+id/tvTransactionDate"
@@ -45,7 +45,7 @@
             android:layout_marginTop="2dp"
             android:textColor="#6B7280"
             android:textSize="11sp"
-            tools:text="19/11/2026 21:30" />
+            tools:text="20/11/2026 08:00" />
 
         <TextView
             android:id="@+id/tvTransactionDetail"
@@ -54,7 +54,7 @@
             android:layout_marginTop="2dp"
             android:textColor="#4F46E5"
             android:textSize="11sp"
-            tools:text="Hết hạn: 31/12/2026" />
+            tools:text="2.000 Xu còn lại · Hết hạn 20/12/2026" />
     </LinearLayout>
 
     <TextView
@@ -66,5 +66,5 @@
         android:textColor="@color/success_dark"
         android:textSize="14sp"
         android:textStyle="bold"
-        tools:text="+100 Xu" />
+        tools:text="+2.500 Xu" />
 </LinearLayout>

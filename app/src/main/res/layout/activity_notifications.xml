@@ -58,6 +58,7 @@
             android:paddingBottom="16dp"
             android:visibility="gone"
             tools:listitem="@layout/item_notification"
+            tools:itemCount="5"
             tools:visibility="visible" />
 
         <LinearLayout

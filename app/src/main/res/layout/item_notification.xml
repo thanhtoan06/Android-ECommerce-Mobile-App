@@ -44,7 +44,7 @@
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            tools:text="Đơn hàng đã được giao" />
+            tools:text="Cập nhật đơn hàng" />
 
         <TextView
             android:id="@+id/tvNotificationMessage"
@@ -53,7 +53,7 @@
             android:layout_marginTop="4dp"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
-            tools:text="Đơn hàng #DH00001 đã được giao thành công. Cảm ơn bạn đã mua sắm!" />
+            tools:text="Đơn hàng #DH200001 chuyển sang trạng thái: Đã giao." />
 
         <TextView
             android:id="@+id/tvNotificationDate"
@@ -62,7 +62,7 @@
             android:layout_marginTop="6dp"
             android:textColor="@color/text_tertiary"
             android:textSize="11sp"
-            tools:text="19/11/2026 10:30" />
+            tools:text="20/11/2026 08:00" />
     </LinearLayout>
 
     <TextView

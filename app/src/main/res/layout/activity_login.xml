@@ -89,7 +89,7 @@
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="14sp"
-                tools:text="test@example.com" />
+                tools:text="demo01@example.com" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

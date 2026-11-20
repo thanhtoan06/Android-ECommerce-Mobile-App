@@ -53,7 +53,7 @@
                     android:textColor="@color/white"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    tools:text="Xin chào, Name Test" />
+                    tools:text="Xin chào, Nguyen Van A" />
                 <TextView
                     android:id="@+id/tvUserEmail"
                     android:layout_width="match_parent"
@@ -63,7 +63,7 @@
                     android:maxLines="1"
                     android:textColor="#E0E7FF"
                     android:textSize="12sp"
-                    tools:text="test@example.com" />
+                    tools:text="demo01@example.com" />
             </LinearLayout>
         </LinearLayout>
         <LinearLayout
@@ -191,7 +191,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:text="Giá"
+                    android:text="Sắp xếp"
                     android:textColor="@color/primary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -255,6 +255,30 @@
                     android:visibility="gone"
                     tools:text="Tai nghe"
                     tools:visibility="visible" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_tab_inactive_translucent"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:text="Đồng hồ thông minh"
+                    tools:visibility="visible" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_tab_inactive_translucent"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:text="Phụ kiện &amp; Sạc"
+                    tools:visibility="visible" />
             </LinearLayout>
         </HorizontalScrollView>
     </LinearLayout>
@@ -277,6 +301,7 @@
                 android:padding="10dp"
                 android:stretchMode="columnWidth"
                 android:verticalSpacing="10dp"
+                tools:itemCount="6"
                 tools:listitem="@layout/item_product" />
             <LinearLayout
                 android:id="@+id/layoutEmpty"

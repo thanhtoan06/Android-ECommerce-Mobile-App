@@ -93,7 +93,7 @@
                             android:textColor="@color/white"
                             android:textSize="19sp"
                             android:textStyle="bold"
-                            tools:text="Name Test" />
+                            tools:text="Nguyen Van A" />
 
                         <TextView
                             android:id="@+id/tvAccountEmail"
@@ -104,7 +104,7 @@
                             android:maxLines="1"
                             android:textColor="#E0E7FF"
                             android:textSize="13sp"
-                            tools:text="test@example.com" />
+                            tools:text="demo01@example.com" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -162,7 +162,7 @@
                     android:layout_marginVertical="12dp"
                     android:background="#F3F4F6" />
 
-                <!-- 4 trạng thái đơn hàng ngang hàng -->
+                <!-- Trạng thái đơn hàng -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -204,7 +204,8 @@
                             android:text="0 đơn"
                             android:textColor="#4F46E5"
                             android:textSize="10sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            tools:text="2 đơn" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -242,7 +243,8 @@
                             android:text="0 đơn"
                             android:textColor="#4F46E5"
                             android:textSize="10sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            tools:text="1 đơn" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -280,7 +282,8 @@
                             android:text="0 đơn"
                             android:textColor="#4F46E5"
                             android:textSize="10sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            tools:text="16 đơn" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -318,7 +321,46 @@
                             android:text="0 đơn"
                             android:textColor="#4F46E5"
                             android:textSize="10sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            tools:text="1 đơn" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutOrderCancelled"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="Đã hủy"
+                            android:src="@drawable/ic_close"
+                            app:tint="#4F46E5" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="Đã hủy"
+                            android:textColor="#374151"
+                            android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvOrderCancelledCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 đơn"
+                            android:textColor="#4F46E5"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            tools:text="1 đơn" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>

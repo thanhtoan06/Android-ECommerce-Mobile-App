@@ -44,9 +44,11 @@ public class OrderDetailActivity extends AppCompatActivity {
     private TextView tvPointsDiscountAmount;
     private TextView tvTotalAmountDetail;
     private TextView tvOrderReturnInfo;
+    private TextView tvOrderCancellationInfo;
     private LinearLayout llOrderDetailProducts;
     private ProgressBar pbLoadingProducts;
     private com.google.android.material.button.MaterialButton btnReturnOrder;
+    private com.google.android.material.button.MaterialButton btnCancelOrder;
 
     private FirestoreRepository repository;
     private Order currentOrder;
@@ -60,6 +62,7 @@ public class OrderDetailActivity extends AppCompatActivity {
 
         initViews();
         btnReturnOrder.setOnClickListener(v -> showReturnReasonOptions());
+        btnCancelOrder.setOnClickListener(v -> confirmOrderCancellation());
 
         View samplePreview = findViewById(R.id.layoutSampleProductPreview);
         if (samplePreview != null) {
@@ -133,9 +136,11 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvPointsDiscountAmount = findViewById(R.id.tvPointsDiscountAmount);
         tvTotalAmountDetail = findViewById(R.id.tvTotalAmountDetail);
         tvOrderReturnInfo = findViewById(R.id.tvOrderReturnInfo);
+        tvOrderCancellationInfo = findViewById(R.id.tvOrderCancellationInfo);
         llOrderDetailProducts = findViewById(R.id.llOrderDetailProducts);
         pbLoadingProducts = findViewById(R.id.pbLoadingProducts);
         btnReturnOrder = findViewById(R.id.btnReturnOrder);
+        btnCancelOrder = findViewById(R.id.btnCancelOrder);
     }
 
     private void bindOrderDetails(Order order) {
@@ -312,10 +317,18 @@ public class OrderDetailActivity extends AppCompatActivity {
 
     private void updateReturnControls(Order order) {
         boolean returned = OrderReturnRules.STATUS_RETURNED.equals(order.getStatus());
+        boolean cancelled = OrderCancellationRules.STATUS_CANCELLED.equals(order.getStatus());
         boolean eligible = OrderReturnRules.isEligible(
                 order.getStatus(), order.getDeliveredAt(), order.getOrderDate(), new Date());
         btnReturnOrder.setVisibility(eligible ? View.VISIBLE : View.GONE);
+        btnCancelOrder.setVisibility(
+                OrderCancellationRules.isEligible(order.getStatus()) ? View.VISIBLE : View.GONE);
         tvOrderReturnInfo.setVisibility(View.GONE);
+        tvOrderCancellationInfo.setVisibility(cancelled ? View.VISIBLE : View.GONE);
+        if (cancelled) {
+            tvOrderCancellationInfo.setText(
+                    "Đơn hàng đã hủy. Tồn kho và Xu đã dùng được hoàn lại; voucher còn hạn được khôi phục.");
+        }
         if (returned) {
             tvOrderReturnInfo.setText("Đã hoàn trả · Lý do: "
                     + (order.getReturnReason() == null ? "" : order.getReturnReason()));
@@ -324,6 +337,43 @@ public class OrderDetailActivity extends AppCompatActivity {
             tvOrderReturnInfo.setText("Đã quá thời hạn yêu cầu hoàn trả 7 ngày.");
             tvOrderReturnInfo.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void confirmOrderCancellation() {
+        if (currentOrder == null || !AuthGate.requireLogin(this)) {
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận hủy đơn hàng")
+                .setMessage("Tồn kho và Xu đã dùng sẽ được hoàn lại. Voucher chỉ được khôi phục nếu còn hạn.")
+                .setPositiveButton("Hủy đơn", (dialog, which) -> submitOrderCancellation())
+                .setNegativeButton("Giữ đơn", null)
+                .show();
+    }
+
+    private void submitOrderCancellation() {
+        btnCancelOrder.setEnabled(false);
+        String email = SharedPrefManager.getInstance(this).getEmail();
+        repository.cancelOrder(currentOrder.getId(), email,
+                new FirestoreRepository.OrderCancellationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        currentOrder.setStatus(OrderCancellationRules.STATUS_CANCELLED);
+                        displayOrder(currentOrder);
+                        Toast.makeText(OrderDetailActivity.this,
+                                "Đơn hàng đã được hủy.", Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        btnCancelOrder.setEnabled(true);
+                        Toast.makeText(OrderDetailActivity.this,
+                                error.getMessage() == null
+                                        ? "Không thể hủy đơn hàng. Vui lòng thử lại."
+                                        : error.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     private void showReturnReasonOptions() {

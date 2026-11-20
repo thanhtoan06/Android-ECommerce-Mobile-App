@@ -79,7 +79,7 @@
                 android:textColor="@color/white"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                tools:text="Name Test" />
+                tools:text="Nguyen Van A" />
 <TextView
                 android:id="@+id/tvAccountEmail"
                 android:layout_width="wrap_content"
@@ -89,7 +89,7 @@
                 android:maxLines="1"
                 android:textColor="#E0E7FF"
                 android:textSize="13sp"
-                tools:text="test@example.com" />
+                tools:text="demo01@example.com" />
         </LinearLayout>
     </LinearLayout>
 <ScrollView
@@ -155,7 +155,7 @@
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        tools:text="Name Test" />
+                        tools:text="Nguyen Van A" />
 <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
@@ -198,7 +198,7 @@
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        tools:text="test@example.com" />
+                        tools:text="demo01@example.com" />
                 </LinearLayout>
 <View
                     android:layout_width="match_parent"
@@ -238,7 +238,7 @@
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        tools:text="0901234567" />
+                        tools:text="0912345001" />
 <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
@@ -287,7 +287,7 @@
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        tools:text="123 Nguyễn Huệ, Quận 1, TP.HCM" />
+                        tools:text="12 Nguyen Hue, Quan 1, TP. Ho Chi Minh" />
 <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"

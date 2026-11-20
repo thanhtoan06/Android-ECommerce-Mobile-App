@@ -520,6 +520,22 @@ public final class PointsRepository {
     void applyOrderReturnInTransaction(com.google.firebase.firestore.Transaction transaction, String email,
             long orderId, long pointsToRefund, List<String> reviewIds, List<DocumentSnapshot> candidateLots)
             throws com.google.firebase.firestore.FirebaseFirestoreException {
+        applyOrderRefundInTransaction(
+                transaction, email, orderId, pointsToRefund, reviewIds, candidateLots, false);
+    }
+
+    void applyOrderCancellationInTransaction(com.google.firebase.firestore.Transaction transaction, String email,
+            long orderId, long pointsToRefund)
+            throws com.google.firebase.firestore.FirebaseFirestoreException {
+        applyOrderRefundInTransaction(
+                transaction, email, orderId, pointsToRefund, new ArrayList<>(), new ArrayList<>(), true);
+    }
+
+    private void applyOrderRefundInTransaction(
+            com.google.firebase.firestore.Transaction transaction, String email,
+            long orderId, long pointsToRefund, List<String> reviewIds, List<DocumentSnapshot> candidateLots,
+            boolean isCancellation)
+            throws com.google.firebase.firestore.FirebaseFirestoreException {
         if (pointsToRefund < 0) {
             throw new IllegalArgumentException("Số Xu hoàn không hợp lệ.");
         }
@@ -538,8 +554,9 @@ public final class PointsRepository {
         Date now = new Date();
         Date expiresAt = PointsRules.expirationDate(now, TimeZone.getDefault());
 
+        String operationType = isCancellation ? "order_cancel" : "order_return";
         String spendReferenceId = String.valueOf(orderId);
-        String refundReferenceId = "order_return_" + orderId;
+        String refundReferenceId = operationType + "_" + orderId;
         DocumentReference spendRef = transactionsCollection(normalizedEmail)
                 .document(operationDocumentId("spend", spendReferenceId));
         DocumentReference refundRef = transactionsCollection(normalizedEmail)
@@ -566,7 +583,7 @@ public final class PointsRepository {
             }
         }
 
-        String recoveryReferenceId = "order_return_review_reward_" + orderId;
+        String recoveryReferenceId = operationType + "_review_reward_" + orderId;
         DocumentReference recoveryRef = transactionsCollection(normalizedEmail)
                 .document(operationDocumentId("recovery", recoveryReferenceId));
         DocumentSnapshot existingRecovery = reviewDocumentIds.isEmpty()
@@ -660,7 +677,8 @@ public final class PointsRepository {
             transaction.update(spendRef, "refundedAmount", alreadyRefunded + pointsToRefund);
             Map<String, Object> refundData = transactionData(
                     "refund", pointsToRefund, pointsToRefund, 0, pointsAfterRefund, currentDebt,
-                    "Hoàn Xu cho đơn hàng đã trả.", "order_return", refundReferenceId, expiresAt);
+                    isCancellation ? "Hoàn Xu cho đơn hàng đã hủy." : "Hoàn Xu cho đơn hàng đã trả.",
+                    operationType, refundReferenceId, expiresAt);
             refundData.put("spendReferenceId", spendReferenceId);
             transaction.set(refundRef, refundData);
             Map<String, Object> refundLot = lotData(
@@ -676,7 +694,7 @@ public final class PointsRepository {
             Map<String, Object> recoveryData = transactionData(
                     "recovery", -rewardToRecover, -amountDeducted, rewardToRecover - amountDeducted,
                     finalBalance, newDebt, "Thu hồi Xu thưởng đánh giá của đơn hoàn trả.",
-                    "order_return", recoveryReferenceId, null);
+                    operationType, recoveryReferenceId, null);
             recoveryData.put("requestedAmount", rewardToRecover);
             recoveryData.put("allocations", allocations);
             transaction.set(recoveryRef, recoveryData);

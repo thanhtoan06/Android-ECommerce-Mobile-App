@@ -43,7 +43,7 @@
             android:textColor="#E0E7FF"
             android:textSize="10sp"
             android:textStyle="bold"
-            tools:text="TECH20" />
+            tools:text="AUDIO10" />
     </LinearLayout>
 
     <LinearLayout
@@ -62,7 +62,7 @@
             android:textColor="#111827"
             android:textSize="14sp"
             android:textStyle="bold"
-            tools:text="Giảm 20% toàn shop" />
+            tools:text="Giảm 10% tai nghe" />
 
         <TextView
             android:id="@+id/tvVoucherDescription"
@@ -73,7 +73,7 @@
             android:maxLines="1"
             android:textColor="#4B5563"
             android:textSize="11sp"
-            tools:text="Giảm 20% trên sản phẩm đủ điều kiện" />
+            tools:text="Áp dụng cho các sản phẩm thuộc danh mục Tai nghe." />
 
         <TextView
             android:id="@+id/tvVoucherConditions"
@@ -84,7 +84,7 @@
             android:maxLines="1"
             android:textColor="#6B7280"
             android:textSize="11sp"
-            tools:text="Đơn tối thiểu 0đ · Tối đa 2.000.000đ" />
+            tools:text="Đơn tối thiểu 0đ · Tối đa 1.000.000đ" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -138,5 +138,5 @@
         app:backgroundTint="#4F46E5"
         app:cornerRadius="8dp"
         app:elevation="0dp"
-        tools:text="Dùng ngay" />
+        tools:text="Lưu" />
 </LinearLayout>

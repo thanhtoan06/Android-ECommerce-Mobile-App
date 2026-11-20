@@ -216,7 +216,7 @@
                     android:textColor="#111827"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    tools:text="Voucher có thể lưu (10)" />
+                    tools:text="Voucher có thể lưu (4)" />
 
                 <TextView
                     android:id="@+id/tvVoucherEmpty"

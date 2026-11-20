@@ -59,7 +59,7 @@
             android:textSize="10sp"
             android:visibility="gone"
             tools:text="5.990.000 ₫"
-            tools:visibility="visible" />
+            tools:visibility="gone" />
         <TextView
             android:id="@+id/tvSummarySubtotal"
             android:layout_width="wrap_content"
@@ -67,6 +67,6 @@
             android:textColor="@color/danger"
             android:textSize="14sp"
             android:textStyle="bold"
-            tools:text="4.792.000 ₫" />
+            tools:text="5.990.000 ₫" />
     </LinearLayout>
 </LinearLayout>

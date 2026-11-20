@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F6FA"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context=".ReviewActivity">
 
     <!-- TopBar đồng bộ tông tím #4F46E5 -->
     <LinearLayout
@@ -68,7 +70,8 @@
                 android:text="0"
                 android:textColor="#4F46E5"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="15" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -98,7 +101,8 @@
                 android:text="0"
                 android:textColor="#111827"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="45" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -128,7 +132,8 @@
                 android:text="0"
                 android:textColor="#111827"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="180" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -207,7 +212,9 @@
         android:padding="24dp"
         android:textColor="#6B7280"
         android:textSize="13sp"
-        android:visibility="gone" />
+        android:visibility="gone"
+        tools:text="Chưa có sản phẩm nào trong đơn đã giao cần đánh giá."
+        tools:visibility="gone" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -224,6 +231,12 @@
             android:id="@+id/layoutReviewItems"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical">
+
+            <include
+                layout="@layout/item_review_pending_preview"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
     </ScrollView>
 </LinearLayout>

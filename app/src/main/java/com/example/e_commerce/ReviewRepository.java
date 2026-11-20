@@ -12,9 +12,11 @@ import com.google.firebase.firestore.SetOptions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -79,15 +81,30 @@ public final class ReviewRepository {
     }
 
     public void getMyReviews(String email, ReviewsCallback callback) {
+        String normalizedEmail;
         String reviewerId;
         try {
-            reviewerId = authenticatedUserId(email);
+            normalizedEmail = normalizeEmail(email);
+            reviewerId = authenticatedUserId(normalizedEmail);
         } catch (IllegalArgumentException | IllegalStateException error) {
             callback.onError(error);
             return;
         }
         firestore.collection("reviews").whereEqualTo("reviewerId", reviewerId).get()
-                .addOnSuccessListener(snapshot -> callback.onResult(toSortedReviews(snapshot)))
+                .addOnSuccessListener(idSnapshot ->
+                        firestore.collection("reviews").whereEqualTo("reviewerEmail", normalizedEmail).get()
+                                .addOnSuccessListener(emailSnapshot -> {
+                                    Map<String, DocumentSnapshot> documents = new HashMap<>();
+                                    for (DocumentSnapshot document : idSnapshot.getDocuments()) {
+                                        documents.put(document.getId(), document);
+                                    }
+                                    for (DocumentSnapshot document : emailSnapshot.getDocuments()) {
+                                        documents.put(document.getId(), document);
+                                    }
+                                    callback.onResult(toSortedReviews(
+                                            new ArrayList<>(documents.values())));
+                                })
+                                .addOnFailureListener(callback::onError))
                 .addOnFailureListener(callback::onError);
     }
 
@@ -177,6 +194,7 @@ public final class ReviewRepository {
             reviewData.put("productName", productName);
             reviewData.put("productIcon", productIcon);
             reviewData.put("reviewerId", reviewerId);
+            reviewData.put("reviewerEmail", normalizedEmail);
             reviewData.put("reviewerName", anonymous ? "" : reviewerName);
             reviewData.put("anonymous", anonymous);
             reviewData.put("rating", rating);
@@ -301,8 +319,12 @@ public final class ReviewRepository {
     }
 
     private List<Review> toSortedReviews(QuerySnapshot snapshot) {
+        return toSortedReviews(snapshot.getDocuments());
+    }
+
+    private List<Review> toSortedReviews(List<DocumentSnapshot> documents) {
         List<Review> reviews = new ArrayList<>();
-        for (DocumentSnapshot document : snapshot.getDocuments()) {
+        for (DocumentSnapshot document : documents) {
             reviews.add(Review.fromDocument(document));
         }
         reviews.sort((first, second) -> Long.compare(
