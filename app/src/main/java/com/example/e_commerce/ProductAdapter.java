@@ -39,6 +39,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
             holder.ivProductImage = convertView.findViewById(R.id.ivProductImage);
             holder.tvCategory = convertView.findViewById(R.id.tvCategory);
             holder.tvName = convertView.findViewById(R.id.tvName);
+            holder.tvAvgStar = convertView.findViewById(R.id.tvAvgStar);
             holder.tvProductReviewSummary = convertView.findViewById(R.id.tvProductReviewSummary);
             holder.tvPrice = convertView.findViewById(R.id.tvPrice);
             holder.tvOriginalPrice = convertView.findViewById(R.id.tvOriginalPrice);
@@ -62,10 +63,14 @@ public class ProductAdapter extends ArrayAdapter<Product> {
                 holder.tvCategory.setText(product.getCategory());
             if (holder.tvName != null)
                 holder.tvName.setText(product.getName());
+            if (holder.tvAvgStar != null) {
+                holder.tvAvgStar.setText(String.format(Locale.forLanguageTag("vi-VN"),
+                        "★ %.1f", product.getAverageRating()));
+            }
             if (holder.tvProductReviewSummary != null) {
                 holder.tvProductReviewSummary.setText(String.format(Locale.forLanguageTag("vi-VN"),
-                        "★ %.1f (%d) · Đã bán %d",
-                        product.getAverageRating(), product.getReviewCount(), product.getSoldCount()));
+                        "(%d) · Đã bán %d",
+                        product.getReviewCount(), product.getSoldCount()));
             }
             bindVoucherPrice(holder, product);
             if (holder.tvStock != null) {
@@ -150,6 +155,7 @@ public class ProductAdapter extends ArrayAdapter<Product> {
         ImageView ivProductImage;
         TextView tvCategory;
         TextView tvName;
+        TextView tvAvgStar;
         TextView tvProductReviewSummary;
         TextView tvPrice;
         TextView tvOriginalPrice;

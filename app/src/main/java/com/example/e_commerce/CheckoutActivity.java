@@ -81,7 +81,7 @@ public class CheckoutActivity extends AppCompatActivity {
         pendingProductVoucherId = getIntent().getStringExtra(VoucherActivity.EXTRA_PRODUCT_VOUCHER_ID);
         pendingShippingVoucherId = getIntent().getStringExtra(VoucherActivity.EXTRA_SHIPPING_VOUCHER_ID);
 
-        TextView tvCheckoutBack = findViewById(R.id.tvCheckoutBack);
+        View tvCheckoutBack = findViewById(R.id.tvCheckoutBack);
         etReceiverName = findViewById(R.id.etReceiverName);
         etReceiverPhone = findViewById(R.id.etReceiverPhone);
         etReceiverAddress = findViewById(R.id.etReceiverAddress);

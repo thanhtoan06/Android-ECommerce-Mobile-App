@@ -1,12 +1,15 @@
 package com.example.e_commerce;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
@@ -23,6 +26,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,6 +50,10 @@ public class ProductListActivity extends AppCompatActivity {
     private ImageView btnClearSearch;
     private LinearLayout btnSort;
     private TextView tvSortLabel;
+    private View layoutSortPanel;
+    private LinearLayout layoutSortOptions;
+    private final List<LinearLayout> sortOptionRows = new ArrayList<>();
+    private boolean isSortPanelExpanded;
     private SwipeRefreshLayout swipeRefresh;
     private View layoutEmpty;
     private Button btnResetFilter;
@@ -57,7 +65,7 @@ public class ProductListActivity extends AppCompatActivity {
     private Product[] filteredProducts = new Product[0];
     private List<Voucher> savedVouchers = new ArrayList<>();
     private String selectedCategory = "Tất cả";
-    private List<ProductSortRules.Criterion> currentSortCriteria = new ArrayList<>();
+    private ProductSortRules.Criterion currentSortCriterion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +86,8 @@ public class ProductListActivity extends AppCompatActivity {
         btnClearSearch = findViewById(R.id.btnClearSearch);
         btnSort = findViewById(R.id.btnSort);
         tvSortLabel = findViewById(R.id.tvSortLabel);
+        layoutSortPanel = findViewById(R.id.layoutSortPanel);
+        layoutSortOptions = findViewById(R.id.layoutSortOptions);
         swipeRefresh = findViewById(R.id.swipeRefresh);
         layoutEmpty = findViewById(R.id.layoutEmpty);
         btnResetFilter = findViewById(R.id.btnResetFilter);
@@ -94,7 +104,8 @@ public class ProductListActivity extends AppCompatActivity {
         swipeRefresh.setOnRefreshListener(() -> loadProductsFromFirebase(true));
         updateUserHeader();
         setupSearch();
-        btnSort.setOnClickListener(this::showSortMenu);
+        setupSortPanel();
+        btnSort.setOnClickListener(v -> setSortPanelExpanded(!isSortPanelExpanded));
         updateSortLabel();
         btnResetFilter.setOnClickListener(v -> resetAllFilters());
         gridView.setOnItemClickListener((parent, view, position, id) -> {
@@ -191,105 +202,136 @@ public class ProductListActivity extends AppCompatActivity {
         btnClearSearch.setOnClickListener(v -> edtSearch.setText(""));
     }
 
-    private void showSortMenu(View anchor) {
-        List<ProductSortRules.Criterion> pendingCriteria = new ArrayList<>(currentSortCriteria);
-        CharSequence[] labels = new CharSequence[SORT_OPTIONS.length];
-        boolean[] checked = new boolean[SORT_OPTIONS.length];
-        for (int index = 0; index < SORT_OPTIONS.length; index++) {
-            ProductSortRules.Criterion criterion = SORT_OPTIONS[index];
-            labels[index] = criterion.getLabel();
-            checked[index] = pendingCriteria.contains(criterion);
+    private void setupSortPanel() {
+        for (int rowIndex = 0; rowIndex < SORT_OPTIONS.length; rowIndex += 2) {
+            LinearLayout optionRow = new LinearLayout(this);
+            optionRow.setOrientation(LinearLayout.HORIZONTAL);
+
+            for (int columnIndex = 0; columnIndex < 2; columnIndex++) {
+                int optionIndex = rowIndex + columnIndex;
+                if (optionIndex >= SORT_OPTIONS.length) {
+                    break;
+                }
+
+                ProductSortRules.Criterion criterion = SORT_OPTIONS[optionIndex];
+                LinearLayout option = new LinearLayout(this);
+                option.setOrientation(LinearLayout.HORIZONTAL);
+                option.setGravity(Gravity.CENTER_VERTICAL);
+                option.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+                option.setClickable(true);
+                option.setFocusable(true);
+
+                TextView label = new TextView(this);
+                label.setLayoutParams(new LinearLayout.LayoutParams(0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                label.setMaxLines(2);
+                label.setText(criterion.getLabel().replace(" (", "\n("));
+                label.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+                label.setTextSize(12.5f);
+
+                TextView checkmark = new TextView(this);
+                checkmark.setGravity(Gravity.CENTER);
+                checkmark.setText("✓");
+                checkmark.setTextColor(ContextCompat.getColor(this, R.color.primary));
+                checkmark.setTextSize(17f);
+                checkmark.setTypeface(null, Typeface.BOLD);
+                checkmark.setVisibility(View.GONE);
+                option.addView(label);
+                option.addView(checkmark, new LinearLayout.LayoutParams(dpToPx(20),
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+                option.setOnClickListener(v -> selectSortCriterion(criterion));
+
+                LinearLayout.LayoutParams optionParams = new LinearLayout.LayoutParams(
+                        0, dpToPx(68), 1f);
+                if (columnIndex == 1) {
+                    optionParams.setMarginStart(dpToPx(8));
+                }
+                optionRow.addView(option, optionParams);
+                sortOptionRows.add(option);
+            }
+
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            rowParams.topMargin = dpToPx(6);
+            layoutSortOptions.addView(optionRow, rowParams);
         }
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Sắp xếp sản phẩm")
-                .setMessage(sortPriorityMessage(pendingCriteria))
-                .setMultiChoiceItems(labels, checked, (shownDialog, which, isChecked) -> {
-                    ProductSortRules.Criterion selected = SORT_OPTIONS[which];
-                    if (isChecked) {
-                        ProductSortRules.Criterion oppositePrice = oppositePriceCriterion(selected);
-                        if (oppositePrice != null && pendingCriteria.remove(oppositePrice)) {
-                            int oppositeIndex = indexOfSortCriterion(oppositePrice);
-                            AlertDialog sortDialog = (AlertDialog) shownDialog;
-                            sortDialog.getListView().setItemChecked(oppositeIndex, false);
-                        }
-                        pendingCriteria.remove(selected);
-                        pendingCriteria.add(selected);
-                    } else {
-                        pendingCriteria.remove(selected);
-                    }
-                    ((AlertDialog) shownDialog).setMessage(sortPriorityMessage(pendingCriteria));
-                })
-                .setPositiveButton("Áp dụng", (shownDialog, which) -> {
-                    currentSortCriteria = new ArrayList<>(pendingCriteria);
-                    updateSortLabel();
-                    applyFilterAndSort();
-                })
-                .setNeutralButton("Mặc định", (shownDialog, which) -> {
-                    currentSortCriteria.clear();
-                    updateSortLabel();
-                    applyFilterAndSort();
-                })
-                .setNegativeButton("Hủy", null)
-                .create();
-        dialog.show();
+        findViewById(R.id.btnSortDefault).setOnClickListener(v -> {
+            currentSortCriterion = null;
+            updateSortLabel();
+            updateSortOptionSelection();
+            setSortPanelExpanded(false);
+            applyFilterAndSort();
+        });
+        updateSortOptionSelection();
     }
 
-    private void updateSortLabel() {
-        if (currentSortCriteria.isEmpty()) {
-            tvSortLabel.setText("Sắp xếp");
-            btnSort.setContentDescription("Sắp xếp sản phẩm");
+    private void selectSortCriterion(ProductSortRules.Criterion criterion) {
+        currentSortCriterion = criterion;
+        updateSortLabel();
+        updateSortOptionSelection();
+        setSortPanelExpanded(false);
+        applyFilterAndSort();
+    }
+
+    private void setSortPanelExpanded(boolean expanded) {
+        if (isSortPanelExpanded == expanded) {
             return;
         }
 
-        ProductSortRules.Criterion primary = currentSortCriteria.get(0);
-        String label = primary.getShortLabel();
-        if (currentSortCriteria.size() > 1) {
-            label += " +" + (currentSortCriteria.size() - 1);
-        }
-        tvSortLabel.setText(label);
-        btnSort.setContentDescription("Sắp xếp sản phẩm: " + sortPriorityMessage(currentSortCriteria));
+        ViewGroup parent = (ViewGroup) layoutSortPanel.getParent();
+        TransitionManager.beginDelayedTransition(parent, new AutoTransition().setDuration(220));
+        layoutSortPanel.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        isSortPanelExpanded = expanded;
+        updateSortButtonAppearance();
     }
 
-    private String sortPriorityMessage(List<ProductSortRules.Criterion> criteria) {
-        if (criteria.isEmpty()) {
-            return "Tích một hoặc nhiều tiêu chí. Tiêu chí tích trước được ưu tiên cao hơn.";
-        }
+    private void updateSortOptionSelection() {
+        for (int index = 0; index < sortOptionRows.size(); index++) {
+            LinearLayout option = sortOptionRows.get(index);
+            ProductSortRules.Criterion criterion = SORT_OPTIONS[index];
+            boolean selected = criterion == currentSortCriterion;
 
-        StringBuilder message = new StringBuilder("Ưu tiên: ");
-        for (ProductSortRules.Criterion criterion : criteria) {
-            if (message.length() > "Ưu tiên: ".length()) {
-                message.append(" → ");
-            }
-            message.append(criterion.getLabel());
+            option.setBackgroundResource(selected
+                    ? R.drawable.bg_sort_option_selected
+                    : R.drawable.bg_sort_option);
+            option.setContentDescription(criterion.getLabel()
+                    + (selected ? ", đang được áp dụng" : ""));
+            option.setSelected(selected);
+            TextView label = (TextView) option.getChildAt(0);
+            label.setTextColor(ContextCompat.getColor(this,
+                    selected ? R.color.primary : R.color.text_primary));
+            label.setTypeface(null, selected ? Typeface.BOLD : Typeface.NORMAL);
+            option.getChildAt(1).setVisibility(selected ? View.VISIBLE : View.GONE);
         }
-        return message.toString();
     }
 
-    private ProductSortRules.Criterion oppositePriceCriterion(ProductSortRules.Criterion criterion) {
-        if (criterion == ProductSortRules.Criterion.PRICE_ASC) {
-            return ProductSortRules.Criterion.PRICE_DESC;
+    private void updateSortLabel() {
+        if (currentSortCriterion == null) {
+            tvSortLabel.setText("Sắp xếp");
+            btnSort.setContentDescription("Sắp xếp sản phẩm");
+            updateSortButtonAppearance();
+            return;
         }
-        if (criterion == ProductSortRules.Criterion.PRICE_DESC) {
-            return ProductSortRules.Criterion.PRICE_ASC;
-        }
-        return null;
+
+        tvSortLabel.setText(currentSortCriterion.getShortLabel());
+        btnSort.setContentDescription("Sắp xếp sản phẩm: " + currentSortCriterion.getLabel());
+        updateSortButtonAppearance();
     }
 
-    private int indexOfSortCriterion(ProductSortRules.Criterion criterion) {
-        for (int index = 0; index < SORT_OPTIONS.length; index++) {
-            if (SORT_OPTIONS[index] == criterion) {
-                return index;
-            }
-        }
-        return -1;
+    private void updateSortButtonAppearance() {
+        btnSort.setBackgroundResource(currentSortCriterion != null || isSortPanelExpanded
+                ? R.drawable.bg_sort_active
+                : R.drawable.bg_search_white);
     }
 
     private void resetAllFilters() {
         edtSearch.setText("");
         selectedCategory = "Tất cả";
-        currentSortCriteria.clear();
+        currentSortCriterion = null;
         updateSortLabel();
+        updateSortOptionSelection();
+        setSortPanelExpanded(false);
         buildCategoryTabs();
         applyFilterAndSort();
     }
@@ -390,8 +432,9 @@ public class ProductListActivity extends AppCompatActivity {
             }
         }
 
-        if (!currentSortCriteria.isEmpty()) {
-            matched.sort(ProductSortRules.comparatorFor(currentSortCriteria));
+        if (currentSortCriterion != null) {
+            matched.sort(ProductSortRules.comparatorFor(
+                    Collections.singletonList(currentSortCriterion)));
         }
 
         filteredProducts = matched.toArray(new Product[0]);

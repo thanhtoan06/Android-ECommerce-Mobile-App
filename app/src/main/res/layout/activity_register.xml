@@ -16,14 +16,8 @@
         android:padding="20dp">
         <ImageButton
             android:id="@+id/btnBackToHome"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
             android:layout_gravity="start"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Quay lại trang chủ"
-            android:padding="12dp"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/primary" />
+            style="@style/AppToolbarBackButton" />
         <com.google.android.material.card.MaterialCardView
             android:layout_width="76dp"
             android:layout_height="76dp"

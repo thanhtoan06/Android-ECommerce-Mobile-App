@@ -11,56 +11,32 @@
     <!-- TopBar -->
     <LinearLayout
         android:id="@+id/topBar"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_alignParentTop="true"
-        android:background="#FFFFFF"
-        android:elevation="2dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="14dp">
+        style="@style/AppToolbar"
+        android:layout_alignParentTop="true">
 
-        <com.google.android.material.card.MaterialCardView
+        <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:cardBackgroundColor="#F9FAFB"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#E5E7EB"
-            app:strokeWidth="1dp">
-
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_gravity="center"
-                android:contentDescription="Quay lại"
-                android:src="@drawable/ic_arrow_back"
-                app:tint="#111827" />
-        </com.google.android.material.card.MaterialCardView>
+            style="@style/AppToolbarBackButton" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="center"
+            android:layout_marginStart="12dp"
             android:text="Chi tiết sản phẩm"
-            android:textColor="#111827"
-            android:textSize="17sp"
-            android:textStyle="bold" />
+            style="@style/AppToolbarTitle" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/btnHeaderCart"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:clickable="true"
             android:focusable="true"
-            app:cardBackgroundColor="#F9FAFB"
-            app:cardCornerRadius="18dp"
+            app:cardBackgroundColor="@color/gray_50"
+            app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
-            app:strokeColor="#E5E7EB"
+            app:rippleColor="@color/primary_soft"
+            app:strokeColor="@color/card_stroke"
             app:strokeWidth="1dp">
 
             <FrameLayout

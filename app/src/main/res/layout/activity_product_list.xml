@@ -103,7 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_marginEnd="6dp"
-                android:background="@drawable/bg_search_white"
+                android:background="@drawable/bg_toolbar_action"
                 android:minWidth="0dp"
                 android:paddingHorizontal="14dp"
                 android:text="Đăng nhập"
@@ -116,7 +116,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_marginStart="6dp"
-                android:background="@drawable/bg_search_white"
+                android:background="@drawable/bg_toolbar_action"
                 android:minWidth="0dp"
                 android:paddingHorizontal="14dp"
                 android:text="Đăng ký"
@@ -281,6 +281,52 @@
                     tools:visibility="visible" />
             </LinearLayout>
         </HorizontalScrollView>
+        <LinearLayout
+            android:id="@+id/layoutSortPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="4dp"
+            android:background="@drawable/bg_sort_panel"
+            android:elevation="3dp"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:visibility="gone">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Sắp xếp sản phẩm"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/btnSortDefault"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_sort_reset"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:minWidth="88dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="Mặc định"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/layoutSortOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical" />
+        </LinearLayout>
     </LinearLayout>
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"

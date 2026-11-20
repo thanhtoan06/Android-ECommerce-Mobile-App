@@ -8,33 +8,19 @@
     android:orientation="vertical"
     tools:context=".PointsActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:background="#4F46E5"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp">
+    <LinearLayout style="@style/AppToolbar">
 
         <ImageView
             android:id="@+id/btnBackPoints"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Quay lại"
-            android:padding="8dp"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/white" />
+            style="@style/AppToolbarBackButton" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="Tech Xu"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            style="@style/AppToolbarTitle" />
     </LinearLayout>
 
     <FrameLayout

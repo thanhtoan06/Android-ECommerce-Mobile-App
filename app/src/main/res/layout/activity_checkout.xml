@@ -10,40 +10,20 @@
 
     <LinearLayout
         android:id="@+id/topBar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_alignParentTop="true"
-        android:background="@color/surface"
-        android:elevation="2dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="14dp">
+        style="@style/AppToolbar"
+        android:layout_alignParentTop="true">
 
-        <TextView
+        <ImageButton
             android:id="@+id/tvCheckoutBack"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:background="@drawable/bg_circle_btn"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:padding="9dp"
-            app:drawableStartCompat="@drawable/ic_arrow_back"
-            app:drawableTint="#4F46E5" />
+            style="@style/AppToolbarBackButton" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="center"
+            android:layout_marginStart="12dp"
             android:text="Xác nhận thanh toán"
-            android:textColor="#111827"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <View
-            android:layout_width="38dp"
-            android:layout_height="38dp" />
+            style="@style/AppToolbarTitle" />
     </LinearLayout>
 
     <LinearLayout

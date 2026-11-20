@@ -8,6 +8,20 @@
     android:orientation="vertical"
     tools:context=".AccountActivity">
 
+    <LinearLayout style="@style/AppToolbar">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Tài khoản của tôi"
+            style="@style/AppToolbarTitle" />
+        <ImageView
+            android:id="@+id/btnSettings"
+            android:contentDescription="Cài đặt"
+            android:src="@drawable/ic_settings"
+            style="@style/AppToolbarIconAction" />
+    </LinearLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -21,44 +35,13 @@
             android:orientation="vertical"
             android:paddingBottom="24dp">
 
-            <!-- Header tím phủ rộng tạo chiều sâu -->
+            <!-- Thẻ hồ sơ trên trang tài khoản -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#4F46E5"
                 android:orientation="vertical"
                 android:paddingBottom="44dp">
-
-                <!-- Thanh tiêu đề & nút bánh răng Cài đặt -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Tài khoản của tôi"
-                        android:textColor="@color/white"
-                        android:textSize="19sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:id="@+id/btnSettings"
-                        android:layout_width="42dp"
-                        android:layout_height="42dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Cài đặt"
-                        android:padding="9dp"
-                        android:src="@drawable/ic_settings"
-                        app:tint="@color/white" />
-                </LinearLayout>
-
-                <!-- Thông tin User -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

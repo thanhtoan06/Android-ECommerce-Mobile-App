@@ -11,33 +11,18 @@
 <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/primary"
-        android:elevation="4dp"
         android:orientation="vertical">
-<LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp">
+<LinearLayout style="@style/AppToolbar">
             <ImageView
                 android:id="@+id/btnBackSettings"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Quay lại"
-                android:padding="8dp"
-                android:src="@drawable/ic_arrow_back"
-                app:tint="@color/white" />
+                style="@style/AppToolbarBackButton" />
 <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
-                android:gravity="center"
                 android:text="Cài đặt"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                style="@style/AppToolbarTitle" />
             <View
                 android:layout_width="40dp"
                 android:layout_height="40dp" />
@@ -45,10 +30,15 @@
 <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_settings_profile"
+            android:elevation="2dp"
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingTop="4dp"
+            android:paddingTop="16dp"
             android:paddingBottom="20dp">
 <FrameLayout
                 android:layout_width="74dp"
